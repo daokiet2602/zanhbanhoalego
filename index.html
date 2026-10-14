@@ -609,25 +609,113 @@
         .trust-text h4 { font-size: 0.92rem; font-weight: 800; color: var(--dark); margin-bottom: 2px; }
         .trust-text p { font-size: 0.78rem; color: var(--text-sub); font-weight: 600; }
 
-        .floating-chat-btn {
+        /* FLOATING MULTI-CHANNEL CONTACT WIDGET */
+        .contact-widget-wrap {
             position: fixed;
             bottom: 24px;
             right: 24px;
-            background: #0068FF;
+            z-index: 150;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .contact-menu {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            background: #fff;
+            padding: 12px;
+            border-radius: 18px;
+            border: 2.5px solid var(--dark);
+            box-shadow: 6px 6px 0 var(--dark);
+            animation: popIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            min-width: 210px;
+        }
+        .contact-menu.active { display: flex; }
+
+        .contact-channel-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 800;
+            font-size: 0.88rem;
+            transition: all 0.15s;
+            background: #F8FAFC;
+            border: 1.5px solid var(--border);
+        }
+        .contact-channel-item:hover {
+            transform: translateX(-3px);
+            border-color: var(--dark);
+        }
+        .contact-channel-item.hotline:hover { background: #FEE2E2; border-color: var(--primary); color: var(--primary); }
+        .contact-channel-item.zalo:hover { background: #E0F2FE; border-color: #0068FF; color: #0068FF; }
+        .contact-channel-item.tiktok:hover { background: #000; color: #fff; border-color: #000; }
+
+        .contact-channel-icon {
+            font-size: 1.25rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .floating-chat-trigger {
+            background: var(--primary);
             color: #fff;
-            padding: 12px 20px;
+            padding: 12px 22px;
             border-radius: 999px;
             font-weight: 900;
-            font-size: 0.9rem;
+            font-size: 0.92rem;
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 6px 20px rgba(0, 104, 255, 0.4);
-            text-decoration: none;
-            z-index: 90;
-            transition: transform 0.2s;
+            border: 2.5px solid var(--dark);
+            box-shadow: 4px 4px 0 var(--dark);
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
         }
-        .floating-chat-btn:hover { transform: scale(1.05); }
+        .floating-chat-trigger:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 5px 5px 0 var(--dark);
+            background: var(--primary-hover);
+        }
+
+        /* FOOTER CONTACT BUTTONS */
+        .footer-contacts {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0 20px;
+        }
+        .footer-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 18px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.85rem;
+            text-decoration: none;
+            border: 2px solid var(--dark);
+            box-shadow: 2px 2px 0 var(--dark);
+            transition: transform 0.15s;
+        }
+        .footer-btn:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--dark); }
+        .footer-btn.phone { background: var(--yellow); color: var(--dark); }
+        .footer-btn.zalo { background: #0068FF; color: #fff; }
+        .footer-btn.tiktok { background: #000; color: #fff; }
 
         .toast-notify {
             position: fixed;
@@ -752,6 +840,20 @@
 
         <footer>
             <p style="font-weight: 800; font-size: 0.95rem; margin-bottom: 6px;">DÁNH BÁN HOA · Tiệm Hoa Lego & Quà Tặng Sáng Tạo</p>
+            
+            <!-- 3 NÚT LIÊN HỆ FOOTER -->
+            <div class="footer-contacts">
+                <a class="footer-btn phone" href="tel:0343076043" aria-label="Gọi điện thoại trực tiếp">
+                    <span>📞</span> Hotline: 0343.076.043
+                </a>
+                <a class="footer-btn zalo" href="https://zalo.me/0343076043" target="_blank" rel="noopener" aria-label="Nhắn tin qua Zalo">
+                    <span>💬</span> Zalo: 0343.076.043
+                </a>
+                <a class="footer-btn tiktok" href="https://www.tiktok.com/@hoa.lego.sg" target="_blank" rel="noopener" aria-label="Xem kênh TikTok">
+                    <span>🎵</span> TikTok: @hoa.lego.sg
+                </a>
+            </div>
+
             <p style="color: var(--text-sub); font-size: 0.8rem; line-height: 1.6;">
                 © 2026 DÁNH BÁN HOA. Tất cả sản phẩm đều đảm bảo chất lượng và đóng gói cẩn thận.<br>
                 <small style="opacity: 0.7;">(Sản phẩm mô hình gạch lắp ráp tương thích tiêu chuẩn)</small>
@@ -759,10 +861,26 @@
         </footer>
     </div>
 
-    <!-- NÚT CHAT HỖ TRỢ NỔI -->
-    <a class="floating-chat-btn" href="https://t.me/danhbanhoa_bot" target="_blank" rel="noopener" aria-label="Nhắn tin hỗ trợ qua Telegram">
-        <span>💬</span> Hỗ Trợ Đơn Hàng
-    </a>
+    <!-- WIDGET HỖ TRỢ ĐA KÊNH NỔI (SPEED DIAL) -->
+    <div class="contact-widget-wrap">
+        <div class="contact-menu" id="contact-popup-menu">
+            <a class="contact-channel-item hotline" href="tel:0343076043" aria-label="Gọi điện thoại hotline">
+                <span class="contact-channel-icon">📞</span>
+                <span>Gọi: 0343.076.043</span>
+            </a>
+            <a class="contact-channel-item zalo" href="https://zalo.me/0343076043" target="_blank" rel="noopener" aria-label="Nhắn tin qua Zalo">
+                <span class="contact-channel-icon" style="color:#0068FF">💬</span>
+                <span>Zalo: 0343.076.043</span>
+            </a>
+            <a class="contact-channel-item tiktok" href="https://www.tiktok.com/@hoa.lego.sg" target="_blank" rel="noopener" aria-label="Kênh TikTok shop">
+                <span class="contact-channel-icon">🎵</span>
+                <span>TikTok: @hoa.lego.sg</span>
+            </a>
+        </div>
+        <button type="button" class="floating-chat-trigger" onclick="toggleContactMenu()" aria-label="Mở menu hỗ trợ đơn hàng">
+            <span>💬</span> Hỗ Trợ Đơn Hàng
+        </button>
+    </div>
 
     <div class="toast-notify" id="toast-notify">Đã sao chép ✓</div>
 
@@ -1319,6 +1437,19 @@
             t.style.display = 'block';
             setTimeout(() => { t.style.display = 'none'; }, 2200);
         }
+
+        function toggleContactMenu() {
+            const menu = document.getElementById('contact-popup-menu');
+            menu.classList.toggle('active');
+        }
+
+        // Đóng menu hỗ trợ khi bấm ra ngoài
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.contact-widget-wrap')) {
+                const menu = document.getElementById('contact-popup-menu');
+                if (menu) menu.classList.remove('active');
+            }
+        });
 
         init();
     </script>
