@@ -504,33 +504,57 @@
         }
         .btn-submit-order:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--dark); }
 
-        /* SUCCESS MODAL */
-        #success-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
+        /* PAYMENT / VIETQR MODAL */
+        #payment-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200;
             display: none; align-items: center; justify-content: center; padding: 20px;
-            backdrop-filter: blur(6px);
+            backdrop-filter: blur(8px);
         }
-        .success-card {
-            background: #fff; width: 100%; max-width: 420px; border-radius: 24px;
-            padding: 32px 24px; text-align: center; border: 3px solid var(--dark);
-            box-shadow: 8px 8px 0 var(--green); animation: popIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        .payment-card {
+            background: #fff; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto;
+            border-radius: 24px; padding: 24px; text-align: center; border: 3px solid var(--dark);
+            box-shadow: 8px 8px 0 var(--yellow); animation: popIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .success-card h3 { font-size: 1.4rem; font-weight: 900; margin: 12px 0 8px; color: var(--dark); }
-        .success-card p { font-size: 0.88rem; color: var(--text-sub); line-height: 1.5; margin-bottom: 20px; }
-        .order-summary-box {
+        .payment-card h3 { font-size: 1.3rem; font-weight: 900; color: var(--dark); margin-bottom: 6px; }
+        .payment-card .sub-tip { font-size: 0.82rem; color: var(--text-sub); margin-bottom: 16px; }
+
+        .qr-wrap {
+            background: #F8FAFC; border: 2px dashed #CBD5E1; border-radius: 16px;
+            padding: 14px; margin-bottom: 16px; display: inline-block;
+        }
+        .qr-img {
+            width: 220px; height: 220px; object-fit: contain; display: block; margin: 0 auto;
+            border-radius: 10px; background: #fff;
+        }
+
+        .bank-info-box {
             background: #F8FAFC; border: 1.5px solid var(--border); border-radius: 14px;
-            padding: 14px; text-align: left; font-size: 0.82rem; margin-bottom: 20px;
+            padding: 14px 16px; text-align: left; font-size: 0.85rem; margin-bottom: 18px;
         }
-        .btn-done-zalo {
-            width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--dark);
-            background: #0068FF; color: #fff; font-weight: 800; font-size: 0.95rem;
-            cursor: pointer; box-shadow: 3px 3px 0 var(--dark); text-decoration: none;
-            display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;
+        .info-line {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
         }
-        .btn-close-success {
-            width: 100%; padding: 10px; border-radius: 10px; border: none;
-            background: #F1F5F9; color: var(--text-sub); font-weight: 800; font-size: 0.85rem; cursor: pointer;
+        .info-line:last-child { margin-bottom: 0; }
+        .info-line span.lbl { color: var(--text-sub); font-weight: 700; }
+        .info-line b.val { color: var(--dark); font-weight: 900; }
+        .btn-copy {
+            background: #E2E8F0; border: none; padding: 2px 8px; border-radius: 6px;
+            font-size: 0.72rem; font-weight: 800; cursor: pointer; margin-left: 6px;
+        }
+        .btn-copy:hover { background: #CBD5E1; }
+
+        .btn-paid-done {
+            width: 100%; padding: 14px; border-radius: 12px; border: 2px solid var(--dark);
+            background: var(--green); color: #fff; font-size: 1rem; font-weight: 900;
+            cursor: pointer; box-shadow: 3px 3px 0 var(--dark); transition: all 0.15s;
+            margin-bottom: 10px;
+        }
+        .btn-paid-done:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--dark); }
+
+        .btn-cancel-pay {
+            width: 100%; padding: 10px; border: none; background: transparent;
+            color: var(--text-sub); font-size: 0.85rem; font-weight: 800; cursor: pointer;
         }
 
         /* FOOTER */
@@ -674,20 +698,50 @@
         </div>
     </div>
 
-    <!-- SUCCESS MODAL -->
-    <div id="success-modal">
-        <div class="success-card">
-            <div style="font-size: 3rem;">🎉</div>
-            <h3>Đặt Hàng Thành Công!</h3>
-            <p>Cảm ơn bạn đã ủng hộ <b>DÁNH BÁN HOA</b>! Thông tin đơn hàng đã được gửi trực tiếp đến cửa hàng để chuẩn bị gói và giao hàng cho bạn.</p>
-            <div class="order-summary-box" id="success-summary">
-                <!-- Summary info -->
+    <!-- PAYMENT / VIETQR MODAL -->
+    <div id="payment-modal">
+        <div class="payment-card">
+            <h3>💳 Thanh Toán Chuyển Khoản Ngay</h3>
+            <p class="sub-tip">Mở App Ngân Hàng bất kỳ quét mã QR bên dưới để thanh toán tự động</p>
+
+            <div class="qr-wrap">
+                <img class="qr-img" id="pay-qr-img" src="" alt="Mã VietQR thanh toán">
             </div>
-            <a class="btn-done-zalo" id="success-zalo-link" href="#" target="_blank">
-                💬 Nhắn Tin Xác Nhận Qua Zalo
-            </a>
-            <button class="btn-close-success" onclick="closeSuccessModal()">
-                Tiếp tục xem sản phẩm
+
+            <div class="bank-info-box">
+                <div class="info-line">
+                    <span class="lbl">Ngân hàng:</span>
+                    <b class="val" id="pay-bank-name">MB Bank (Quân Đội)</b>
+                </div>
+                <div class="info-line">
+                    <span class="lbl">Số tài khoản:</span>
+                    <span style="display:flex; align-items:center;">
+                        <b class="val" id="pay-acc-num">0901234567</b>
+                        <button class="btn-copy" onclick="copyText('pay-acc-num')">Copy</button>
+                    </span>
+                </div>
+                <div class="info-line">
+                    <span class="lbl">Chủ tài khoản:</span>
+                    <b class="val" id="pay-acc-name">DAO GIA KIET</b>
+                </div>
+                <div class="info-line">
+                    <span class="lbl">Số tiền cần chuyển:</span>
+                    <b class="val" id="pay-amount" style="color:var(--primary); font-size:1.05rem;">0đ</b>
+                </div>
+                <div class="info-line">
+                    <span class="lbl">Nội dung chuyển khoản:</span>
+                    <span style="display:flex; align-items:center;">
+                        <b class="val" id="pay-memo" style="color:var(--blue)">DH123456</b>
+                        <button class="btn-copy" onclick="copyText('pay-memo')">Copy</button>
+                    </span>
+                </div>
+            </div>
+
+            <button class="btn-paid-done" onclick="finishPayment()">
+                ✅ Tôi Đã Chuyển Khoản Thành Công
+            </button>
+            <button class="btn-cancel-pay" onclick="closePaymentModal()">
+                ✕ Đóng / Thanh toán sau
             </button>
         </div>
     </div>
@@ -863,10 +917,20 @@
         }
 
         // BẮN ĐƠN HÀNG VỀ TELEGRAM BOT & TỰ ĐỘNG TRỪ KHO REALTIME
+        // CẤU HÌNH NGÂN HÀNG VIETQR
+        const BANK_CONFIG = {
+            BANK_ID: "MB", // MB, VCB, TCB, VPB, TPB, ACB...
+            ACCOUNT_NO: "0901234567", // Số tài khoản ngân hàng của shop
+            ACCOUNT_NAME: "DAO GIA KIET",
+            BANK_DISPLAY: "MB Bank (Ngân Hàng Quân Đội)"
+        };
+
         const TELEGRAM_CONFIG = {
             BOT_TOKEN: "8615110743:AAFWqNOTLgdFQMDelen2WbxPUW-Na5iwDRo",
             CHAT_ID: "6401633197"
         };
+
+        let CURRENT_ORDER = null;
 
         async function submitOrderToTelegram() {
             const name = document.getElementById('cust-name').value.trim();
@@ -881,12 +945,11 @@
 
             const btn = document.getElementById('btn-submit-order');
             btn.disabled = true;
-            btn.textContent = "⏳ Đang gửi đơn hàng...";
+            btn.textContent = "⏳ Đang tạo cổng thanh toán...";
 
-            const orderId = 'DH-' + Date.now().toString().slice(-6);
+            const orderId = 'DH' + Date.now().toString().slice(-6);
             let totalAmount = 0;
             let itemsSummaryHtml = '';
-            let itemsSummaryZalo = '';
 
             // Chuẩn bị nội dung đơn hàng & tự động trừ kho
             Object.entries(CART).forEach(([id, qty]) => {
@@ -895,11 +958,10 @@
                     const lineMoney = p.price_retail * qty;
                     totalAmount += lineMoney;
                     itemsSummaryHtml += `• <b>${qty}x</b> [${p.id}] ${p.name}: <code>${fmtVND(lineMoney)}</code>\n`;
-                    itemsSummaryZalo += `- ${qty}x ${p.name} (${fmtVND(lineMoney)})\n`;
 
                     // TỰ ĐỘNG TRỪ KHO REALTIME TRÊN HỆ THỐNG
                     if (window.realtimeStore) {
-                        window.realtimeStore.recordSale(p, qty, p.price_retail, `Khách web: ${name} (${phone}) - ${address}`);
+                        window.realtimeStore.recordSale(p, qty, p.price_retail, `Chờ CK: ${name} (${phone}) - ${address}`);
                     }
                 }
             });
@@ -907,13 +969,14 @@
             const nowStr = new Date().toLocaleString('vi-VN');
 
             // Tin nhắn gửi về Telegram của anh Kiệt
-            const teleMsg = `🌸 <b>ĐƠN HÀNG MỚI - DÁNH BÁN HOA!</b>\n` +
+            const teleMsg = `🌸 <b>ĐƠN HÀNG MỚI (CHỜ CHUYỂN KHOẢN) - DÁNH BÁN HOA!</b>\n` +
                 `━━━━━━━━━━━━━━━━━━\n` +
                 `📦 <b>Mã đơn:</b> <code>#${orderId}</code>\n` +
                 `👤 <b>Khách hàng:</b> ${name}\n` +
                 `📞 <b>Điện thoại:</b> <code>${phone}</code>\n` +
                 `📍 <b>Địa chỉ:</b> ${address}\n` +
                 `${note ? `📝 <b>Ghi chú:</b> <i>${note}</i>\n` : ''}` +
+                `💳 <b>Hình thức:</b> Chuyển khoản VietQR (${BANK_CONFIG.BANK_ID})\n` +
                 `━━━━━━━━━━━━━━━━━━\n` +
                 `🛍️ <b>CHI TIẾT SẢN PHẨM:</b>\n${itemsSummaryHtml}` +
                 `━━━━━━━━━━━━━━━━━━\n` +
@@ -921,7 +984,6 @@
                 `⏰ <b>Thời gian:</b> ${nowStr}`;
 
             try {
-                // Gọi API Telegram
                 await fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -935,20 +997,20 @@
                 console.warn("Lỗi gửi Telegram:", err);
             }
 
-            // Mở link Zalo kèm lời nhắn soạn sẵn
-            const zaloText = `Chào DÁNH BÁN HOA, mình là ${name} (SĐT: ${phone}). Mình vừa đặt đơn hàng #${orderId} trên website:\n${itemsSummaryZalo}Tổng cộng: ${fmtVND(totalAmount)}.\nĐịa chỉ nhận hàng: ${address}.\nNhờ shop kiểm tra và xác nhận đơn giúp mình nhé!`;
-            const zaloLink = `https://zalo.me/?text=${encodeURIComponent(zaloText)}`;
-            document.getElementById('success-zalo-link').href = zaloLink;
+            // TẠO MÃ VIETQR TỰ ĐỘNG KHỚP SỐ TIỀN & MÃ ĐƠN HÀNG
+            const memo = `${orderId} ${phone}`;
+            const qrUrl = `https://img.vietqr.io/image/${BANK_CONFIG.BANK_ID}-${BANK_CONFIG.ACCOUNT_NO}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(BANK_CONFIG.ACCOUNT_NAME)}`;
 
-            // Hiển thị tóm tắt trong modal thành công
-            document.getElementById('success-summary').innerHTML = `
-                <div><b>Mã đơn hàng:</b> #${orderId}</div>
-                <div><b>Người nhận:</b> ${name} (${phone})</div>
-                <div><b>Địa chỉ:</b> ${address}</div>
-                <div style="margin-top:6px; color:var(--primary); font-weight:800; font-size:0.95rem;">Tổng thanh toán: ${fmtVND(totalAmount)}</div>
-            `;
+            document.getElementById('pay-qr-img').src = qrUrl;
+            document.getElementById('pay-bank-name').textContent = BANK_CONFIG.BANK_DISPLAY;
+            document.getElementById('pay-acc-num').textContent = BANK_CONFIG.ACCOUNT_NO;
+            document.getElementById('pay-acc-name').textContent = BANK_CONFIG.ACCOUNT_NAME;
+            document.getElementById('pay-amount').textContent = fmtVND(totalAmount);
+            document.getElementById('pay-memo').textContent = memo;
 
-            // Xóa giỏ hàng & reset form
+            CURRENT_ORDER = { orderId, name, phone, address, totalAmount };
+
+            // Reset giỏ hàng & đóng drawer
             CART = {};
             updateCartUI();
             toggleCart(false);
@@ -956,16 +1018,24 @@
             btn.disabled = false;
             btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
 
-            // Hiện modal đặt hàng thành công
-            document.getElementById('success-modal').style.display = 'flex';
+            // BẬT POPUP THANH TOÁN VIETQR
+            document.getElementById('payment-modal').style.display = 'flex';
         }
 
-        function closeSuccessModal() {
-            document.getElementById('success-modal').style.display = 'none';
+        function finishPayment() {
+            alert("Cảm ơn bạn! Cửa hàng đã ghi nhận đơn hàng và sẽ kiểm tra thông tin chuyển khoản để gửi hàng sớm nhất.");
+            document.getElementById('payment-modal').style.display = 'none';
         }
 
-        function sendOrderZalo() {
-            openCheckoutForm();
+        function closePaymentModal() {
+            document.getElementById('payment-modal').style.display = 'none';
+        }
+
+        function copyText(elemId) {
+            const txt = document.getElementById(elemId).textContent;
+            navigator.clipboard.writeText(txt).then(() => {
+                alert(`Đã sao chép: ${txt}`);
+            });
         }
 
         init();
