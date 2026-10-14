@@ -640,27 +640,28 @@
         .trust-text h4 { font-size: 0.92rem; font-weight: 800; color: var(--dark); margin-bottom: 2px; }
         .trust-text p { font-size: 0.78rem; color: var(--text-sub); font-weight: 600; }
 
-        /* FLOATING MULTI-CHANNEL CONTACT WIDGET */
+        /* FLOATING MULTI-CHANNEL CONTACT WIDGET (DỜI SANG GÓC DƯỚI BÊN TRÁI ĐỂ TRÁNH GIỎ HÀNG BÊN PHẢI) */
         .contact-widget-wrap {
             position: fixed;
             bottom: 24px;
-            right: 24px;
-            z-index: 40; /* Nằm dưới lớp giỏ hàng modal-overlay (z-index 100) */
+            left: 24px;
+            right: auto;
+            z-index: 90;
             display: flex;
             flex-direction: column;
-            align-items: flex-end;
+            align-items: flex-start;
             gap: 10px;
             transition: opacity 0.25s, transform 0.25s, visibility 0.25s;
         }
 
-        /* TỰ ĐỘNG ẨN NÚT HỖ TRỢ KHI MỞ GIỎ HÀNG HOẶC THANH TOÁN (TRÁNH ĐÈ LÊN NÚT ĐẶT HÀNG) */
-        body.cart-open .contact-widget-wrap,
+        /* TỰ ĐỘNG ẨN HOÀN TOÀN KHI MỞ GIỎ HÀNG */
         .modal-overlay.active ~ .contact-widget-wrap,
-        #cart-modal.active ~ .contact-widget-wrap {
+        #cart-modal.active ~ .contact-widget-wrap,
+        #payment-modal.active ~ .contact-widget-wrap {
+            display: none !important;
             opacity: 0 !important;
             pointer-events: none !important;
             visibility: hidden !important;
-            transform: translateY(15px) scale(0.9);
         }
 
         .contact-menu {
@@ -1047,18 +1048,18 @@
             <div class="bank-info-box">
                 <div class="info-line">
                     <span class="lbl">Ngân hàng:</span>
-                    <b class="val" id="pay-bank-name">MB Bank (Quân Đội)</b>
+                    <b class="val" id="pay-bank-name">Vietcombank (Ngân Hàng Ngoại Thương)</b>
                 </div>
                 <div class="info-line">
                     <span class="lbl">Số tài khoản:</span>
                     <span style="display:flex; align-items:center;">
-                        <b class="val" id="pay-acc-num">0901234567</b>
+                        <b class="val" id="pay-acc-num">7984193727</b>
                         <button class="btn-copy" onclick="copyText('pay-acc-num')">Copy</button>
                     </span>
                 </div>
                 <div class="info-line">
                     <span class="lbl">Chủ tài khoản:</span>
-                    <b class="val" id="pay-acc-name">DAO GIA KIET</b>
+                    <b class="val" id="pay-acc-name">ZHANG TINH HUY</b>
                 </div>
                 <div class="info-line">
                     <span class="lbl">Số tiền cần chuyển:</span>
