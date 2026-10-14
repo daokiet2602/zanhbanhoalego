@@ -974,7 +974,7 @@
 
                 <div class="form-row">
                     <label>Phường / Xã nhận hàng *</label>
-                    <select class="form-input" id="cust-ward" style="cursor:pointer; font-weight:700;">
+                    <select class="form-input" id="cust-ward" onchange="handleWardChange()" style="cursor:pointer; font-weight:700;">
                         <!-- Injected dynamically -->
                     </select>
                 </div>
@@ -1307,6 +1307,25 @@
             handleCityChange();
         }
 
+        // DANH SÁCH 64 PHƯỜNG / XÃ THUỘC BÌNH DƯƠNG & BÀ RỊA VŨNG TÀU CŨ (KHÔNG HỖ TRỢ HỎA TỐC)
+        const EXCLUDED_EXPRESS_WARDS = new Set([
+            // Bình Dương cũ
+            "Phường Thủ Dầu Một", "Phường Bình Dương", "Phường Phú Hòa", "Phường Phú Lợi",
+            "Phường Chánh Hiệp", "Phường Dĩ An", "Phường Đông Hòa", "Phường Tân Đông Hiệp",
+            "Phường Thuận An", "Phường Lái Thiêu", "Phường Thuận Giao", "Phường An Phú",
+            "Phường Bến Cát", "Phường Chánh Phú Hòa", "Phường Hòa Lợi", "Phường Thới Hòa",
+            "Phường Long Nguyên", "Phường Tây Nam", "Phường Tân Uyên", "Phường Vĩnh Tân",
+            "Phường Tân Hiệp", "Phường Tân Khánh", "Phường Bình Cơ", "Phường Phú An",
+            "Xã Bàu Bàng", "Xã Trừ Văn Thố", "Xã Dầu Tiếng", "Xã Minh Thạnh", "Xã Thanh An",
+            "Xã Long Hòa", "Xã Bắc Tân Uyên", "Xã Thường Tân", "Xã Phú Giáo", "Xã Phước Hòa", "Xã Phước Thành", "Xã An Long",
+            // Bà Rịa - Vũng Tàu cũ
+            "Phường Vũng Tàu", "Phường Bà Rịa", "Phường Phú Mỹ", "Phường Long Hương", 
+            "Phường Rạch Dừa", "Phường Phước Thắng", "Phường Tam Thắng", "Phường Tân Hải", "Phường Tân Phước",
+            "Đặc khu Côn Đảo", "Xã Long Điền", "Xã Long Hải", "Xã Đất Đỏ", "Xã Phước Hải",
+            "Xã Xuyên Mộc", "Xã Hồ Tràm", "Xã Bình Châu", "Xã Hòa Hội", "Xã Hòa Hiệp", "Xã Bàu Lâm",
+            "Xã Châu Đức", "Xã Ngãi Giao", "Xã Kim Long", "Xã Bình Giã", "Xã Nghĩa Thành", "Xã Xuân Sơn", "Xã Châu Pha", "Xã Long Sơn"
+        ]);
+
         function handleCityChange() {
             const citySel = document.getElementById('cust-city');
             if (!citySel) return;
@@ -1319,8 +1338,24 @@
                 wardSel.innerHTML = wards.map(w => `<option value="${w}">${w}</option>`).join('');
             }
 
+            handleWardChange();
+        }
+
+        function handleWardChange() {
+            const wardSel = document.getElementById('cust-ward');
+            const curWard = wardSel ? wardSel.value : '';
+
+            // Nếu phường thuộc vùng ngoại vi Bình Dương / BRVT cũ mà đang chọn Hỏa tốc -> Chuyển về Tiêu chuẩn
+            if (isExcludedFromExpress(curWard) && SELECTED_SHIP_METHOD === 'hcm_express') {
+                SELECTED_SHIP_METHOD = 'hcm_std';
+            }
+
             renderShippingOptions();
             updateBillSummary();
+        }
+
+        function isExcludedFromExpress(wardName) {
+            return isHcmCity() && EXCLUDED_EXPRESS_WARDS.has(wardName);
         }
 
         function isHcmCity() {
@@ -1329,32 +1364,56 @@
 
         function renderShippingOptions() {
             const container = document.getElementById('shipping-options-container');
+            const wardSel = document.getElementById('cust-ward');
+            const curWard = wardSel ? wardSel.value : '';
+            const cannotExpress = isExcludedFromExpress(curWard);
+
             if (isHcmCity()) {
-                if (SELECTED_SHIP_METHOD !== 'hcm_std' && SELECTED_SHIP_METHOD !== 'hcm_express') {
+                if (cannotExpress) {
+                    // Chỉ cho phép Giao Tiêu Chuẩn 25k đối với khu vực ngoại vi sáp nhập
                     SELECTED_SHIP_METHOD = 'hcm_std';
+                    container.innerHTML = `
+                        <div class="ship-method-card active" onclick="selectShipping('hcm_std')">
+                            <div class="ship-info-left">
+                                <span class="ship-icon">🛵</span>
+                                <div>
+                                    <div class="ship-title">Giao Tiêu Chuẩn TP.HCM</div>
+                                    <div class="ship-desc">Giao tận nơi trong 1 - 2 ngày</div>
+                                </div>
+                            </div>
+                            <div class="ship-fee">25.000đ</div>
+                        </div>
+                        <div style="font-size:0.75rem; color:#B45309; background:#FEF3C7; padding:8px 12px; border-radius:8px; font-weight:700;">
+                            ⚠️ Khu vực <b>${curWard}</b> hiện chỉ áp dụng Giao Tiêu Chuẩn (1-2 ngày), không hỗ trợ Hỏa Tốc Grab/AhaMove.
+                        </div>
+                    `;
+                } else {
+                    if (SELECTED_SHIP_METHOD !== 'hcm_std' && SELECTED_SHIP_METHOD !== 'hcm_express') {
+                        SELECTED_SHIP_METHOD = 'hcm_std';
+                    }
+                    container.innerHTML = `
+                        <div class="ship-method-card ${SELECTED_SHIP_METHOD === 'hcm_std' ? 'active' : ''}" onclick="selectShipping('hcm_std')">
+                            <div class="ship-info-left">
+                                <span class="ship-icon">🛵</span>
+                                <div>
+                                    <div class="ship-title">Giao Tiêu Chuẩn TP.HCM</div>
+                                    <div class="ship-desc">Giao tận nơi trong 1 - 2 ngày</div>
+                                </div>
+                            </div>
+                            <div class="ship-fee">25.000đ</div>
+                        </div>
+                        <div class="ship-method-card ${SELECTED_SHIP_METHOD === 'hcm_express' ? 'active' : ''}" onclick="selectShipping('hcm_express')">
+                            <div class="ship-info-left">
+                                <span class="ship-icon">⚡</span>
+                                <div>
+                                    <div class="ship-title">Giao Hỏa Tốc Nội Thành (2 - 4h)</div>
+                                    <div class="ship-desc">Nhận ngay trong ngày qua Grab/AhaMove</div>
+                                </div>
+                            </div>
+                            <div class="ship-fee" style="font-size:0.75rem; color:var(--text-sub);">Cước App (Trả Shipper)</div>
+                        </div>
+                    `;
                 }
-                container.innerHTML = `
-                    <div class="ship-method-card ${SELECTED_SHIP_METHOD === 'hcm_std' ? 'active' : ''}" onclick="selectShipping('hcm_std')">
-                        <div class="ship-info-left">
-                            <span class="ship-icon">🛵</span>
-                            <div>
-                                <div class="ship-title">Giao Tiêu Chuẩn TP.HCM</div>
-                                <div class="ship-desc">Giao tận nơi trong 1 - 2 ngày</div>
-                            </div>
-                        </div>
-                        <div class="ship-fee">25.000đ</div>
-                    </div>
-                    <div class="ship-method-card ${SELECTED_SHIP_METHOD === 'hcm_express' ? 'active' : ''}" onclick="selectShipping('hcm_express')">
-                        <div class="ship-info-left">
-                            <span class="ship-icon">⚡</span>
-                            <div>
-                                <div class="ship-title">Giao Hỏa Tốc Nội Thành (2 - 4h)</div>
-                                <div class="ship-desc">Nhận ngay trong ngày qua Grab/AhaMove</div>
-                            </div>
-                        </div>
-                        <div class="ship-fee" style="font-size:0.75rem; color:var(--text-sub);">Cước App (Trả Shipper)</div>
-                    </div>
-                `;
             } else {
                 SELECTED_SHIP_METHOD = 'prov_std';
                 container.innerHTML = `
