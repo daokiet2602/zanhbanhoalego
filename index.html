@@ -383,13 +383,15 @@
 
         .cart-drawer {
             width: 100%;
-            max-width: 440px;
+            max-width: 480px;
             height: 100%;
             background: #fff;
             box-shadow: -5px 0 25px rgba(0,0,0,0.15);
             display: flex;
             flex-direction: column;
             animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         @keyframes slideIn {
             from { transform: translateX(100%); }
@@ -397,11 +399,15 @@
         }
 
         .cart-head {
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
+            padding: 18px 20px;
+            border-bottom: 1.5px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 20;
         }
         .cart-head h3 { font-size: 1.2rem; font-weight: 900; }
         .close-cart {
@@ -534,8 +540,8 @@
         /* CHECKOUT FORM */
         .checkout-form {
             background: #F8FAFC;
-            border-top: 1px solid var(--border);
-            padding: 18px 20px;
+            border-top: 1.5px solid var(--border);
+            padding: 18px 20px 60px;
             display: none;
             animation: fadeIn 0.25s ease;
         }
