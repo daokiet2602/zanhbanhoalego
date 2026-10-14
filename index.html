@@ -477,6 +477,23 @@
         }
         .checkout-btn:hover { background: var(--primary-hover); }
 
+        /* PAYMENT METHOD RADIO BUTTONS */
+        .payment-methods-box {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 16px;
+        }
+        .pay-method-card {
+            border: 2px solid var(--border); border-radius: 12px; padding: 12px 10px;
+            cursor: pointer; text-align: center; background: #fff; transition: all 0.2s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+        }
+        .pay-method-card.active {
+            border-color: var(--primary); background: #FFF5F5;
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+        .pay-method-card .icon { font-size: 1.3rem; }
+        .pay-method-card .t { font-size: 0.82rem; font-weight: 800; color: var(--dark); }
+        .pay-method-card .d { font-size: 0.68rem; color: var(--text-sub); font-weight: 600; }
+
         /* CHECKOUT FORM */
         .checkout-form {
             background: #F8FAFC;
@@ -688,6 +705,23 @@
                     <label>Ghi chú đơn hàng (nếu có)</label>
                     <input type="text" class="form-input" id="cust-note" placeholder="VD: Giao giờ hành chính, gọi trước khi giao...">
                 </div>
+
+                <div class="form-row" style="margin-top: 14px;">
+                    <label>Phương thức thanh toán *</label>
+                    <div class="payment-methods-box">
+                        <div class="pay-method-card active" id="pay-opt-transfer" onclick="selectPayMethod('transfer')">
+                            <span class="icon">💳</span>
+                            <span class="t">Chuyển Khoản Ngay</span>
+                            <span class="d">Quét mã VietQR (ACB)</span>
+                        </div>
+                        <div class="pay-method-card" id="pay-opt-cod" onclick="selectPayMethod('cod')">
+                            <span class="icon">🚚</span>
+                            <span class="t">Nhận Hàng Trả Tiền</span>
+                            <span class="d">Thanh toán COD cho shipper</span>
+                        </div>
+                    </div>
+                </div>
+
                 <button class="btn-submit-order" id="btn-submit-order" onclick="submitOrderToTelegram()">
                     🚀 Xác Nhận Đặt Hàng Ngay
                 </button>
@@ -917,12 +951,12 @@
         }
 
         // BẮN ĐƠN HÀNG VỀ TELEGRAM BOT & TỰ ĐỘNG TRỪ KHO REALTIME
-        // CẤU HÌNH NGÂN HÀNG VIETQR
+        // CẤU HÌNH NGÂN HÀNG ACB (VIETQR CHÍNH THỨC)
         const BANK_CONFIG = {
-            BANK_ID: "MB", // MB, VCB, TCB, VPB, TPB, ACB...
-            ACCOUNT_NO: "0901234567", // Số tài khoản ngân hàng của shop
-            ACCOUNT_NAME: "DAO GIA KIET",
-            BANK_DISPLAY: "MB Bank (Ngân Hàng Quân Đội)"
+            BANK_ID: "ACB",
+            ACCOUNT_NO: "10703257",
+            ACCOUNT_NAME: "LE THI SAO",
+            BANK_DISPLAY: "ACB - Ngân Hàng Á Châu"
         };
 
         const TELEGRAM_CONFIG = {
@@ -930,7 +964,14 @@
             CHAT_ID: "6401633197"
         };
 
+        let SELECTED_PAY_METHOD = 'transfer'; // 'transfer' hoặc 'cod'
         let CURRENT_ORDER = null;
+
+        function selectPayMethod(method) {
+            SELECTED_PAY_METHOD = method;
+            document.getElementById('pay-opt-transfer').classList.toggle('active', method === 'transfer');
+            document.getElementById('pay-opt-cod').classList.toggle('active', method === 'cod');
+        }
 
         async function submitOrderToTelegram() {
             const name = document.getElementById('cust-name').value.trim();
@@ -945,11 +986,14 @@
 
             const btn = document.getElementById('btn-submit-order');
             btn.disabled = true;
-            btn.textContent = "⏳ Đang tạo cổng thanh toán...";
+            btn.textContent = "⏳ Đang ghi nhận đơn hàng...";
 
             const orderId = 'DH' + Date.now().toString().slice(-6);
             let totalAmount = 0;
             let itemsSummaryHtml = '';
+
+            const isTransfer = SELECTED_PAY_METHOD === 'transfer';
+            const payMethodText = isTransfer ? '💳 Chuyển khoản VietQR (ACB)' : '🚚 Thanh toán khi nhận hàng (COD)';
 
             // Chuẩn bị nội dung đơn hàng & tự động trừ kho
             Object.entries(CART).forEach(([id, qty]) => {
@@ -961,7 +1005,7 @@
 
                     // TỰ ĐỘNG TRỪ KHO REALTIME TRÊN HỆ THỐNG
                     if (window.realtimeStore) {
-                        window.realtimeStore.recordSale(p, qty, p.price_retail, `Chờ CK: ${name} (${phone}) - ${address}`);
+                        window.realtimeStore.recordSale(p, qty, p.price_retail, `${isTransfer ? 'Chờ CK' : 'COD'}: ${name} (${phone}) - ${address}`);
                     }
                 }
             });
@@ -969,14 +1013,14 @@
             const nowStr = new Date().toLocaleString('vi-VN');
 
             // Tin nhắn gửi về Telegram của anh Kiệt
-            const teleMsg = `🌸 <b>ĐƠN HÀNG MỚI (CHỜ CHUYỂN KHOẢN) - DÁNH BÁN HOA!</b>\n` +
+            const teleMsg = `🌸 <b>ĐƠN HÀNG MỚI - DÁNH BÁN HOA!</b>\n` +
                 `━━━━━━━━━━━━━━━━━━\n` +
                 `📦 <b>Mã đơn:</b> <code>#${orderId}</code>\n` +
                 `👤 <b>Khách hàng:</b> ${name}\n` +
                 `📞 <b>Điện thoại:</b> <code>${phone}</code>\n` +
                 `📍 <b>Địa chỉ:</b> ${address}\n` +
                 `${note ? `📝 <b>Ghi chú:</b> <i>${note}</i>\n` : ''}` +
-                `💳 <b>Hình thức:</b> Chuyển khoản VietQR (${BANK_CONFIG.BANK_ID})\n` +
+                `💵 <b>Hình thức:</b> <b>${payMethodText}</b>\n` +
                 `━━━━━━━━━━━━━━━━━━\n` +
                 `🛍️ <b>CHI TIẾT SẢN PHẨM:</b>\n${itemsSummaryHtml}` +
                 `━━━━━━━━━━━━━━━━━━\n` +
@@ -997,19 +1041,6 @@
                 console.warn("Lỗi gửi Telegram:", err);
             }
 
-            // TẠO MÃ VIETQR TỰ ĐỘNG KHỚP SỐ TIỀN & MÃ ĐƠN HÀNG
-            const memo = `${orderId} ${phone}`;
-            const qrUrl = `https://img.vietqr.io/image/${BANK_CONFIG.BANK_ID}-${BANK_CONFIG.ACCOUNT_NO}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(BANK_CONFIG.ACCOUNT_NAME)}`;
-
-            document.getElementById('pay-qr-img').src = qrUrl;
-            document.getElementById('pay-bank-name').textContent = BANK_CONFIG.BANK_DISPLAY;
-            document.getElementById('pay-acc-num').textContent = BANK_CONFIG.ACCOUNT_NO;
-            document.getElementById('pay-acc-name').textContent = BANK_CONFIG.ACCOUNT_NAME;
-            document.getElementById('pay-amount').textContent = fmtVND(totalAmount);
-            document.getElementById('pay-memo').textContent = memo;
-
-            CURRENT_ORDER = { orderId, name, phone, address, totalAmount };
-
             // Reset giỏ hàng & đóng drawer
             CART = {};
             updateCartUI();
@@ -1018,8 +1049,24 @@
             btn.disabled = false;
             btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
 
-            // BẬT POPUP THANH TOÁN VIETQR
-            document.getElementById('payment-modal').style.display = 'flex';
+            if (isTransfer) {
+                // TẠO MÃ VIETQR TỰ ĐỘNG KHỚP SỐ TIỀN & MÃ ĐƠN HÀNG
+                const memo = `${orderId} ${phone}`;
+                const qrUrl = `https://img.vietqr.io/image/${BANK_CONFIG.BANK_ID}-${BANK_CONFIG.ACCOUNT_NO}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(BANK_CONFIG.ACCOUNT_NAME)}`;
+
+                document.getElementById('pay-qr-img').src = qrUrl;
+                document.getElementById('pay-bank-name').textContent = BANK_CONFIG.BANK_DISPLAY;
+                document.getElementById('pay-acc-num').textContent = BANK_CONFIG.ACCOUNT_NO;
+                document.getElementById('pay-acc-name').textContent = BANK_CONFIG.ACCOUNT_NAME;
+                document.getElementById('pay-amount').textContent = fmtVND(totalAmount);
+                document.getElementById('pay-memo').textContent = memo;
+
+                // BẬT POPUP THANH TOÁN VIETQR
+                document.getElementById('payment-modal').style.display = 'flex';
+            } else {
+                // NẾU CHỌN THANH TOÁN KHI NHẬN HÀNG (COD)
+                alert(`🎉 Đặt hàng thành công!\n\nĐơn hàng #${orderId} của bạn đã được chuyển đến shop DÁNH BÁN HOA.\nShop sẽ liên hệ số điện thoại ${phone} để xác nhận và giao hàng nhanh nhất cho bạn.\n\nBạn sẽ thanh toán số tiền ${fmtVND(totalAmount)} trực tiếp cho nhân viên giao hàng.`);
+            }
         }
 
         function finishPayment() {
