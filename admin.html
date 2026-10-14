@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LEGO Portal - Quản Trị & Xuất Bán Hàng</title>
+    <title>DÁNH BÁN HOA - Portal Quản Trị & Xuất Kho</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -52,8 +53,11 @@
             display: flex; align-items: center; justify-content: space-between;
         }
         .logo-box { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
-        .logo-badge { background: var(--dark); color: #fff; font-weight: 900; font-size: 1.1rem; padding: 6px 12px; border-radius: 8px; }
-        .logo-title h1 { font-size: 1.15rem; font-weight: 800; }
+        .logo-img {
+            width: 44px; height: 44px; border-radius: 12px; border: 2px solid var(--dark);
+            object-fit: cover; background: #fff; box-shadow: 2px 2px 0 var(--dark);
+        }
+        .logo-title h1 { font-size: 1.2rem; font-weight: 900; }
         .logo-title span { font-size: 0.75rem; color: var(--text-sub); }
 
         .header-actions { display: flex; align-items: center; gap: 14px; }
@@ -230,10 +234,10 @@
     <header>
         <div class="header-wrap">
             <div class="logo-box">
-                <div class="logo-badge">ADMIN</div>
+                <img class="logo-img" src="logo.jpg" alt="DÁNH BÁN HOA">
                 <div class="logo-title">
-                    <h1>LEGO Manager & Sales</h1>
-                    <span>Bảng nhập xuất bán hàng & quản lý kho tức thì</span>
+                    <h1>DÁNH BÁN HOA · Admin</h1>
+                    <span>Bảng xuất bán & quản lý kho tức thì</span>
                 </div>
             </div>
 
