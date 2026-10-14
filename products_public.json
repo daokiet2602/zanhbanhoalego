@@ -1,0 +1,915 @@
+{
+  "total_products": 91,
+  "products": [
+    {
+      "id": "LG-01",
+      "code": "Mẫu #1",
+      "name": "Hoa Lego Mẫu #1",
+      "qty": 5,
+      "price_retail": 148000.0,
+      "price_market": 239000.0,
+      "status": "discontinued",
+      "img": "images/prod_row_2.jpeg"
+    },
+    {
+      "id": "LG-02",
+      "code": "Mẫu #2",
+      "name": "Hoa Lego Mẫu #2",
+      "qty": 4,
+      "price_retail": 178000.0,
+      "price_market": 179000.0,
+      "status": "active",
+      "img": "images/prod_row_3.jpeg"
+    },
+    {
+      "id": "LG-03",
+      "code": "Mẫu #3",
+      "name": "Hoa Lego Mẫu #3",
+      "qty": 6,
+      "price_retail": 188000.0,
+      "price_market": 189000.0,
+      "status": "active",
+      "img": "images/prod_row_4.jpeg"
+    },
+    {
+      "id": "LG-04",
+      "code": "Mẫu #4",
+      "name": "Hoa Lego Mẫu #4",
+      "qty": 10,
+      "price_retail": 188000.0,
+      "price_market": 189000.0,
+      "status": "active",
+      "img": "images/prod_row_5.jpeg"
+    },
+    {
+      "id": "LG-05",
+      "code": "Mẫu #5",
+      "name": "Hoa Lego Mẫu #5",
+      "qty": 8,
+      "price_retail": 208000.0,
+      "price_market": 215000.0,
+      "status": "active",
+      "img": "images/prod_row_6.jpeg"
+    },
+    {
+      "id": "LG-06",
+      "code": "Mẫu #6",
+      "name": "Hoa Lego Mẫu #6",
+      "qty": 3,
+      "price_retail": 208000.0,
+      "price_market": 215000.0,
+      "status": "active",
+      "img": "images/prod_row_7.jpeg"
+    },
+    {
+      "id": "LG-07",
+      "code": "NO.9093",
+      "name": "Hoa Lego NO.9093",
+      "qty": 10,
+      "price_retail": 258000.0,
+      "price_market": 285000.0,
+      "status": "active",
+      "img": "images/prod_row_8.jpeg"
+    },
+    {
+      "id": "LG-08",
+      "code": "NO.9094",
+      "name": "Hoa Lego NO.9094",
+      "qty": 10,
+      "price_retail": 258000.0,
+      "price_market": 285000.0,
+      "status": "active",
+      "img": "images/prod_row_9.jpeg"
+    },
+    {
+      "id": "LG-09",
+      "code": "NO.9095",
+      "name": "Hoa Lego NO.9095",
+      "qty": 10,
+      "price_retail": 258000.0,
+      "price_market": 285000.0,
+      "status": "active",
+      "img": "images/prod_row_10.jpeg"
+    },
+    {
+      "id": "LG-10",
+      "code": "Mẫu #10",
+      "name": "Hoa Lego Mẫu #10",
+      "qty": 4,
+      "price_retail": 258000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_11.jpeg"
+    },
+    {
+      "id": "LG-11",
+      "code": "26212.0",
+      "name": "Hoa Lego 26212.0",
+      "qty": 3,
+      "price_retail": 278000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_12.jpeg"
+    },
+    {
+      "id": "LG-12",
+      "code": "26224.0",
+      "name": "Hoa Lego 26224.0",
+      "qty": 4,
+      "price_retail": 278000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_13.jpeg"
+    },
+    {
+      "id": "LG-13",
+      "code": "Mẫu #13",
+      "name": "Hoa Lego Mẫu #13",
+      "qty": 4,
+      "price_retail": 288000.0,
+      "price_market": 289000.0,
+      "status": "active",
+      "img": "images/prod_row_14.jpeg"
+    },
+    {
+      "id": "LG-14",
+      "code": "Mẫu #14",
+      "name": "Hoa Lego Mẫu #14",
+      "qty": 4,
+      "price_retail": 288000.0,
+      "price_market": 289000.0,
+      "status": "active",
+      "img": "images/prod_row_15.jpeg"
+    },
+    {
+      "id": "LG-15",
+      "code": "Mẫu #15",
+      "name": "Hoa Lego Mẫu #15",
+      "qty": 4,
+      "price_retail": 288000.0,
+      "price_market": 289000.0,
+      "status": "active",
+      "img": "images/prod_row_16.jpeg"
+    },
+    {
+      "id": "LG-16",
+      "code": "Mẫu #16",
+      "name": "Hoa Lego Mẫu #16",
+      "qty": 4,
+      "price_retail": 288000.0,
+      "price_market": 289000.0,
+      "status": "active",
+      "img": "images/prod_row_17.jpeg"
+    },
+    {
+      "id": "LG-17",
+      "code": "Mẫu #17",
+      "name": "Hoa Lego Mẫu #17",
+      "qty": 4,
+      "price_retail": 288000.0,
+      "price_market": 289000.0,
+      "status": "active",
+      "img": "images/prod_row_18.jpeg"
+    },
+    {
+      "id": "LG-18",
+      "code": "Mẫu #18",
+      "name": "Hoa Lego Mẫu #18",
+      "qty": 4,
+      "price_retail": 288000.0,
+      "price_market": 289000.0,
+      "status": "active",
+      "img": "images/prod_row_19.jpeg"
+    },
+    {
+      "id": "LG-19",
+      "code": "Mẫu #19",
+      "name": "Hoa Lego Mẫu #19",
+      "qty": 4,
+      "price_retail": 288000.0,
+      "price_market": 289000.0,
+      "status": "active",
+      "img": "images/prod_row_20.jpeg"
+    },
+    {
+      "id": "LG-20",
+      "code": "Mẫu #20",
+      "name": "Hoa Lego Mẫu #20",
+      "qty": 4,
+      "price_retail": 288000.0,
+      "price_market": 289000.0,
+      "status": "active",
+      "img": "images/prod_row_21.jpeg"
+    },
+    {
+      "id": "LG-21",
+      "code": "NO.8735",
+      "name": "Hoa Lego NO.8735",
+      "qty": 6,
+      "price_retail": 288000.0,
+      "price_market": 385000.0,
+      "status": "active",
+      "img": "images/prod_row_22.jpeg"
+    },
+    {
+      "id": "LG-22",
+      "code": "26244.0",
+      "name": "Hoa Lego 26244.0",
+      "qty": 4,
+      "price_retail": 298000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_23.jpeg"
+    },
+    {
+      "id": "LG-23",
+      "code": "26110.0",
+      "name": "Hoa Lego 26110.0",
+      "qty": 3,
+      "price_retail": 298000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_24.jpeg"
+    },
+    {
+      "id": "LG-24",
+      "code": "26112.0",
+      "name": "Hoa Lego 26112.0",
+      "qty": 3,
+      "price_retail": 298000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_25.jpeg"
+    },
+    {
+      "id": "LG-25",
+      "code": "26245.0",
+      "name": "Hoa Lego 26245.0",
+      "qty": 6,
+      "price_retail": 308000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_26.jpeg"
+    },
+    {
+      "id": "LG-26",
+      "code": "26256.0",
+      "name": "Hoa Lego 26256.0",
+      "qty": 4,
+      "price_retail": 298000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_27.jpeg"
+    },
+    {
+      "id": "LG-27",
+      "code": "26207.0",
+      "name": "Hoa Lego 26207.0",
+      "qty": 6,
+      "price_retail": 308000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_28.jpeg"
+    },
+    {
+      "id": "LG-28",
+      "code": "26233.0",
+      "name": "Hoa Lego 26233.0",
+      "qty": 4,
+      "price_retail": 308000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_29.jpeg"
+    },
+    {
+      "id": "LG-29",
+      "code": "26240.0",
+      "name": "Hoa Lego 26240.0",
+      "qty": 4,
+      "price_retail": 308000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_30.jpeg"
+    },
+    {
+      "id": "LG-30",
+      "code": "JJ9258",
+      "name": "Hoa Lego JJ9258",
+      "qty": 7,
+      "price_retail": 308000.0,
+      "price_market": 310000.0,
+      "status": "active",
+      "img": "images/prod_row_31.jpeg"
+    },
+    {
+      "id": "LG-31",
+      "code": "JJ9240",
+      "name": "Hoa Lego JJ9240",
+      "qty": 4,
+      "price_retail": 308000.0,
+      "price_market": 310000.0,
+      "status": "active",
+      "img": "images/prod_row_32.jpeg"
+    },
+    {
+      "id": "LG-32",
+      "code": "JJ9092",
+      "name": "Hoa Lego JJ9092",
+      "qty": 16,
+      "price_retail": 318000.0,
+      "price_market": 310000.0,
+      "status": "active",
+      "img": "images/prod_row_33.jpeg"
+    },
+    {
+      "id": "LG-33",
+      "code": "Mẫu #33",
+      "name": "Hoa Lego Mẫu #33",
+      "qty": 4,
+      "price_retail": 318000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_34.jpeg"
+    },
+    {
+      "id": "LG-34",
+      "code": "26251.0",
+      "name": "Hoa Lego 26251.0",
+      "qty": 5,
+      "price_retail": 318000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_35.jpeg"
+    },
+    {
+      "id": "LG-35",
+      "code": "26225.0",
+      "name": "Hoa Lego 26225.0",
+      "qty": 3,
+      "price_retail": 338000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_36.jpeg"
+    },
+    {
+      "id": "LG-36",
+      "code": "26234.0",
+      "name": "Hoa Lego 26234.0",
+      "qty": 4,
+      "price_retail": 358000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_37.jpeg"
+    },
+    {
+      "id": "LG-37",
+      "code": "26217.0",
+      "name": "Hoa Lego 26217.0",
+      "qty": 3,
+      "price_retail": 368000.0,
+      "price_market": 0,
+      "status": "active",
+      "img": "images/prod_row_38.jpeg"
+    },
+    {
+      "id": "LG-38",
+      "code": "Mẫu #38",
+      "name": "Hoa Lego Mẫu #38",
+      "qty": 10,
+      "price_retail": 29000.0,
+      "price_market": 32000.0,
+      "status": "active",
+      "img": "images/prod_row_39.jpeg"
+    },
+    {
+      "id": "LG-39",
+      "code": "NO.087",
+      "name": "Hoa Lego NO.087",
+      "qty": 10,
+      "price_retail": 38000.0,
+      "price_market": 44000.0,
+      "status": "active",
+      "img": "images/prod_row_40.jpeg"
+    },
+    {
+      "id": "LG-40",
+      "code": "NO.087",
+      "name": "Hoa Lego NO.087",
+      "qty": 10,
+      "price_retail": 38000.0,
+      "price_market": 44000.0,
+      "status": "active",
+      "img": "images/prod_row_41.jpeg"
+    },
+    {
+      "id": "LG-41",
+      "code": "NO.087",
+      "name": "Hoa Lego NO.087",
+      "qty": 10,
+      "price_retail": 38000.0,
+      "price_market": 44000.0,
+      "status": "active",
+      "img": "images/prod_row_42.jpeg"
+    },
+    {
+      "id": "LG-42",
+      "code": "NO.087",
+      "name": "Hoa Lego NO.087",
+      "qty": 4,
+      "price_retail": 38000.0,
+      "price_market": 44000.0,
+      "status": "active",
+      "img": "images/prod_row_43.jpeg"
+    },
+    {
+      "id": "LG-43",
+      "code": "NO.087",
+      "name": "Hoa Lego NO.087",
+      "qty": 4,
+      "price_retail": 38000.0,
+      "price_market": 44000.0,
+      "status": "active",
+      "img": "images/prod_row_44.jpeg"
+    },
+    {
+      "id": "LG-44",
+      "code": "NO.087",
+      "name": "Hoa Lego NO.087",
+      "qty": 4,
+      "price_retail": 38000.0,
+      "price_market": 44000.0,
+      "status": "active",
+      "img": "images/prod_row_45.jpeg"
+    },
+    {
+      "id": "LG-45",
+      "code": "NO.087",
+      "name": "Hoa Lego NO.087",
+      "qty": 4,
+      "price_retail": 38000.0,
+      "price_market": 44000.0,
+      "status": "active",
+      "img": "images/prod_row_46.jpeg"
+    },
+    {
+      "id": "LG-46",
+      "code": "NO.087",
+      "name": "Hoa Lego NO.087",
+      "qty": 4,
+      "price_retail": 38000.0,
+      "price_market": 44000.0,
+      "status": "active",
+      "img": "images/prod_row_47.jpeg"
+    },
+    {
+      "id": "LG-47",
+      "code": "NO.087",
+      "name": "Hoa Lego NO.087",
+      "qty": 4,
+      "price_retail": 38000.0,
+      "price_market": 44000.0,
+      "status": "active",
+      "img": "images/prod_row_48.jpeg"
+    },
+    {
+      "id": "LG-48",
+      "code": "Mẫu #48",
+      "name": "Hoa Lego Mẫu #48",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_49.jpeg"
+    },
+    {
+      "id": "LG-49",
+      "code": "Mẫu #49",
+      "name": "Hoa Lego Mẫu #49",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 89000.0,
+      "status": "active",
+      "img": "images/prod_row_50.jpeg"
+    },
+    {
+      "id": "LG-50",
+      "code": "Mẫu #50",
+      "name": "Hoa Lego Mẫu #50",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_51.jpeg"
+    },
+    {
+      "id": "LG-51",
+      "code": "Mẫu #51",
+      "name": "Hoa Lego Mẫu #51",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_52.jpeg"
+    },
+    {
+      "id": "LG-52",
+      "code": "Mẫu #52",
+      "name": "Hoa Lego Mẫu #52",
+      "qty": 10,
+      "price_retail": 55000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_53.jpeg"
+    },
+    {
+      "id": "LG-53",
+      "code": "Mẫu #53",
+      "name": "Hoa Lego Mẫu #53",
+      "qty": 10,
+      "price_retail": 55000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_54.jpeg"
+    },
+    {
+      "id": "LG-54",
+      "code": "Mẫu #54",
+      "name": "Hoa Lego Mẫu #54",
+      "qty": 10,
+      "price_retail": 55000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_55.jpeg"
+    },
+    {
+      "id": "LG-55",
+      "code": "Mẫu #55",
+      "name": "Hoa Lego Mẫu #55",
+      "qty": 10,
+      "price_retail": 55000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_56.jpeg"
+    },
+    {
+      "id": "LG-56",
+      "code": "Mẫu #56",
+      "name": "Hoa Lego Mẫu #56",
+      "qty": 10,
+      "price_retail": 55000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_57.jpeg"
+    },
+    {
+      "id": "LG-57",
+      "code": "Mẫu #57",
+      "name": "Hoa Lego Mẫu #57",
+      "qty": 10,
+      "price_retail": 58000.0,
+      "price_market": 89000.0,
+      "status": "active",
+      "img": "images/prod_row_58.jpeg"
+    },
+    {
+      "id": "LG-58",
+      "code": "Mẫu #58",
+      "name": "Hoa Lego Mẫu #58",
+      "qty": 10,
+      "price_retail": 58000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_59.jpeg"
+    },
+    {
+      "id": "LG-59",
+      "code": "Mẫu #59",
+      "name": "Hoa Lego Mẫu #59",
+      "qty": 10,
+      "price_retail": 58000.0,
+      "price_market": 89000.0,
+      "status": "active",
+      "img": "images/prod_row_60.jpeg"
+    },
+    {
+      "id": "LG-60",
+      "code": "Mẫu #60",
+      "name": "Hoa Lego Mẫu #60",
+      "qty": 16,
+      "price_retail": 58000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_61.jpeg"
+    },
+    {
+      "id": "LG-61",
+      "code": "Mẫu #61",
+      "name": "Hoa Lego Mẫu #61",
+      "qty": 16,
+      "price_retail": 58000.0,
+      "price_market": 64000.0,
+      "status": "active",
+      "img": "images/prod_row_62.jpeg"
+    },
+    {
+      "id": "LG-62",
+      "code": "Mẫu #62",
+      "name": "Hoa Lego Mẫu #62",
+      "qty": 10,
+      "price_retail": 58000.0,
+      "price_market": 89000.0,
+      "status": "active",
+      "img": "images/prod_row_63.jpeg"
+    },
+    {
+      "id": "LG-63",
+      "code": "YS66009",
+      "name": "Hoa Lego YS66009",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_64.jpeg"
+    },
+    {
+      "id": "LG-64",
+      "code": "YS66010",
+      "name": "Hoa Lego YS66010",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_65.jpeg"
+    },
+    {
+      "id": "LG-62",
+      "code": "YS66011",
+      "name": "Hoa Lego YS66011",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_66.jpeg"
+    },
+    {
+      "id": "LG-66",
+      "code": "YS66012",
+      "name": "Hoa Lego YS66012",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_67.jpeg"
+    },
+    {
+      "id": "LG-67",
+      "code": "YS66013",
+      "name": "Hoa Lego YS66013",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_68.jpeg"
+    },
+    {
+      "id": "LG-68",
+      "code": "YS66014",
+      "name": "Hoa Lego YS66014",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_69.jpeg"
+    },
+    {
+      "id": "LG-69",
+      "code": "YS66015",
+      "name": "Hoa Lego YS66015",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_70.jpeg"
+    },
+    {
+      "id": "LG-70",
+      "code": "YS66016",
+      "name": "Hoa Lego YS66016",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_71.jpeg"
+    },
+    {
+      "id": "LG-71",
+      "code": "YS66017",
+      "name": "Hoa Lego YS66017",
+      "qty": 16,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_72.jpeg"
+    },
+    {
+      "id": "LG-72",
+      "code": "YS66018",
+      "name": "Hoa Lego YS66018",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_73.jpeg"
+    },
+    {
+      "id": "LG-73",
+      "code": "YS66019",
+      "name": "Hoa Lego YS66019",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_74.jpeg"
+    },
+    {
+      "id": "LG-74",
+      "code": "YS66020",
+      "name": "Hoa Lego YS66020",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_75.jpeg"
+    },
+    {
+      "id": "LG-75",
+      "code": "YS66021",
+      "name": "Hoa Lego YS66021",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_76.jpeg"
+    },
+    {
+      "id": "LG-76",
+      "code": "YS66022",
+      "name": "Hoa Lego YS66022",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_77.jpeg"
+    },
+    {
+      "id": "LG-77",
+      "code": "YS66023",
+      "name": "Hoa Lego YS66023",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_78.jpeg"
+    },
+    {
+      "id": "LG-78",
+      "code": "YS66024",
+      "name": "Hoa Lego YS66024",
+      "qty": 20,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_79.jpeg"
+    },
+    {
+      "id": "LG-79",
+      "code": "YS66025",
+      "name": "Hoa Lego YS66025",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_80.jpeg"
+    },
+    {
+      "id": "LG-80",
+      "code": "YS66026",
+      "name": "Hoa Lego YS66026",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_81.jpeg"
+    },
+    {
+      "id": "LG-81",
+      "code": "YS66027",
+      "name": "Hoa Lego YS66027",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_82.jpeg"
+    },
+    {
+      "id": "LG-82",
+      "code": "Mẫu #82",
+      "name": "Hoa Lego Mẫu #82",
+      "qty": 10,
+      "price_retail": 48000.0,
+      "price_market": 77000.0,
+      "status": "active",
+      "img": "images/prod_row_83.jpeg"
+    },
+    {
+      "id": "LG-83",
+      "code": "Mẫu #83",
+      "name": "Hoa Lego Mẫu #83",
+      "qty": 0,
+      "price_retail": 50000.0,
+      "price_market": 80000.0,
+      "status": "out_of_stock",
+      "img": "images/prod_row_84.jpeg"
+    },
+    {
+      "id": "LG-84",
+      "code": "Mẫu #84",
+      "name": "Hoa Lego Mẫu #84",
+      "qty": 10,
+      "price_retail": 50000.0,
+      "price_market": 80000.0,
+      "status": "active",
+      "img": "images/prod_row_85.jpeg"
+    },
+    {
+      "id": "LG-85",
+      "code": "Mẫu #85",
+      "name": "Hoa Lego Mẫu #85",
+      "qty": 10,
+      "price_retail": 50000.0,
+      "price_market": 80000.0,
+      "status": "active",
+      "img": "images/prod_row_86.jpeg"
+    },
+    {
+      "id": "LG-86",
+      "code": "Mẫu #86",
+      "name": "Hoa Lego Mẫu #86",
+      "qty": 10,
+      "price_retail": 50000.0,
+      "price_market": 80000.0,
+      "status": "active",
+      "img": "images/prod_row_87.jpeg"
+    },
+    {
+      "id": "LG-87",
+      "code": "Mẫu #87",
+      "name": "Hoa Lego Mẫu #87",
+      "qty": 10,
+      "price_retail": 50000.0,
+      "price_market": 80000.0,
+      "status": "active",
+      "img": "images/prod_row_88.jpeg"
+    },
+    {
+      "id": "LG-88",
+      "code": "Mẫu #88",
+      "name": "Hoa Lego Mẫu #88",
+      "qty": 10,
+      "price_retail": 50000.0,
+      "price_market": 80000.0,
+      "status": "active",
+      "img": "images/prod_row_89.jpeg"
+    },
+    {
+      "id": "LG-89",
+      "code": "Mẫu #89",
+      "name": "Hoa Lego Mẫu #89",
+      "qty": 10,
+      "price_retail": 50000.0,
+      "price_market": 80000.0,
+      "status": "active",
+      "img": "images/prod_row_90.jpeg"
+    },
+    {
+      "id": "LG-90",
+      "code": "Mẫu #90",
+      "name": "Hoa Lego Mẫu #90",
+      "qty": 10,
+      "price_retail": 50000.0,
+      "price_market": 80000.0,
+      "status": "active",
+      "img": "images/prod_row_91.jpeg"
+    },
+    {
+      "id": "LG-91",
+      "code": "Mẫu #91",
+      "name": "Hoa Lego Mẫu #91",
+      "qty": 10,
+      "price_retail": 0,
+      "price_market": 80000.0,
+      "status": "active",
+      "img": "images/prod_row_92.jpeg"
+    }
+  ]
+}

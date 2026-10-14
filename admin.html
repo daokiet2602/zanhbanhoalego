@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEGO Portal - Quản Trị Kinh Doanh & Lãi Lỗ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #D11013;
+            --green: #10B981;
+            --blue: #006CB7;
+            --yellow: #FFD500;
+            --dark: #0F172A;
+            --border: #E2E8F0;
+            --bg: #F8FAFC;
+            --text-sub: #64748B;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--dark); min-height: 100vh; padding-bottom: 60px; }
+
+        /* LOCK SCREEN */
+        #auth-overlay {
+            position: fixed; inset: 0; background: #0F172A; z-index: 999;
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .auth-card {
+            background: #fff; width: 100%; max-width: 380px; padding: 32px 28px;
+            border-radius: 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .auth-card h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: 8px; }
+        .auth-card p { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 24px; }
+        .auth-input {
+            width: 100%; padding: 14px; border: 2px solid var(--border); border-radius: 12px;
+            font-size: 1.2rem; font-weight: 800; text-align: center; letter-spacing: 0.2em;
+            margin-bottom: 16px; outline: none;
+        }
+        .auth-input:focus { border-color: var(--primary); }
+        .auth-btn {
+            width: 100%; padding: 13px; border-radius: 12px; border: none;
+            background: var(--primary); color: #fff; font-size: 0.95rem; font-weight: 800; cursor: pointer;
+        }
+
+        /* HEADER */
+        header {
+            background: #fff; border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 50;
+        }
+        .header-wrap {
+            max-width: 1320px; margin: 0 auto; padding: 14px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo-box { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+        .logo-badge {
+            background: var(--dark); color: #fff; font-weight: 900; font-size: 1.1rem;
+            padding: 6px 12px; border-radius: 8px;
+        }
+        .logo-title h1 { font-size: 1.15rem; font-weight: 800; }
+        .logo-title span { font-size: 0.75rem; color: var(--text-sub); }
+
+        .container { max-width: 1320px; margin: 0 auto; padding: 24px; }
+
+        /* KPI TILES */
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px; margin-bottom: 28px;
+        }
+        .kpi-card {
+            background: #fff; padding: 20px; border-radius: 18px; border: 1px solid var(--border);
+            box-shadow: 0 4px 15px -3px rgba(0,0,0,0.03); position: relative; overflow: hidden;
+        }
+        .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: var(--blue); }
+        .kpi-card.profit::before { background: var(--green); }
+        .kpi-card.warn::before { background: var(--yellow); }
+        .kpi-card.cost::before { background: var(--primary); }
+        .kpi-card .label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-sub); margin-bottom: 6px; }
+        .kpi-card .val { font-size: 1.7rem; font-weight: 900; color: var(--dark); }
+        .kpi-card .sub { font-size: 0.8rem; color: var(--text-sub); margin-top: 4px; }
+
+        /* TOOLBAR */
+        .toolbar {
+            background: #fff; padding: 16px 20px; border-radius: 16px; border: 1px solid var(--border);
+            display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .search-box { position: relative; flex: 1; min-width: 260px; }
+        .search-box input {
+            width: 100%; padding: 11px 16px 11px 40px; border: 2px solid var(--border);
+            border-radius: 12px; font-size: 0.95rem; font-weight: 600; outline: none;
+        }
+        .search-box input:focus { border-color: var(--dark); }
+        .search-box svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; stroke: var(--text-sub); }
+
+        .btn-export {
+            padding: 11px 20px; border-radius: 12px; border: 2px solid var(--dark);
+            background: var(--yellow); color: var(--dark); font-weight: 800; font-size: 0.9rem;
+            cursor: pointer; box-shadow: 2px 2px 0 var(--dark);
+        }
+
+        /* TABLE */
+        .table-wrap {
+            background: #fff; border-radius: 18px; border: 1px solid var(--border);
+            overflow-x: auto; box-shadow: 0 4px 15px -3px rgba(0,0,0,0.03);
+        }
+        table.admin-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+        table.admin-table th {
+            background: #F8FAFC; padding: 14px 16px; font-weight: 800; color: var(--text-sub);
+            border-bottom: 2px solid var(--border); white-space: nowrap;
+        }
+        table.admin-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        table.admin-table tr:hover { background: #F8FAFC; }
+        .tbl-thumb { width: 48px; height: 48px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; background: #F1F5F9; }
+        .num-right { text-align: right; }
+        .profit-pos { color: var(--green); font-weight: 800; }
+        .profit-neg { color: var(--primary); font-weight: 800; }
+
+        .stock-badge {
+            padding: 4px 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.04em; display: inline-block;
+        }
+        .badge-active { background: #DCFCE7; color: #15803D; }
+        .badge-out { background: #FEE2E2; color: #B91C1C; }
+        .badge-disc { background: #F1F5F9; color: #64748B; }
+    </style>
+</head>
+<body>
+
+    <!-- AUTH LOCK SCREEN -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <div style="font-size: 2.5rem; margin-bottom: 12px;">🔒</div>
+            <h2>Xác Thực Chủ Shop</h2>
+            <p>Nhập mã PIN để truy cập bảng kiểm soát giá vốn & lãi lỗ</p>
+            <input type="password" id="pin-input" class="auth-input" placeholder="••••" maxlength="6" autofocus onkeydown="if(event.key==='Enter') verifyPin()">
+            <button class="auth-btn" onclick="verifyPin()">Mở Khóa Quản Trị</button>
+            <div id="auth-err" style="color:var(--primary); font-size:0.8rem; font-weight:700; margin-top:10px; display:none;">
+                Mã PIN không đúng, vui lòng thử lại!
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN ADMIN CONTENT -->
+    <header>
+        <div class="header-wrap">
+            <div class="logo-box">
+                <div class="logo-badge">ADMIN</div>
+                <div class="logo-title">
+                    <h1>LEGO Internal Portal</h1>
+                    <span>Bảng kiểm soát tồn kho & lợi nhuận nội bộ</span>
+                </div>
+            </div>
+            <a href="index.html" style="font-weight: 800; font-size: 0.85rem; color: var(--blue); text-decoration: none;">
+                ← Về Cửa Hàng Khách
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- KPI METRICS -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="label">Tổng mẫu mã</div>
+                <div class="val" id="kpi-total-prods">0</div>
+                <div class="sub" id="kpi-active-count">0 mẫu đang bán</div>
+            </div>
+            <div class="kpi-card warn">
+                <div class="label">Tổng tồn kho</div>
+                <div class="val" id="kpi-total-stock">0</div>
+                <div class="sub">Bộ sản phẩm sẵn có</div>
+            </div>
+            <div class="kpi-card cost">
+                <div class="label">Tổng vốn nhập kho</div>
+                <div class="val" id="kpi-cost-val">0đ</div>
+                <div class="sub">Tiền hàng đã đầu tư</div>
+            </div>
+            <div class="kpi-card profit">
+                <div class="label">Doanh thu dự kiến</div>
+                <div class="val" id="kpi-retail-val">0đ</div>
+                <div class="sub" id="kpi-profit-est">Lãi dự kiến: 0đ</div>
+            </div>
+        </div>
+
+        <!-- TOOLBAR -->
+        <div class="toolbar">
+            <div class="search-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="admin-search" placeholder="Tìm theo mã hàng, tên sản phẩm..." oninput="filterAdminTable()">
+            </div>
+            <button class="btn-export" onclick="exportCSV()">
+                📥 Xuất File Excel (CSV)
+            </button>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Ảnh</th>
+                        <th>Mã SP</th>
+                        <th>Tên Sản Phẩm</th>
+                        <th class="num-right">Tồn Kho</th>
+                        <th class="num-right">Giá Vốn</th>
+                        <th class="num-right">Giá Bán Lẻ</th>
+                        <th class="num-right">Lợi Nhuận / Bộ</th>
+                        <th class="num-right">Biên Lãi %</th>
+                        <th>Trạng Thái</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-tbody">
+                    <!-- Rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let DATA = null;
+        const fmtVND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
+
+        // Mật khẩu mặc định là 2602 (theo ngày sinh của anh Kiệt) hoặc 1234
+        function verifyPin() {
+            const pin = document.getElementById('pin-input').value;
+            if (pin === '2602' || pin === '1234') {
+                document.getElementById('auth-overlay').style.display = 'none';
+                sessionStorage.setItem('lego_admin_auth', 'true');
+                loadData();
+            } else {
+                document.getElementById('auth-err').style.display = 'block';
+                document.getElementById('pin-input').value = '';
+                document.getElementById('pin-input').focus();
+            }
+        }
+
+        // Tự động vào nếu phiên trước đã nhập mã PIN
+        if (sessionStorage.getItem('lego_admin_auth') === 'true') {
+            document.getElementById('auth-overlay').style.display = 'none';
+            loadData();
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch('data.json');
+                DATA = await res.json();
+                renderKPI();
+                filterAdminTable();
+            } catch (err) {
+                console.error("Lỗi nạp dữ liệu:", err);
+            }
+        }
+
+        function renderKPI() {
+            if (!DATA) return;
+            const s = DATA.summary;
+            document.getElementById('kpi-total-prods').textContent = s.total_products;
+            document.getElementById('kpi-active-count').textContent = `${DATA.products.filter(p => p.status === 'active').length} mẫu đang mở bán`;
+            document.getElementById('kpi-total-stock').textContent = `${s.total_stock} bộ`;
+            document.getElementById('kpi-cost-val').textContent = fmtVND(s.total_cost_val);
+            document.getElementById('kpi-retail-val').textContent = fmtVND(s.total_retail_val);
+            document.getElementById('kpi-profit-est').textContent = `Lãi ròng: ${fmtVND(s.potential_profit)} (${s.avg_margin_pct}%)`;
+        }
+
+        function filterAdminTable() {
+            if (!DATA) return;
+            const tbody = document.getElementById('admin-tbody');
+            const q = document.getElementById('admin-search').value.toLowerCase().trim();
+
+            const rows = DATA.products.filter(p => {
+                return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+            });
+
+            tbody.innerHTML = rows.map(p => `
+                <tr>
+                    <td><img class="tbl-thumb" src="${p.img}" alt="" loading="lazy"></td>
+                    <td><b>${p.id}</b><br><small style="color:var(--text-sub)">${p.code}</small></td>
+                    <td><b>${p.name}</b></td>
+                    <td class="num-right"><b>${p.qty}</b></td>
+                    <td class="num-right">${fmtVND(p.price_cost)}</td>
+                    <td class="num-right"><b>${fmtVND(p.price_retail)}</b></td>
+                    <td class="num-right ${p.profit_unit >= 0 ? 'profit-pos' : 'profit-neg'}">
+                        +${fmtVND(p.profit_unit)}
+                    </td>
+                    <td class="num-right"><b>${p.margin_pct}%</b></td>
+                    <td>
+                        <span class="stock-badge ${p.status === 'active' ? 'badge-active' : p.status === 'out_of_stock' ? 'badge-out' : 'badge-disc'}">
+                            ${p.status === 'active' ? 'Đang bán' : p.status === 'out_of_stock' ? 'Hết hàng' : 'Ngưng bán'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function exportCSV() {
+            let csv = "Mã SP,Mẫu,Tên Sản Phẩm,Tồn Kho,Giá Vốn,Giá Bán Lẻ,Lợi Nhuận / Bộ,Biên Lãi %,Trạng Thái\n";
+            DATA.products.forEach(p => {
+                csv += `"${p.id}","${p.code}","${p.name}",${p.qty},${p.price_cost},${p.price_retail},${p.profit_unit},${p.margin_pct}%,"${p.status}"\n`;
+            });
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Bao_Cao_Lai_Lo_LEGO_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+        }
+    </script>
+</body>
+</html>

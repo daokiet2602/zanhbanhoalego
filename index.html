@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LEGO Store & Inventory Portal</title>
+    <title>LEGO Store - Cửa Hàng Mô Hình Lắp Ráp Chính Hãng</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -36,7 +36,7 @@
             padding-bottom: 80px;
         }
 
-        /* HEADER & NAVIGATION */
+        /* HEADER */
         header {
             background: #fff;
             border-bottom: 2px solid var(--border);
@@ -61,6 +61,8 @@
             align-items: center;
             gap: 12px;
             cursor: pointer;
+            text-decoration: none;
+            color: inherit;
         }
 
         .logo-badge {
@@ -76,43 +78,15 @@
         }
 
         .logo-title h1 {
-            font-size: 1.15rem;
-            font-weight: 800;
+            font-size: 1.2rem;
+            font-weight: 900;
             line-height: 1.2;
+            letter-spacing: -0.02em;
         }
         .logo-title span {
             font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-sub);
-        }
-
-        .mode-switcher {
-            display: flex;
-            background: #F1F5F9;
-            padding: 4px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-
-        .mode-btn {
-            border: none;
-            background: transparent;
-            padding: 8px 16px;
-            border-radius: 8px;
             font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
             color: var(--text-sub);
-        }
-
-        .mode-btn.active {
-            background: #fff;
-            color: var(--dark);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
 
         .cart-trigger {
@@ -120,9 +94,9 @@
             background: #FFF;
             border: 2px solid var(--dark);
             border-radius: 12px;
-            padding: 8px 16px;
+            padding: 9px 18px;
             font-weight: 800;
-            font-size: 0.9rem;
+            font-size: 0.92rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -180,57 +154,12 @@
         }
         .hero-text p {
             font-size: 0.95rem;
-            opacity: 0.9;
-            max-width: 500px;
+            opacity: 0.92;
+            max-width: 520px;
             line-height: 1.5;
         }
 
-        /* STATS SUMMARY TILES (ADMIN) */
-        .admin-kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin-bottom: 28px;
-        }
-        .kpi-card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            box-shadow: 0 4px 15px -3px rgba(0,0,0,0.03);
-            position: relative;
-            overflow: hidden;
-        }
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 4px; height: 100%;
-            background: var(--blue);
-        }
-        .kpi-card.profit::before { background: var(--green); }
-        .kpi-card.warn::before { background: var(--yellow); }
-        .kpi-card.cost::before { background: var(--primary); }
-
-        .kpi-card .label {
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-sub);
-            margin-bottom: 6px;
-        }
-        .kpi-card .val {
-            font-size: 1.6rem;
-            font-weight: 900;
-            color: var(--dark);
-        }
-        .kpi-card .sub {
-            font-size: 0.75rem;
-            color: var(--text-sub);
-            margin-top: 4px;
-        }
-
-        /* SEARCH & FILTER BAR */
+        /* TOOLBAR */
         .toolbar {
             background: #fff;
             padding: 16px 20px;
@@ -328,10 +257,10 @@
             height: 100%;
             object-fit: contain;
             transition: transform 0.3s ease;
-            padding: 8px;
+            padding: 10px;
         }
         .prod-card:hover .prod-thumb {
-            transform: scale(1.05);
+            transform: scale(1.06);
         }
 
         .stock-badge {
@@ -377,7 +306,7 @@
             display: flex;
             align-items: baseline;
             gap: 8px;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
         .price-retail {
             font-size: 1.25rem;
@@ -432,49 +361,7 @@
             transform: none;
         }
 
-        /* ADMIN DATA TABLE */
-        .admin-table-wrap {
-            background: #fff;
-            border-radius: 18px;
-            border: 1px solid var(--border);
-            overflow-x: auto;
-            box-shadow: 0 4px 15px -3px rgba(0,0,0,0.03);
-        }
-        table.admin-table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 0.88rem;
-        }
-        table.admin-table th {
-            background: #F8FAFC;
-            padding: 14px 16px;
-            font-weight: 800;
-            color: var(--text-sub);
-            border-bottom: 2px solid var(--border);
-            white-space: nowrap;
-        }
-        table.admin-table td {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--border);
-            vertical-align: middle;
-        }
-        table.admin-table tr:hover {
-            background: #F8FAFC;
-        }
-        .tbl-thumb {
-            width: 48px;
-            height: 48px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            object-fit: cover;
-            background: #F1F5F9;
-        }
-        .num-right { text-align: right; }
-        .profit-pos { color: var(--green); font-weight: 800; }
-        .profit-neg { color: var(--primary); font-weight: 800; }
-
-        /* MODAL / CART DRAWER */
+        /* CART DRAWER */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -589,8 +476,28 @@
         }
         .checkout-btn:hover { background: var(--primary-hover); }
 
+        /* FOOTER */
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+        .admin-secret-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: #CBD5E1;
+            text-decoration: none;
+            font-size: 0.72rem;
+            transition: color 0.2s;
+        }
+        .admin-secret-link:hover {
+            color: var(--text-sub);
+        }
+
         @media (max-width: 640px) {
-            .header-wrap { flex-direction: column; align-items: stretch; gap: 12px; }
+            .header-wrap { flex-direction: row; }
             .hero-banner { padding: 24px 20px; flex-direction: column; text-align: center; gap: 16px; }
             .toolbar { flex-direction: column; align-items: stretch; }
             .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -603,25 +510,16 @@
 </head>
 <body>
 
-    <!-- HEADER -->
+    <!-- HEADER (CHỈ DÀNH CHO KHÁCH) -->
     <header>
         <div class="header-wrap">
-            <div class="logo-box" onclick="switchView('catalog')">
+            <a class="logo-box" href="#">
                 <div class="logo-badge">LEGO</div>
                 <div class="logo-title">
-                    <h1>LEGO Store & Inventory</h1>
-                    <span>Hệ thống phân phối & Quản lý tồn kho</span>
+                    <h1>LEGO Store Online</h1>
+                    <span>Mô hình lắp ráp chính hãng</span>
                 </div>
-            </div>
-
-            <div class="mode-switcher">
-                <button class="mode-btn active" id="btn-catalog" onclick="switchView('catalog')">
-                    🛍️ Catalog Mua Hàng
-                </button>
-                <button class="mode-btn" id="btn-admin" onclick="switchView('admin')">
-                    📊 Portal Quản Trị
-                </button>
-            </div>
+            </a>
 
             <button class="cart-trigger" onclick="toggleCart()">
                 🛒 Giỏ hàng <span class="cart-count" id="cart-badge">0</span>
@@ -630,100 +528,44 @@
     </header>
 
     <div class="container">
-        
-        <!-- ================= CATALOG VIEW ================= -->
-        <div id="view-catalog">
-            <div class="hero-banner">
-                <div class="hero-text">
-                    <h2>Thế Giới LEGO & Mô Hình Lắp Ráp</h2>
-                    <p>Khám phá hơn 90 bộ mô hình LEGO chính hãng với mức giá chiết khấu ưu đãi nhất dành cho bạn.</p>
-                </div>
-            </div>
-
-            <div class="toolbar">
-                <div class="search-box">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <input type="text" id="catalog-search" placeholder="Tìm theo tên mẫu, mã LEGO..." oninput="filterCatalog()">
-                </div>
-                <div class="filters-group">
-                    <select class="filter-select" id="catalog-filter-status" onchange="filterCatalog()">
-                        <option value="all">Tất cả tình trạng</option>
-                        <option value="active">Còn hàng (Sẵn sàng giao)</option>
-                        <option value="out_of_stock">Hết hàng</option>
-                    </select>
-                    <select class="filter-select" id="catalog-filter-price" onchange="filterCatalog()">
-                        <option value="all">Mọi mức giá</option>
-                        <option value="under-150">Dưới 150.000đ</option>
-                        <option value="150-250">150.000đ - 250.000đ</option>
-                        <option value="above-250">Trên 250.000đ</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="products-grid" id="catalog-grid">
-                <!-- Products injected by JS -->
+        <!-- HERO BANNER -->
+        <div class="hero-banner">
+            <div class="hero-text">
+                <h2>Thế Giới LEGO & Mô Hình Sáng Tạo</h2>
+                <p>Khám phá hơn 90 bộ mô hình LEGO hoa, kiến trúc và phương tiện chính hãng với mức giá ưu đãi nhất dành riêng cho bạn.</p>
             </div>
         </div>
 
-        <!-- ================= ADMIN PORTAL VIEW ================= -->
-        <div id="view-admin" style="display: none;">
-            <div class="admin-kpi-grid">
-                <div class="kpi-card">
-                    <div class="label">Tổng mẫu sản phẩm</div>
-                    <div class="val" id="kpi-total-prods">0</div>
-                    <div class="sub" id="kpi-active-count">0 mẫu đang kinh doanh</div>
-                </div>
-                <div class="kpi-card warn">
-                    <div class="label">Tổng tồn kho</div>
-                    <div class="val" id="kpi-total-stock">0</div>
-                    <div class="sub">Bộ sản phẩm sẵn sàng</div>
-                </div>
-                <div class="kpi-card cost">
-                    <div class="label">Tổng vốn tồn kho</div>
-                    <div class="val" id="kpi-cost-val">0đ</div>
-                    <div class="sub">Giá trị nhập kho</div>
-                </div>
-                <div class="kpi-card profit">
-                    <div class="label">Doanh thu dự kiến</div>
-                    <div class="val" id="kpi-retail-val">0đ</div>
-                    <div class="sub" id="kpi-profit-est">Lợi nhuận: 0đ (0%)</div>
-                </div>
+        <!-- SEARCH & FILTER -->
+        <div class="toolbar">
+            <div class="search-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="catalog-search" placeholder="Tìm theo tên mẫu, mã LEGO..." oninput="filterCatalog()">
             </div>
-
-            <div class="toolbar">
-                <div class="search-box">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <input type="text" id="admin-search" placeholder="Tìm theo mã hàng, tên sản phẩm..." oninput="filterAdminTable()">
-                </div>
-                <div class="filters-group">
-                    <button class="add-cart-btn" style="padding: 10px 18px; width: auto;" onclick="exportCSV()">
-                        📥 Xuất Excel Báo Cáo
-                    </button>
-                </div>
-            </div>
-
-            <div class="admin-table-wrap">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Ảnh</th>
-                            <th>Mã SP</th>
-                            <th>Tên Sản Phẩm</th>
-                            <th class="num-right">Tồn Kho</th>
-                            <th class="num-right">Giá Vốn</th>
-                            <th class="num-right">Giá Bán Lẻ</th>
-                            <th class="num-right">Lợi Nhuận / Bộ</th>
-                            <th class="num-right">Biên Lãi</th>
-                            <th>Trạng Thái</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-tbody">
-                        <!-- Admin rows injected by JS -->
-                    </tbody>
-                </table>
+            <div class="filters-group">
+                <select class="filter-select" id="catalog-filter-status" onchange="filterCatalog()">
+                    <option value="all">Tất cả sản phẩm</option>
+                    <option value="active" selected>Còn hàng (Sẵn sàng giao)</option>
+                    <option value="out_of_stock">Tạm hết hàng</option>
+                </select>
+                <select class="filter-select" id="catalog-filter-price" onchange="filterCatalog()">
+                    <option value="all">Mọi mức giá</option>
+                    <option value="under-150">Dưới 150.000đ</option>
+                    <option value="150-250">150.000đ - 250.000đ</option>
+                    <option value="above-250">Trên 250.000đ</option>
+                </select>
             </div>
         </div>
 
+        <!-- PRODUCT GRID -->
+        <div class="products-grid" id="catalog-grid">
+            <!-- Render products -->
+        </div>
+
+        <footer>
+            <p>© 2026 LEGO Store. Tất cả các sản phẩm đều đảm bảo chất lượng và đóng gói cẩn thận.</p>
+            <a class="admin-secret-link" href="admin.html">🔒 Quản trị hệ thống</a>
+        </footer>
     </div>
 
     <!-- CART DRAWER -->
@@ -754,27 +596,17 @@
 
         const fmtVND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
-        // LOAD DATA
         async function init() {
             try {
-                const res = await fetch('data.json');
+                // Tải file public (hoàn toàn không có giá vốn hay lợi nhuận)
+                const res = await fetch('products_public.json');
                 DATA = await res.json();
                 renderCatalog();
-                renderAdmin();
             } catch (err) {
-                console.error("Lỗi đọc data.json:", err);
+                console.error("Lỗi đọc dữ liệu:", err);
             }
         }
 
-        // VIEW SWITCHER
-        function switchView(view) {
-            document.getElementById('view-catalog').style.display = view === 'catalog' ? 'block' : 'none';
-            document.getElementById('view-admin').style.display = view === 'admin' ? 'block' : 'none';
-            document.getElementById('btn-catalog').classList.toggle('active', view === 'catalog');
-            document.getElementById('btn-admin').classList.toggle('active', view === 'admin');
-        }
-
-        // RENDER CATALOG
         function renderCatalog() {
             const grid = document.getElementById('catalog-grid');
             if (!DATA || !DATA.products) return;
@@ -801,7 +633,7 @@
                 const isOut = p.status === 'out_of_stock' || p.qty <= 0;
                 const isDisc = p.status === 'discontinued';
                 let badgeClass = 'badge-active', badgeTxt = 'Còn Hàng';
-                if (isOut) { badgeClass = 'badge-out'; badgeTxt = 'Hết Hàng'; }
+                if (isOut) { badgeClass = 'badge-out'; badgeTxt = 'Tạm Hết Hàng'; }
                 if (isDisc) { badgeClass = 'badge-disc'; badgeTxt = 'Ngưng Bán'; }
 
                 return `
@@ -821,7 +653,7 @@
                                     ${p.price_market ? `<span class="price-market">${fmtVND(p.price_market)}</span>` : ''}
                                 </div>
                                 <div class="stock-info">
-                                    📦 Tồn kho: <b>${p.qty} bộ</b>
+                                    📦 Tình trạng: <b>${isOut ? 'Hết hàng' : isDisc ? 'Ngưng bán' : 'Sẵn kho'}</b>
                                 </div>
                                 <button class="add-cart-btn" ${isOut || isDisc ? 'disabled' : ''} onclick="addToCart('${p.id}')">
                                     🛒 ${isOut ? 'Tạm Hết Hàng' : isDisc ? 'Ngưng Bán' : 'Thêm Vào Giỏ'}
@@ -835,50 +667,6 @@
 
         function filterCatalog() { renderCatalog(); }
 
-        // RENDER ADMIN
-        function renderAdmin() {
-            if (!DATA) return;
-            const s = DATA.summary;
-            document.getElementById('kpi-total-prods').textContent = s.total_products;
-            document.getElementById('kpi-active-count').textContent = `${DATA.products.filter(p => p.status === 'active').length} mẫu đang kinh doanh`;
-            document.getElementById('kpi-total-stock').textContent = `${s.total_stock} bộ`;
-            document.getElementById('kpi-cost-val').textContent = fmtVND(s.total_cost_val);
-            document.getElementById('kpi-retail-val').textContent = fmtVND(s.total_retail_val);
-            document.getElementById('kpi-profit-est').textContent = `Lãi dự kiến: ${fmtVND(s.potential_profit)} (${s.avg_margin_pct}%)`;
-
-            filterAdminTable();
-        }
-
-        function filterAdminTable() {
-            const tbody = document.getElementById('admin-tbody');
-            const q = document.getElementById('admin-search').value.toLowerCase().trim();
-
-            const rows = DATA.products.filter(p => {
-                return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
-            });
-
-            tbody.innerHTML = rows.map(p => `
-                <tr>
-                    <td><img class="tbl-thumb" src="${p.img}" alt="" loading="lazy"></td>
-                    <td><b>${p.id}</b><br><small style="color:var(--text-sub)">${p.code}</small></td>
-                    <td><b>${p.name}</b></td>
-                    <td class="num-right"><b>${p.qty}</b></td>
-                    <td class="num-right">${fmtVND(p.price_cost)}</td>
-                    <td class="num-right"><b>${fmtVND(p.price_retail)}</b></td>
-                    <td class="num-right ${p.profit_unit >= 0 ? 'profit-pos' : 'profit-neg'}">
-                        +${fmtVND(p.profit_unit)}
-                    </td>
-                    <td class="num-right"><b>${p.margin_pct}%</b></td>
-                    <td>
-                        <span class="stock-badge ${p.status === 'active' ? 'badge-active' : p.status === 'out_of_stock' ? 'badge-out' : 'badge-disc'}">
-                            ${p.status === 'active' ? 'Đang bán' : p.status === 'out_of_stock' ? 'Hết hàng' : 'Ngưng bán'}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // CART LOGIC
         function addToCart(id) {
             const p = DATA.products.find(item => item.id === id);
             if (!p || p.qty <= 0) return;
@@ -949,7 +737,7 @@
                 alert("Giỏ hàng đang trống!");
                 return;
             }
-            let msg = "Chào bạn, mình muốn đặt các mẫu LEGO sau:\n";
+            let msg = "Chào shop, mình muốn đặt các mẫu LEGO sau:\n";
             let total = 0;
             Object.entries(CART).forEach(([id, qty]) => {
                 const p = DATA.products.find(item => item.id === id);
@@ -960,18 +748,6 @@
             });
             msg += `\nTổng cộng: ${fmtVND(total)}`;
             window.open(`https://zalo.me/?text=${encodeURIComponent(msg)}`, '_blank');
-        }
-
-        function exportCSV() {
-            let csv = "Mã SP,Mẫu,Tên Sản Phẩm,Tồn Kho,Giá Vốn,Giá Bán Lẻ,Lợi Nhuận,Biên Lãi %,Trạng Thái\n";
-            DATA.products.forEach(p => {
-                csv += `"${p.id}","${p.code}","${p.name}",${p.qty},${p.price_cost},${p.price_retail},${p.profit_unit},${p.margin_pct}%,"${p.status}"\n`;
-            });
-            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `Bao_Cao_LEGO_${new Date().toISOString().slice(0,10)}.csv`;
-            a.click();
         }
 
         init();
