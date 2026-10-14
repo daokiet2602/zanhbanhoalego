@@ -830,7 +830,7 @@
             });
 
             grid.innerHTML = filtered.map(p => {
-                const stockInfo = window.realtimeStore.getProductStock(p);
+                const stockInfo = window.realtimeStore.getProductData(p);
                 const isOut = stockInfo.qty <= 0 || stockInfo.status === 'out_of_stock';
                 const isDisc = stockInfo.status === 'discontinued';
                 
@@ -851,7 +851,7 @@
                             </div>
                             <div>
                                 <div class="price-row">
-                                    <span class="price-retail">${fmtVND(p.price_retail)}</span>
+                                    <span class="price-retail">${fmtVND(stockInfo.price_retail)}</span>
                                     ${p.price_market ? `<span class="price-market">${fmtVND(p.price_market)}</span>` : ''}
                                 </div>
                                 <div class="stock-info">
@@ -871,7 +871,7 @@
 
         function addToCart(id) {
             const p = DATA.products.find(item => item.id === id);
-            const stockInfo = window.realtimeStore.getProductStock(p);
+            const stockInfo = window.realtimeStore.getProductData(p);
             if (!p || stockInfo.qty <= 0) return;
 
             CART[id] = (CART[id] || 0) + 1;

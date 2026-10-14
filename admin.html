@@ -174,6 +174,36 @@
         .num-right { text-align: right; }
         .profit-pos { color: var(--green); font-weight: 800; }
 
+        /* INLINE EDIT INPUTS */
+        .inline-input-group {
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .input-stock {
+            width: 58px; padding: 6px; border: 2px solid var(--border); border-radius: 8px;
+            font-size: 0.95rem; font-weight: 800; text-align: center; background: #fff; outline: none;
+        }
+        .input-stock:focus { border-color: var(--primary); }
+
+        .input-money {
+            width: 95px; padding: 6px 8px; border: 1.5px solid var(--border); border-radius: 8px;
+            font-size: 0.88rem; font-weight: 700; text-align: right; background: #fff; outline: none;
+        }
+        .input-money:focus { border-color: var(--blue); }
+
+        .btn-qty-step {
+            width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border);
+            background: #F1F5F9; font-weight: 800; font-size: 0.85rem; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .btn-qty-step:hover { background: #E2E8F0; }
+
+        .btn-save-inline {
+            background: var(--dark); color: #fff; border: none; padding: 6px 12px;
+            border-radius: 8px; font-weight: 800; font-size: 0.78rem; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-save-inline:hover { background: var(--green); transform: scale(1.05); }
+
         /* INLINE SELL ROW */
         .row-sell-box {
             display: flex; align-items: center; justify-content: flex-end; gap: 6px;
@@ -332,13 +362,13 @@
                             <th>Ảnh</th>
                             <th>Mã SP</th>
                             <th>Tên Sản Phẩm</th>
-                            <th class="num-right">Tồn Kho</th>
-                            <th class="num-right">Đã Bán</th>
-                            <th class="num-right">Giá Vốn</th>
-                            <th class="num-right">Giá Bán</th>
-                            <th class="num-right">Lãi / Bộ</th>
-                            <th>Trạng Thái</th>
-                            <th style="text-align: right;">Nhập Bán Nhanh Tại Dòng</th>
+                            <th class="num-right" style="min-width: 140px;">Tồn Kho (Sửa số)</th>
+                            <th class="num-right" style="min-width: 110px;">Giá Vốn (đ)</th>
+                            <th class="num-right" style="min-width: 110px;">Giá Bán (đ)</th>
+                            <th class="num-right">Lãi Dự Kiến / Bộ</th>
+                            <th class="num-right">Biên Lãi %</th>
+                            <th style="text-align: center;">Lưu Giá & Kho</th>
+                            <th style="text-align: right;">Xuất Bán Hàng</th>
                         </tr>
                     </thead>
                     <tbody id="stock-tbody">
@@ -457,6 +487,43 @@
             populateSelectDropdown();
         }
 
+        // ĐIỀU CHỈNH KHO & TỰ TÍNH LÃI
+        function calcRowProfit(id) {
+            const cost = parseFloat(document.getElementById(`cfg-cost-${id}`).value) || 0;
+            const retail = parseFloat(document.getElementById(`cfg-retail-${id}`).value) || 0;
+            const profit = retail - cost;
+            const margin = retail > 0 ? Math.round((profit / retail) * 1000) / 10 : 0;
+
+            const profitCell = document.getElementById(`cell-profit-${id}`);
+            const marginCell = document.getElementById(`cell-margin-${id}`);
+
+            profitCell.innerHTML = `<b class="${profit >= 0 ? 'profit-pos' : 'profit-neg'}">${profit >= 0 ? '+' : ''}${fmtVND(profit)}</b>`;
+            marginCell.innerHTML = `<b style="color:${margin >= 30 ? 'var(--green)' : margin > 0 ? 'var(--dark)' : 'var(--primary)'}">${margin}%</b>`;
+        }
+
+        function stepQty(id, delta) {
+            const input = document.getElementById(`cfg-qty-${id}`);
+            const cur = parseInt(input.value) || 0;
+            input.value = Math.max(0, cur + delta);
+            autoSaveRow(id);
+        }
+
+        function autoSaveRow(id) {
+            const p = DATA.products.find(item => item.id === id);
+            const qty = parseInt(document.getElementById(`cfg-qty-${id}`).value) || 0;
+            const cost = parseFloat(document.getElementById(`cfg-cost-${id}`).value) || 0;
+            const retail = parseFloat(document.getElementById(`cfg-retail-${id}`).value) || 0;
+
+            window.realtimeStore.updateProductConfig(id, qty, cost, retail);
+            renderKPI();
+            populateSelectDropdown();
+        }
+
+        function manualSaveRow(id) {
+            autoSaveRow(id);
+            showToast(`💾 Đã lưu cấu hình mới cho [${id}]! Bên trang khách đã tự cập nhật giá & kho.`);
+        }
+
         // BÁN NHANH TRỰC TIẾP TRÊN DÒNG SẢN PHẨM
         function handleRowSell(id) {
             const p = DATA.products.find(item => item.id === id);
@@ -528,27 +595,41 @@
             });
 
             tbody.innerHTML = rows.map(p => {
-                const stockInfo = window.realtimeStore.getProductStock(p);
+                const stockInfo = window.realtimeStore.getProductData(p);
                 const isOut = stockInfo.qty <= 0 || stockInfo.status === 'out_of_stock';
 
                 return `
-                    <tr>
+                    <tr id="row-${p.id}">
                         <td><img class="tbl-thumb" src="${p.img}" alt="" loading="lazy"></td>
                         <td><b>${p.id}</b><br><small style="color:var(--text-sub)">${p.code}</small></td>
                         <td><b>${p.name}</b></td>
                         <td class="num-right">
-                            <span style="font-size:1.15rem; font-weight:900; color:${stockInfo.qty <= 2 ? 'var(--primary)' : 'inherit'}">
-                                ${stockInfo.qty}
-                            </span>
+                            <div class="inline-input-group">
+                                <button class="btn-qty-step" onclick="stepQty('${p.id}', -1)">-</button>
+                                <input type="number" class="input-stock" id="cfg-qty-${p.id}" value="${stockInfo.qty}" min="0" onchange="autoSaveRow('${p.id}')">
+                                <button class="btn-qty-step" onclick="stepQty('${p.id}', 1)">+</button>
+                            </div>
                         </td>
-                        <td class="num-right"><b style="color:var(--green)">${stockInfo.sold}</b></td>
-                        <td class="num-right">${fmtVND(p.price_cost)}</td>
-                        <td class="num-right"><b>${fmtVND(p.price_retail)}</b></td>
-                        <td class="num-right profit-pos">+${fmtVND(p.profit_unit)}</td>
-                        <td>
-                            <span class="stock-badge ${stockInfo.status === 'active' && stockInfo.qty > 0 ? 'badge-active' : 'badge-out'}">
-                                ${stockInfo.status === 'active' && stockInfo.qty > 0 ? 'Còn hàng' : 'Hết hàng'}
-                            </span>
+                        <td class="num-right">
+                            <input type="number" class="input-money" id="cfg-cost-${p.id}" value="${stockInfo.price_cost}" oninput="calcRowProfit('${p.id}')" onchange="autoSaveRow('${p.id}')">
+                        </td>
+                        <td class="num-right">
+                            <input type="number" class="input-money" id="cfg-retail-${p.id}" value="${stockInfo.price_retail}" oninput="calcRowProfit('${p.id}')" onchange="autoSaveRow('${p.id}')">
+                        </td>
+                        <td class="num-right" id="cell-profit-${p.id}">
+                            <b class="${stockInfo.profit_unit >= 0 ? 'profit-pos' : 'profit-neg'}">
+                                ${stockInfo.profit_unit >= 0 ? '+' : ''}${fmtVND(stockInfo.profit_unit)}
+                            </b>
+                        </td>
+                        <td class="num-right" id="cell-margin-${p.id}">
+                            <b style="color:${stockInfo.margin_pct >= 30 ? 'var(--green)' : stockInfo.margin_pct > 0 ? 'var(--dark)' : 'var(--primary)'}">
+                                ${stockInfo.margin_pct}%
+                            </b>
+                        </td>
+                        <td style="text-align: center;">
+                            <button class="btn-save-inline" onclick="manualSaveRow('${p.id}')" title="Lưu thông tin dòng này">
+                                💾 Lưu
+                            </button>
                         </td>
                         <td>
                             <div class="row-sell-box">
