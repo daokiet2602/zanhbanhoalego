@@ -1726,12 +1726,11 @@
                 timeStr: new Date().toLocaleString('vi-VN')
             };
 
+            const isTransfer = SELECTED_PAY_METHOD === 'transfer';
+
             // T03: ĐƠN CHUYỂN KHOẢN: GỬI NGAY ĐƠN HÀNG Ở TRẠNG THÁI "CHỜ THANH TOÁN (PENDING_PAYMENT)"
             if (isTransfer) {
                 PENDING_TRANSFER_ORDER = orderPayload;
-
-                // 1. Trừ kho tạm giữ hàng & gửi thông báo Telegram 'CHỜ CHUYỂN KHOẢN' ngay
-                await executeOrderConfirmation(orderPayload, '💳 Chuyển khoản VietQR (PENDING_PAYMENT - Chờ chuyển khoản)');
 
                 const memo = `${orderId} ${phone}`;
                 const qrUrl = `https://img.vietqr.io/image/${BANK_CONFIG.BANK_ID}-${BANK_CONFIG.ACCOUNT_NO}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(BANK_CONFIG.ACCOUNT_NAME)}`;
@@ -1752,6 +1751,9 @@
                 btn.disabled = false;
                 btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
                 document.getElementById('payment-modal').style.display = 'flex';
+
+                // Gửi thông báo Telegram chạy ngầm (không để nghẽn luồng mở mã QR)
+                executeOrderConfirmation(orderPayload, '💳 Chuyển khoản VietQR (PENDING_PAYMENT - Chờ chuyển khoản)');
                 return;
             }
 
