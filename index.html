@@ -968,14 +968,14 @@
                 <div class="form-row">
                     <label>Tỉnh / Thành phố nhận hàng *</label>
                     <select class="form-input" id="cust-city" onchange="handleCityChange()" style="cursor:pointer; font-weight:700;">
-                        <option value="HCM">TP. Hồ Chí Minh (Nội thành & Ngoại thành)</option>
-                        <option value="HN">Hà Nội</option>
-                        <option value="DN">Đà Nẵng</option>
-                        <option value="BD">Bình Dương</option>
-                        <option value="DNAI">Đồng Nai</option>
-                        <option value="CT">Cần Thơ</option>
-                        <option value="HP">Hải Phòng</option>
-                        <option value="OTHER">Các Tỉnh / Thành Phố Khác Toàn Quốc</option>
+                        <!-- Injected dynamically from vietnam_wards.json -->
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <label>Phường / Xã nhận hàng *</label>
+                    <select class="form-input" id="cust-ward" style="cursor:pointer; font-weight:700;">
+                        <!-- Injected dynamically -->
                     </select>
                 </div>
 
@@ -987,8 +987,8 @@
                 </div>
 
                 <div class="form-row">
-                    <label>Địa chỉ nhận hàng cụ thể (Số nhà, đường, phường, quận) *</label>
-                    <input type="text" class="form-input" id="cust-address" placeholder="VD: 123 Lê Lợi, Phường Bến Nghé, Quận 1">
+                    <label>Số nhà, Tên đường cụ thể *</label>
+                    <input type="text" class="form-input" id="cust-address" placeholder="VD: Số 123 đường Lê Lợi, Hẻm 45...">
                 </div>
                 <div class="form-row">
                     <label>Ghi chú đơn hàng (nếu có)</label>
@@ -1103,10 +1103,21 @@
             try { localStorage.setItem('danhbanhoa_cart', JSON.stringify(CART)); } catch(e) {}
         }
 
+        let WARDS_DATA = null;
+
         async function init() {
             try {
                 const res = await fetch('products_public.json');
                 DATA = await res.json();
+
+                // Nạp danh mục đơn vị hành chính chuẩn từ file Excel
+                try {
+                    const wRes = await fetch('vietnam_wards.json');
+                    WARDS_DATA = await wRes.json();
+                    populateProvinces();
+                } catch(e) {
+                    console.warn("Chưa nạp được vietnam_wards.json:", e);
+                }
                 
                 window.realtimeStore.subscribe(() => {
                     renderCatalog();
@@ -1282,18 +1293,43 @@
         }
 
         // CẤU HÌNH VẬN CHUYỂN & GIAO HÀNG
-        let SELECTED_CITY = 'HCM';
+        let SELECTED_CITY = 'Thành phố Hồ Chí Minh';
         let SELECTED_SHIP_METHOD = 'hcm_std'; // 'hcm_std' (25k), 'hcm_express' (0đ/cước app), 'prov_std' (35k)
 
+        function populateProvinces() {
+            const citySel = document.getElementById('cust-city');
+            if (!citySel || !WARDS_DATA) return;
+
+            citySel.innerHTML = Object.keys(WARDS_DATA).map(prov => {
+                return `<option value="${prov}" ${prov === 'Thành phố Hồ Chí Minh' ? 'selected' : ''}>${prov}</option>`;
+            }).join('');
+
+            handleCityChange();
+        }
+
         function handleCityChange() {
-            SELECTED_CITY = document.getElementById('cust-city').value;
+            const citySel = document.getElementById('cust-city');
+            if (!citySel) return;
+            SELECTED_CITY = citySel.value;
+            
+            // Đổ danh sách Phường/Xã tương ứng
+            const wardSel = document.getElementById('cust-ward');
+            if (wardSel && WARDS_DATA && WARDS_DATA[SELECTED_CITY]) {
+                const wards = WARDS_DATA[SELECTED_CITY];
+                wardSel.innerHTML = wards.map(w => `<option value="${w}">${w}</option>`).join('');
+            }
+
             renderShippingOptions();
             updateBillSummary();
         }
 
+        function isHcmCity() {
+            return SELECTED_CITY.toLowerCase().includes('hồ chí minh') || SELECTED_CITY.toLowerCase().includes('hcm');
+        }
+
         function renderShippingOptions() {
             const container = document.getElementById('shipping-options-container');
-            if (SELECTED_CITY === 'HCM') {
+            if (isHcmCity()) {
                 if (SELECTED_SHIP_METHOD !== 'hcm_std' && SELECTED_SHIP_METHOD !== 'hcm_express') {
                     SELECTED_SHIP_METHOD = 'hcm_std';
                 }
@@ -1343,10 +1379,10 @@
         }
 
         function getShippingDetails() {
-            if (SELECTED_SHIP_METHOD === 'hcm_std') {
+            if (isHcmCity() && SELECTED_SHIP_METHOD === 'hcm_std') {
                 return { fee: 25000, name: 'Giao Tiêu Chuẩn HCM (1 - 2 ngày)', estimate: '1 - 2 ngày', feeDisplay: '25.000đ' };
             }
-            if (SELECTED_SHIP_METHOD === 'hcm_express') {
+            if (isHcmCity() && SELECTED_SHIP_METHOD === 'hcm_express') {
                 return { fee: 0, name: 'Giao Hỏa Tốc HCM (2 - 4 tiếng)', estimate: '2 - 4 tiếng (trong ngày)', feeDisplay: 'Cước App (Trả Shipper)' };
             }
             return { fee: 35000, name: 'Giao Toàn Quốc (2 - 4 ngày)', estimate: '2 - 4 ngày', feeDisplay: '35.000đ' };
@@ -1493,7 +1529,9 @@
                 }
             });
 
-            const fullAddress = `${escapeHtml(address)} (${cityText})`;
+            const wardSel = document.getElementById('cust-ward');
+            const wardText = (wardSel && wardSel.value) ? wardSel.value : '';
+            const fullAddress = `${escapeHtml(address)}, ${wardText ? escapeHtml(wardText) + ', ' : ''}${cityText}`;
 
             const orderPayload = {
                 orderId,
