@@ -247,21 +247,27 @@
             position: relative;
             width: 100%;
             aspect-ratio: 1 / 1;
-            background: #F1F5F9;
+            background: #F8FAFC;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 12px;
         }
         .prod-thumb {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            transition: transform 0.3s ease;
-            padding: 10px;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 2px solid #E2E8F0;
+            background: #fff;
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
         .prod-card:hover .prod-thumb {
-            transform: scale(1.06);
+            transform: scale(1.04);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+            border-color: #CBD5E1;
         }
 
         .stock-badge {
@@ -959,9 +965,13 @@
             BANK_DISPLAY: "Vietcombank (Ngân Hàng Ngoại Thương)"
         };
 
+        // CẤU HÌNH BẮN ĐƠN TELEGRAM: Hỗ trợ danh sách nhiều người nhận hoặc Group Chat ID
         const TELEGRAM_CONFIG = {
             BOT_TOKEN: "8615110743:AAFWqNOTLgdFQMDelen2WbxPUW-Na5iwDRo",
-            CHAT_ID: "6401633197"
+            // Danh sách Chat ID (có thể thêm nhiều ID cá nhân hoặc 1 Group Chat ID dạng -100xxxxxxxxxx)
+            RECIPIENTS: [
+                "6401633197" // Chat ID của anh Kiệt (Thêm các ID khác vào đây: "ID_2", "ID_3"...)
+            ]
         };
 
         let SELECTED_PAY_METHOD = 'transfer'; // 'transfer' hoặc 'cod'
@@ -1069,15 +1079,19 @@
                 `⏰ <b>Thời gian:</b> ${payload.timeStr}`;
 
             try {
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: TELEGRAM_CONFIG.CHAT_ID,
-                        text: teleMsg,
-                        parse_mode: 'HTML'
-                    })
+                // Tự động bắn thông báo tới TẤT CẢ người nhận trong danh sách RECIPIENTS
+                const sendPromises = TELEGRAM_CONFIG.RECIPIENTS.map(targetChatId => {
+                    return fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chat_id: targetChatId,
+                            text: teleMsg,
+                            parse_mode: 'HTML'
+                        })
+                    });
                 });
+                await Promise.all(sendPromises);
             } catch (err) {
                 console.warn("Lỗi gửi Telegram:", err);
             }
