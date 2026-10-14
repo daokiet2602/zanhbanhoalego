@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEGO Store & Inventory Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #D11013;
+            --primary-hover: #B00D10;
+            --yellow: #FFD500;
+            --blue: #006CB7;
+            --green: #10B981;
+            --dark: #121826;
+            --card-bg: #FFFFFF;
+            --bg: #F8FAFC;
+            --border: #E2E8F0;
+            --text-sub: #64748B;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--dark);
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        /* HEADER & NAVIGATION */
+        header {
+            background: #fff;
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
+        }
+
+        .header-wrap {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .logo-badge {
+            background: var(--primary);
+            color: #fff;
+            font-weight: 900;
+            font-size: 1.3rem;
+            letter-spacing: -1px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            box-shadow: 0 4px 0 #8B0000;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+        }
+
+        .logo-title h1 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+        .logo-title span {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-sub);
+        }
+
+        .mode-switcher {
+            display: flex;
+            background: #F1F5F9;
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .mode-btn {
+            border: none;
+            background: transparent;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-sub);
+        }
+
+        .mode-btn.active {
+            background: #fff;
+            color: var(--dark);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .cart-trigger {
+            position: relative;
+            background: #FFF;
+            border: 2px solid var(--dark);
+            border-radius: 12px;
+            padding: 8px 16px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 3px 3px 0 var(--dark);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .cart-trigger:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0 var(--dark);
+        }
+        .cart-count {
+            background: var(--primary);
+            color: #fff;
+            font-size: 0.75rem;
+            padding: 2px 7px;
+            border-radius: 999px;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+
+        /* HERO BANNER */
+        .hero-banner {
+            background: linear-gradient(135deg, #D11013, #FF4545);
+            border-radius: 20px;
+            padding: 32px 36px;
+            color: #fff;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 25px -5px rgba(209, 16, 19, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-banner::after {
+            content: 'LEGO';
+            position: absolute;
+            right: -20px;
+            bottom: -30px;
+            font-size: 8rem;
+            font-weight: 900;
+            color: rgba(255,255,255,0.08);
+            user-select: none;
+        }
+        .hero-text h2 {
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .hero-text p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        /* STATS SUMMARY TILES (ADMIN) */
+        .admin-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .kpi-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 15px -3px rgba(0,0,0,0.03);
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--blue);
+        }
+        .kpi-card.profit::before { background: var(--green); }
+        .kpi-card.warn::before { background: var(--yellow); }
+        .kpi-card.cost::before { background: var(--primary); }
+
+        .kpi-card .label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+        }
+        .kpi-card .val {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--dark);
+        }
+        .kpi-card .sub {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-top: 4px;
+        }
+
+        /* SEARCH & FILTER BAR */
+        .toolbar {
+            background: #fff;
+            padding: 16px 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 260px;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px 12px 42px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-box input:focus {
+            border-color: var(--primary);
+        }
+        .search-box svg {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-sub);
+        }
+
+        .filters-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-select {
+            padding: 11px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            background: #fff;
+            color: var(--dark);
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* PRODUCT CATALOG GRID */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .prod-card {
+            background: #fff;
+            border-radius: 18px;
+            border: 2px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+        }
+        .prod-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -6px rgba(0,0,0,0.08);
+            border-color: #CBD5E1;
+        }
+
+        .prod-thumb-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #F1F5F9;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .prod-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+            padding: 8px;
+        }
+        .prod-card:hover .prod-thumb {
+            transform: scale(1.05);
+        }
+
+        .stock-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .badge-active { background: #DCFCE7; color: #15803D; }
+        .badge-out { background: #FEE2E2; color: #B91C1C; }
+        .badge-disc { background: #F1F5F9; color: #64748B; }
+
+        .prod-info {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            justify-content: space-between;
+        }
+
+        .prod-code {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .prod-name {
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1.35;
+            color: var(--dark);
+            margin-bottom: 12px;
+        }
+
+        .price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .price-retail {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: var(--primary);
+        }
+        .price-market {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            text-decoration: line-through;
+            font-weight: 600;
+        }
+
+        .stock-info {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-sub);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .add-cart-btn {
+            width: 100%;
+            padding: 11px;
+            border-radius: 12px;
+            border: 2px solid var(--dark);
+            background: var(--yellow);
+            color: var(--dark);
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 var(--dark);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .add-cart-btn:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0 var(--dark);
+            background: #FFE033;
+        }
+        .add-cart-btn:disabled {
+            background: #E2E8F0;
+            color: #94A3B8;
+            border-color: #CBD5E1;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ADMIN DATA TABLE */
+        .admin-table-wrap {
+            background: #fff;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            overflow-x: auto;
+            box-shadow: 0 4px 15px -3px rgba(0,0,0,0.03);
+        }
+        table.admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+        table.admin-table th {
+            background: #F8FAFC;
+            padding: 14px 16px;
+            font-weight: 800;
+            color: var(--text-sub);
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+        table.admin-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        table.admin-table tr:hover {
+            background: #F8FAFC;
+        }
+        .tbl-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            object-fit: cover;
+            background: #F1F5F9;
+        }
+        .num-right { text-align: right; }
+        .profit-pos { color: var(--green); font-weight: 800; }
+        .profit-neg { color: var(--primary); font-weight: 800; }
+
+        /* MODAL / CART DRAWER */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .cart-drawer {
+            width: 100%;
+            max-width: 440px;
+            height: 100%;
+            background: #fff;
+            box-shadow: -5px 0 25px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .cart-head {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cart-head h3 { font-size: 1.2rem; font-weight: 900; }
+        .close-cart {
+            background: #F1F5F9;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .cart-body {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .cart-item {
+            display: flex;
+            gap: 12px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #F1F5F9;
+            align-items: center;
+        }
+        .cart-item img {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+        }
+        .cart-item-info { flex: 1; }
+        .cart-item-name { font-weight: 800; font-size: 0.9rem; margin-bottom: 4px; }
+        .cart-item-price { font-weight: 700; color: var(--primary); font-size: 0.88rem; }
+        .cart-item-qty {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .qty-btn {
+            width: 26px; height: 26px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #F8FAFC;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .cart-foot {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: #F8FAFC;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 1.15rem;
+            font-weight: 900;
+        }
+        .checkout-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(209, 16, 19, 0.3);
+            transition: all 0.2s;
+        }
+        .checkout-btn:hover { background: var(--primary-hover); }
+
+        @media (max-width: 640px) {
+            .header-wrap { flex-direction: column; align-items: stretch; gap: 12px; }
+            .hero-banner { padding: 24px 20px; flex-direction: column; text-align: center; gap: 16px; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .prod-card { border-radius: 14px; }
+            .prod-name { font-size: 0.88rem; }
+            .price-retail { font-size: 1.05rem; }
+            .add-cart-btn { padding: 8px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="header-wrap">
+            <div class="logo-box" onclick="switchView('catalog')">
+                <div class="logo-badge">LEGO</div>
+                <div class="logo-title">
+                    <h1>LEGO Store & Inventory</h1>
+                    <span>Hệ thống phân phối & Quản lý tồn kho</span>
+                </div>
+            </div>
+
+            <div class="mode-switcher">
+                <button class="mode-btn active" id="btn-catalog" onclick="switchView('catalog')">
+                    🛍️ Catalog Mua Hàng
+                </button>
+                <button class="mode-btn" id="btn-admin" onclick="switchView('admin')">
+                    📊 Portal Quản Trị
+                </button>
+            </div>
+
+            <button class="cart-trigger" onclick="toggleCart()">
+                🛒 Giỏ hàng <span class="cart-count" id="cart-badge">0</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- ================= CATALOG VIEW ================= -->
+        <div id="view-catalog">
+            <div class="hero-banner">
+                <div class="hero-text">
+                    <h2>Thế Giới LEGO & Mô Hình Lắp Ráp</h2>
+                    <p>Khám phá hơn 90 bộ mô hình LEGO chính hãng với mức giá chiết khấu ưu đãi nhất dành cho bạn.</p>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="catalog-search" placeholder="Tìm theo tên mẫu, mã LEGO..." oninput="filterCatalog()">
+                </div>
+                <div class="filters-group">
+                    <select class="filter-select" id="catalog-filter-status" onchange="filterCatalog()">
+                        <option value="all">Tất cả tình trạng</option>
+                        <option value="active">Còn hàng (Sẵn sàng giao)</option>
+                        <option value="out_of_stock">Hết hàng</option>
+                    </select>
+                    <select class="filter-select" id="catalog-filter-price" onchange="filterCatalog()">
+                        <option value="all">Mọi mức giá</option>
+                        <option value="under-150">Dưới 150.000đ</option>
+                        <option value="150-250">150.000đ - 250.000đ</option>
+                        <option value="above-250">Trên 250.000đ</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="products-grid" id="catalog-grid">
+                <!-- Products injected by JS -->
+            </div>
+        </div>
+
+        <!-- ================= ADMIN PORTAL VIEW ================= -->
+        <div id="view-admin" style="display: none;">
+            <div class="admin-kpi-grid">
+                <div class="kpi-card">
+                    <div class="label">Tổng mẫu sản phẩm</div>
+                    <div class="val" id="kpi-total-prods">0</div>
+                    <div class="sub" id="kpi-active-count">0 mẫu đang kinh doanh</div>
+                </div>
+                <div class="kpi-card warn">
+                    <div class="label">Tổng tồn kho</div>
+                    <div class="val" id="kpi-total-stock">0</div>
+                    <div class="sub">Bộ sản phẩm sẵn sàng</div>
+                </div>
+                <div class="kpi-card cost">
+                    <div class="label">Tổng vốn tồn kho</div>
+                    <div class="val" id="kpi-cost-val">0đ</div>
+                    <div class="sub">Giá trị nhập kho</div>
+                </div>
+                <div class="kpi-card profit">
+                    <div class="label">Doanh thu dự kiến</div>
+                    <div class="val" id="kpi-retail-val">0đ</div>
+                    <div class="sub" id="kpi-profit-est">Lợi nhuận: 0đ (0%)</div>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="admin-search" placeholder="Tìm theo mã hàng, tên sản phẩm..." oninput="filterAdminTable()">
+                </div>
+                <div class="filters-group">
+                    <button class="add-cart-btn" style="padding: 10px 18px; width: auto;" onclick="exportCSV()">
+                        📥 Xuất Excel Báo Cáo
+                    </button>
+                </div>
+            </div>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Ảnh</th>
+                            <th>Mã SP</th>
+                            <th>Tên Sản Phẩm</th>
+                            <th class="num-right">Tồn Kho</th>
+                            <th class="num-right">Giá Vốn</th>
+                            <th class="num-right">Giá Bán Lẻ</th>
+                            <th class="num-right">Lợi Nhuận / Bộ</th>
+                            <th class="num-right">Biên Lãi</th>
+                            <th>Trạng Thái</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-tbody">
+                        <!-- Admin rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- CART DRAWER -->
+    <div class="modal-overlay" id="cart-modal" onclick="closeCart(event)">
+        <div class="cart-drawer" onclick="event.stopPropagation()">
+            <div class="cart-head">
+                <h3>Giỏ Hàng Của Bạn</h3>
+                <button class="close-cart" onclick="toggleCart()">✕</button>
+            </div>
+            <div class="cart-body" id="cart-items">
+                <!-- Cart items -->
+            </div>
+            <div class="cart-foot">
+                <div class="total-row">
+                    <span>Tổng đơn hàng:</span>
+                    <span id="cart-total" style="color: var(--primary);">0đ</span>
+                </div>
+                <button class="checkout-btn" onclick="sendOrderZalo()">
+                    📲 Đặt Hàng Ngay Qua Zalo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let DATA = null;
+        let CART = {};
+
+        const fmtVND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
+
+        // LOAD DATA
+        async function init() {
+            try {
+                const res = await fetch('data.json');
+                DATA = await res.json();
+                renderCatalog();
+                renderAdmin();
+            } catch (err) {
+                console.error("Lỗi đọc data.json:", err);
+            }
+        }
+
+        // VIEW SWITCHER
+        function switchView(view) {
+            document.getElementById('view-catalog').style.display = view === 'catalog' ? 'block' : 'none';
+            document.getElementById('view-admin').style.display = view === 'admin' ? 'block' : 'none';
+            document.getElementById('btn-catalog').classList.toggle('active', view === 'catalog');
+            document.getElementById('btn-admin').classList.toggle('active', view === 'admin');
+        }
+
+        // RENDER CATALOG
+        function renderCatalog() {
+            const grid = document.getElementById('catalog-grid');
+            if (!DATA || !DATA.products) return;
+
+            const q = document.getElementById('catalog-search').value.toLowerCase().trim();
+            const statusFlt = document.getElementById('catalog-filter-status').value;
+            const priceFlt = document.getElementById('catalog-filter-price').value;
+
+            let filtered = DATA.products.filter(p => {
+                const matchQ = p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+                let matchStatus = true;
+                if (statusFlt === 'active') matchStatus = p.status === 'active';
+                if (statusFlt === 'out_of_stock') matchStatus = p.status === 'out_of_stock';
+
+                let matchPrice = true;
+                if (priceFlt === 'under-150') matchPrice = p.price_retail < 150000;
+                if (priceFlt === '150-250') matchPrice = p.price_retail >= 150000 && p.price_retail <= 250000;
+                if (priceFlt === 'above-250') matchPrice = p.price_retail > 250000;
+
+                return matchQ && matchStatus && matchPrice;
+            });
+
+            grid.innerHTML = filtered.map(p => {
+                const isOut = p.status === 'out_of_stock' || p.qty <= 0;
+                const isDisc = p.status === 'discontinued';
+                let badgeClass = 'badge-active', badgeTxt = 'Còn Hàng';
+                if (isOut) { badgeClass = 'badge-out'; badgeTxt = 'Hết Hàng'; }
+                if (isDisc) { badgeClass = 'badge-disc'; badgeTxt = 'Ngưng Bán'; }
+
+                return `
+                    <div class="prod-card">
+                        <div class="prod-thumb-wrap">
+                            <span class="stock-badge ${badgeClass}">${badgeTxt}</span>
+                            <img class="prod-thumb" src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/300x300?text=LEGO'">
+                        </div>
+                        <div class="prod-info">
+                            <div>
+                                <div class="prod-code">${p.id} · ${p.code}</div>
+                                <h3 class="prod-name">${p.name}</h3>
+                            </div>
+                            <div>
+                                <div class="price-row">
+                                    <span class="price-retail">${fmtVND(p.price_retail)}</span>
+                                    ${p.price_market ? `<span class="price-market">${fmtVND(p.price_market)}</span>` : ''}
+                                </div>
+                                <div class="stock-info">
+                                    📦 Tồn kho: <b>${p.qty} bộ</b>
+                                </div>
+                                <button class="add-cart-btn" ${isOut || isDisc ? 'disabled' : ''} onclick="addToCart('${p.id}')">
+                                    🛒 ${isOut ? 'Tạm Hết Hàng' : isDisc ? 'Ngưng Bán' : 'Thêm Vào Giỏ'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterCatalog() { renderCatalog(); }
+
+        // RENDER ADMIN
+        function renderAdmin() {
+            if (!DATA) return;
+            const s = DATA.summary;
+            document.getElementById('kpi-total-prods').textContent = s.total_products;
+            document.getElementById('kpi-active-count').textContent = `${DATA.products.filter(p => p.status === 'active').length} mẫu đang kinh doanh`;
+            document.getElementById('kpi-total-stock').textContent = `${s.total_stock} bộ`;
+            document.getElementById('kpi-cost-val').textContent = fmtVND(s.total_cost_val);
+            document.getElementById('kpi-retail-val').textContent = fmtVND(s.total_retail_val);
+            document.getElementById('kpi-profit-est').textContent = `Lãi dự kiến: ${fmtVND(s.potential_profit)} (${s.avg_margin_pct}%)`;
+
+            filterAdminTable();
+        }
+
+        function filterAdminTable() {
+            const tbody = document.getElementById('admin-tbody');
+            const q = document.getElementById('admin-search').value.toLowerCase().trim();
+
+            const rows = DATA.products.filter(p => {
+                return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+            });
+
+            tbody.innerHTML = rows.map(p => `
+                <tr>
+                    <td><img class="tbl-thumb" src="${p.img}" alt="" loading="lazy"></td>
+                    <td><b>${p.id}</b><br><small style="color:var(--text-sub)">${p.code}</small></td>
+                    <td><b>${p.name}</b></td>
+                    <td class="num-right"><b>${p.qty}</b></td>
+                    <td class="num-right">${fmtVND(p.price_cost)}</td>
+                    <td class="num-right"><b>${fmtVND(p.price_retail)}</b></td>
+                    <td class="num-right ${p.profit_unit >= 0 ? 'profit-pos' : 'profit-neg'}">
+                        +${fmtVND(p.profit_unit)}
+                    </td>
+                    <td class="num-right"><b>${p.margin_pct}%</b></td>
+                    <td>
+                        <span class="stock-badge ${p.status === 'active' ? 'badge-active' : p.status === 'out_of_stock' ? 'badge-out' : 'badge-disc'}">
+                            ${p.status === 'active' ? 'Đang bán' : p.status === 'out_of_stock' ? 'Hết hàng' : 'Ngưng bán'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // CART LOGIC
+        function addToCart(id) {
+            const p = DATA.products.find(item => item.id === id);
+            if (!p || p.qty <= 0) return;
+
+            CART[id] = (CART[id] || 0) + 1;
+            updateCartUI();
+            toggleCart(true);
+        }
+
+        function changeQty(id, delta) {
+            if (!CART[id]) return;
+            CART[id] += delta;
+            if (CART[id] <= 0) delete CART[id];
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const totalCount = Object.values(CART).reduce((a, b) => a + b, 0);
+            document.getElementById('cart-badge').textContent = totalCount;
+
+            const box = document.getElementById('cart-items');
+            if (totalCount === 0) {
+                box.innerHTML = `<div style="text-align:center; padding:40px 10px; color:var(--text-sub);">
+                    <div style="font-size:2.5rem; margin-bottom:10px;">🛒</div>
+                    <p>Giỏ hàng của bạn đang trống</p>
+                </div>`;
+                document.getElementById('cart-total').textContent = '0đ';
+                return;
+            }
+
+            let totalMoney = 0;
+            box.innerHTML = Object.entries(CART).map(([id, qty]) => {
+                const p = DATA.products.find(item => item.id === id);
+                if (!p) return '';
+                const money = p.price_retail * qty;
+                totalMoney += money;
+                return `
+                    <div class="cart-item">
+                        <img src="${p.img}" alt="${p.name}">
+                        <div class="cart-item-info">
+                            <div class="cart-item-name">${p.name}</div>
+                            <div class="cart-item-price">${fmtVND(p.price_retail)}</div>
+                            <div class="cart-item-qty">
+                                <button class="qty-btn" onclick="changeQty('${id}', -1)">-</button>
+                                <span><b>${qty}</b></span>
+                                <button class="qty-btn" onclick="changeQty('${id}', 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('cart-total').textContent = fmtVND(totalMoney);
+        }
+
+        function toggleCart(forceOpen) {
+            const modal = document.getElementById('cart-modal');
+            if (forceOpen) modal.classList.add('active');
+            else modal.classList.toggle('active');
+        }
+
+        function closeCart(e) {
+            if (e.target.id === 'cart-modal') toggleCart();
+        }
+
+        function sendOrderZalo() {
+            if (Object.keys(CART).length === 0) {
+                alert("Giỏ hàng đang trống!");
+                return;
+            }
+            let msg = "Chào bạn, mình muốn đặt các mẫu LEGO sau:\n";
+            let total = 0;
+            Object.entries(CART).forEach(([id, qty]) => {
+                const p = DATA.products.find(item => item.id === id);
+                if (p) {
+                    msg += `- [${p.id}] ${p.name}: ${qty} bộ (${fmtVND(p.price_retail * qty)})\n`;
+                    total += p.price_retail * qty;
+                }
+            });
+            msg += `\nTổng cộng: ${fmtVND(total)}`;
+            window.open(`https://zalo.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function exportCSV() {
+            let csv = "Mã SP,Mẫu,Tên Sản Phẩm,Tồn Kho,Giá Vốn,Giá Bán Lẻ,Lợi Nhuận,Biên Lãi %,Trạng Thái\n";
+            DATA.products.forEach(p => {
+                csv += `"${p.id}","${p.code}","${p.name}",${p.qty},${p.price_cost},${p.price_retail},${p.profit_unit},${p.margin_pct}%,"${p.status}"\n`;
+            });
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Bao_Cao_LEGO_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+        }
+
+        init();
+    </script>
+</body>
+</html>
