@@ -1,41 +1,37 @@
-// REALTIME CLOUD SYNC MODULE CHO LEGO STORE
-// Sử dụng JSONBin.io / Cloud KV REST API để đồng bộ trạng thái tồn kho Realtime 2 chiều giữa Admin & Khách
-
+// REALTIME CLOUD SYNC & SALES HISTORY MODULE
 const CLOUD_CONFIG = {
-    // Master Bin lưu trữ trạng thái tồn kho thời gian thực
-    BIN_ID: "670d3e52ad19ca34f8ba1234", // Sẽ tự động khởi tạo hoặc dùng LocalStorage fallback
-    API_KEY: "$2a$10$7vN3J9rV1jH4F.placeholder",
-    STORAGE_KEY: "lego_store_realtime_inventory"
+    STORAGE_KEY: "lego_store_realtime_inventory",
+    SALES_KEY: "lego_store_sales_history"
 };
 
 class RealtimeStore {
     constructor() {
         this.inventoryState = {}; // { [id]: { qty: number, status: string, sold: number } }
+        this.salesHistory = [];   // [ { id, prodId, name, qty, price, cost, profit, note, time } ]
         this.listeners = [];
         this.loadInitialState();
     }
 
     loadInitialState() {
         try {
-            const local = localStorage.getItem(CLOUD_CONFIG.STORAGE_KEY);
-            if (local) {
-                this.inventoryState = JSON.parse(local);
-            }
+            const localInv = localStorage.getItem(CLOUD_CONFIG.STORAGE_KEY);
+            if (localInv) this.inventoryState = JSON.parse(localInv);
+
+            const localSales = localStorage.getItem(CLOUD_CONFIG.SALES_KEY);
+            if (localSales) this.salesHistory = JSON.parse(localSales);
         } catch (e) {
-            console.warn("Chưa có cache tồn kho:", e);
+            console.warn("Chưa có cache:", e);
         }
     }
 
-    // Lắng nghe thay đổi (dành cho UI cập nhật)
     subscribe(callback) {
         this.listeners.push(callback);
     }
 
     notify() {
-        this.listeners.forEach(cb => cb(this.inventoryState));
+        this.listeners.forEach(cb => cb({ inventory: this.inventoryState, sales: this.salesHistory }));
     }
 
-    // Lấy tồn kho thực tế của 1 sản phẩm
     getProductStock(p) {
         if (this.inventoryState[p.id]) {
             return {
@@ -51,45 +47,84 @@ class RealtimeStore {
         };
     }
 
-    // Cập nhật xuất kho / nhập kho từ trang Admin
-    updateStock(id, newQty, soldDelta = 0) {
-        const cur = this.inventoryState[id] || { qty: 0, status: 'active', sold: 0 };
-        const updatedQty = Math.max(0, newQty);
-        let updatedStatus = 'active';
-        if (updatedQty === 0) updatedStatus = 'out_of_stock';
+    // NHẬP ĐƠN BÁN HÀNG CHỦ ĐỘNG (Bán N bộ)
+    recordSale(product, sellQty, actualPrice = null, note = '') {
+        const qtyToSell = parseInt(sellQty) || 0;
+        if (qtyToSell <= 0) return { success: false, msg: 'Số lượng bán phải lớn hơn 0' };
 
-        this.inventoryState[id] = {
+        const currentStock = this.getProductStock(product).qty;
+        if (qtyToSell > currentStock) {
+            return { success: false, msg: `Tồn kho chỉ còn ${currentStock} bộ, không đủ xuất bán ${qtyToSell} bộ!` };
+        }
+
+        const price = actualPrice !== null ? parseFloat(actualPrice) : product.price_retail;
+        const cost = product.price_cost || 0;
+        const profit = (price - cost) * qtyToSell;
+
+        // 1. Trừ tồn kho & cộng số lượng đã bán
+        const updatedQty = Math.max(0, currentStock - qtyToSell);
+        const curInfo = this.inventoryState[product.id] || { qty: currentStock, status: product.status, sold: 0 };
+        
+        let newStatus = product.status;
+        if (updatedQty === 0) newStatus = 'out_of_stock';
+
+        this.inventoryState[product.id] = {
             qty: updatedQty,
-            status: updatedStatus,
-            sold: (cur.sold || 0) + soldDelta,
+            status: newStatus,
+            sold: (curInfo.sold || 0) + qtyToSell,
             updatedAt: Date.now()
         };
 
-        // Lưu vào LocalStorage của trình duyệt và phát tín hiệu BroadcastChannel giữa các tab/cửa sổ
+        // 2. Ghi nhật ký đơn bán hàng
+        const orderRecord = {
+            orderId: 'DH-' + Date.now().toString().slice(-6),
+            prodId: product.id,
+            prodCode: product.code,
+            prodName: product.name,
+            qty: qtyToSell,
+            price: price,
+            totalRevenue: price * qtyToSell,
+            profit: profit,
+            note: note || 'Bán trực tiếp',
+            time: new Date().toLocaleString('vi-VN')
+        };
+
+        this.salesHistory.unshift(orderRecord);
         this.saveAndBroadcast();
+
+        return { success: true, order: orderRecord, remainingStock: updatedQty };
     }
 
-    // Bán 1 bộ sản phẩm (Xuất kho nhanh 1 chạm)
-    sellOne(id, currentQty) {
-        const stock = this.inventoryState[id] ? this.inventoryState[id].qty : currentQty;
-        if (stock <= 0) return false;
-        this.updateStock(id, stock - 1, 1);
+    // HOÀN TÁC ĐƠN BÁN (Nếu nhập nhầm)
+    undoSale(orderId) {
+        const idx = this.salesHistory.findIndex(o => o.orderId === orderId);
+        if (idx === -1) return false;
+
+        const order = this.salesHistory[idx];
+        const curInfo = this.inventoryState[order.prodId] || { qty: 0, status: 'active', sold: 0 };
+
+        // Cộng lại kho & trừ đã bán
+        this.inventoryState[order.prodId] = {
+            ...curInfo,
+            qty: curInfo.qty + order.qty,
+            status: 'active',
+            sold: Math.max(0, (curInfo.sold || 0) - order.qty),
+            updatedAt: Date.now()
+        };
+
+        this.salesHistory.splice(idx, 1);
+        this.saveAndBroadcast();
         return true;
     }
 
-    // Nhập thêm hàng (+N bộ)
-    addStock(id, currentQty, amount = 1) {
-        const stock = this.inventoryState[id] ? this.inventoryState[id].qty : currentQty;
-        this.updateStock(id, stock + amount, 0);
-    }
-
-    // Đổi trạng thái trực tiếp (Còn hàng / Tạm hết hàng)
-    toggleStatus(id, currentQty) {
-        const cur = this.inventoryState[id] || { qty: currentQty, status: 'active', sold: 0 };
-        const newStatus = cur.status === 'active' ? 'out_of_stock' : 'active';
+    // ĐIỀU CHỈNH TỒN KHO TRỰC TIẾP
+    adjustStockDirect(id, newQty, defaultStatus = 'active') {
+        const cur = this.inventoryState[id] || { qty: 0, status: defaultStatus, sold: 0 };
+        const q = Math.max(0, parseInt(newQty) || 0);
         this.inventoryState[id] = {
             ...cur,
-            status: newStatus,
+            qty: q,
+            status: q === 0 ? 'out_of_stock' : 'active',
             updatedAt: Date.now()
         };
         this.saveAndBroadcast();
@@ -97,32 +132,36 @@ class RealtimeStore {
 
     saveAndBroadcast() {
         localStorage.setItem(CLOUD_CONFIG.STORAGE_KEY, JSON.stringify(this.inventoryState));
+        localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
         this.notify();
 
-        // Broadcast Channel đồng bộ ngay lập tức giữa các tab khác nhau trên cùng máy hoặc mạng
         if (window.BroadcastChannel) {
             const bc = new BroadcastChannel('lego_inventory_sync');
-            bc.postMessage({ type: 'INVENTORY_UPDATE', data: this.inventoryState });
+            bc.postMessage({
+                type: 'SYNC_UPDATE',
+                inventory: this.inventoryState,
+                sales: this.salesHistory
+            });
         }
     }
 
-    // Khởi tạo lắng nghe liên tab
     initListener() {
         if (window.BroadcastChannel) {
             const bc = new BroadcastChannel('lego_inventory_sync');
             bc.onmessage = (ev) => {
-                if (ev.data && ev.data.type === 'INVENTORY_UPDATE') {
-                    this.inventoryState = ev.data.data;
+                if (ev.data && ev.data.type === 'SYNC_UPDATE') {
+                    if (ev.data.inventory) this.inventoryState = ev.data.inventory;
+                    if (ev.data.sales) this.salesHistory = ev.data.sales;
                     this.notify();
                 }
             };
         }
         window.addEventListener('storage', (e) => {
             if (e.key === CLOUD_CONFIG.STORAGE_KEY && e.newValue) {
-                try {
-                    this.inventoryState = JSON.parse(e.newValue);
-                    this.notify();
-                } catch(err){}
+                try { this.inventoryState = JSON.parse(e.newValue); this.notify(); } catch(err){}
+            }
+            if (e.key === CLOUD_CONFIG.SALES_KEY && e.newValue) {
+                try { this.salesHistory = JSON.parse(e.newValue); this.notify(); } catch(err){}
             }
         });
     }

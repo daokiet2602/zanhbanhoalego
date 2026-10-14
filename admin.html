@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LEGO Portal - Quản Trị Kinh Doanh & Xuất Kho</title>
+    <title>LEGO Portal - Quản Trị & Xuất Bán Hàng</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -21,9 +21,9 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: var(--dark); min-height: 100vh; padding-bottom: 60px; }
+        body { background: var(--bg); color: var(--dark); min-height: 100vh; padding-bottom: 80px; }
 
-        /* LOCK SCREEN */
+        /* AUTH LOCK SCREEN */
         #auth-overlay {
             position: fixed; inset: 0; background: #0F172A; z-index: 999;
             display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -46,18 +46,13 @@
         }
 
         /* HEADER */
-        header {
-            background: #fff; border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 50;
-        }
+        header { background: #fff; border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 50; }
         .header-wrap {
             max-width: 1320px; margin: 0 auto; padding: 14px 24px;
             display: flex; align-items: center; justify-content: space-between;
         }
         .logo-box { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
-        .logo-badge {
-            background: var(--dark); color: #fff; font-weight: 900; font-size: 1.1rem;
-            padding: 6px 12px; border-radius: 8px;
-        }
+        .logo-badge { background: var(--dark); color: #fff; font-weight: 900; font-size: 1.1rem; padding: 6px 12px; border-radius: 8px; }
         .logo-title h1 { font-size: 1.15rem; font-weight: 800; }
         .logo-title span { font-size: 0.75rem; color: var(--text-sub); }
 
@@ -66,10 +61,67 @@
             background: #DCFCE7; color: #15803D; font-size: 0.75rem; font-weight: 800;
             padding: 5px 12px; border-radius: 999px; display: flex; align-items: center; gap: 6px;
         }
-        .sync-dot { width: 8px; height: 8px; background: #22C55E; border-radius: 50%; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .sync-dot { width: 8px; height: 8px; background: #22C55E; border-radius: 50%; }
 
         .container { max-width: 1320px; margin: 0 auto; padding: 24px; }
+
+        /* FORM NHẬP BÁN HÀNG NHANH */
+        .sales-entry-panel {
+            background: #fff;
+            border-radius: 20px;
+            border: 2px solid var(--dark);
+            padding: 24px;
+            margin-bottom: 28px;
+            box-shadow: 6px 6px 0 var(--yellow);
+        }
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        .panel-head h2 { font-size: 1.25rem; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+        .panel-head span { font-size: 0.8rem; color: var(--text-sub); font-weight: 600; }
+
+        .entry-form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1.5fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            outline: none;
+            background: #fff;
+        }
+        .form-control:focus { border-color: var(--primary); }
+        .btn-confirm-sale {
+            padding: 13px 24px;
+            border-radius: 12px;
+            border: 2px solid var(--dark);
+            background: var(--green);
+            color: #fff;
+            font-weight: 900;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 var(--dark);
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .btn-confirm-sale:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--dark); }
 
         /* KPI TILES */
         .kpi-grid {
@@ -88,30 +140,24 @@
         .kpi-card .val { font-size: 1.7rem; font-weight: 900; color: var(--dark); }
         .kpi-card .sub { font-size: 0.8rem; color: var(--text-sub); margin-top: 4px; }
 
-        /* TOOLBAR */
-        .toolbar {
-            background: #fff; padding: 16px 20px; border-radius: 16px; border: 1px solid var(--border);
-            display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
-            margin-bottom: 20px;
+        /* TABS */
+        .admin-tabs {
+            display: flex; gap: 8px; margin-bottom: 18px;
         }
-        .search-box { position: relative; flex: 1; min-width: 260px; }
-        .search-box input {
-            width: 100%; padding: 11px 16px 11px 40px; border: 2px solid var(--border);
-            border-radius: 12px; font-size: 0.95rem; font-weight: 600; outline: none;
+        .tab-btn {
+            padding: 10px 20px; border-radius: 12px; border: 2px solid var(--dark);
+            background: #fff; font-weight: 800; font-size: 0.88rem; cursor: pointer;
+            box-shadow: 2px 2px 0 var(--dark);
         }
-        .search-box input:focus { border-color: var(--dark); }
-        .search-box svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; stroke: var(--text-sub); }
-
-        .btn-export {
-            padding: 11px 20px; border-radius: 12px; border: 2px solid var(--dark);
-            background: var(--yellow); color: var(--dark); font-weight: 800; font-size: 0.9rem;
-            cursor: pointer; box-shadow: 2px 2px 0 var(--dark);
+        .tab-btn.active {
+            background: var(--dark); color: #fff; box-shadow: none;
         }
 
         /* TABLE */
         .table-wrap {
             background: #fff; border-radius: 18px; border: 1px solid var(--border);
             overflow-x: auto; box-shadow: 0 4px 15px -3px rgba(0,0,0,0.03);
+            margin-bottom: 30px;
         }
         table.admin-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
         table.admin-table th {
@@ -124,41 +170,43 @@
         .num-right { text-align: right; }
         .profit-pos { color: var(--green); font-weight: 800; }
 
-        /* ACTION BUTTONS (XUẤT KHO / BÁN HÀNG) */
-        .stock-control {
-            display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+        /* INLINE SELL ROW */
+        .row-sell-box {
+            display: flex; align-items: center; justify-content: flex-end; gap: 6px;
         }
-        .btn-action-sell {
-            background: var(--primary); color: #fff; border: none; padding: 6px 12px;
-            border-radius: 8px; font-weight: 800; font-size: 0.78rem; cursor: pointer;
-            box-shadow: 0 2px 6px rgba(209, 16, 19, 0.25); transition: transform 0.1s;
-            white-space: nowrap;
+        .sell-input-mini {
+            width: 52px; padding: 6px 8px; border: 2px solid var(--border);
+            border-radius: 8px; font-weight: 800; text-align: center;
         }
-        .btn-action-sell:hover { transform: scale(1.05); }
-        .btn-action-sell:disabled { background: #CBD5E1; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-sell-mini {
+            background: var(--primary); color: #fff; border: 2px solid var(--dark);
+            padding: 6px 12px; border-radius: 8px; font-weight: 800; font-size: 0.78rem;
+            cursor: pointer; box-shadow: 2px 2px 0 var(--dark);
+        }
+        .btn-sell-mini:hover { background: #B00D10; }
 
-        .btn-qty-mini {
-            width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border);
-            background: #F1F5F9; font-weight: 800; cursor: pointer; display: flex;
-            align-items: center; justify-content: center;
+        .btn-undo {
+            background: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5;
+            padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;
         }
-        .btn-qty-mini:hover { background: #E2E8F0; }
 
         .stock-badge {
             padding: 4px 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 800;
             text-transform: uppercase; letter-spacing: 0.04em; display: inline-block;
-            cursor: pointer;
         }
         .badge-active { background: #DCFCE7; color: #15803D; }
         .badge-out { background: #FEE2E2; color: #B91C1C; }
-        .badge-disc { background: #F1F5F9; color: #64748B; }
 
-        /* TOAST NOTIFICATION */
+        /* TOAST */
         .toast {
             position: fixed; bottom: 24px; right: 24px; background: var(--dark); color: #fff;
-            padding: 12px 20px; border-radius: 12px; font-size: 0.88rem; font-weight: 700;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 1000; display: none;
-            border-left: 4px solid var(--green);
+            padding: 14px 22px; border-radius: 14px; font-size: 0.9rem; font-weight: 800;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 1000; display: none;
+            border-left: 5px solid var(--green);
+        }
+
+        @media (max-width: 900px) {
+            .entry-form-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -169,7 +217,7 @@
         <div class="auth-card">
             <div style="font-size: 2.5rem; margin-bottom: 12px;">🔒</div>
             <h2>Xác Thực Chủ Shop</h2>
-            <p>Nhập mã PIN để truy cập bảng kiểm soát giá vốn & lãi lỗ</p>
+            <p>Nhập mã PIN để truy cập bảng quản trị & xuất bán hàng</p>
             <input type="password" id="pin-input" class="auth-input" placeholder="••••" maxlength="6" autofocus onkeydown="if(event.key==='Enter') verifyPin()">
             <button class="auth-btn" onclick="verifyPin()">Mở Khóa Quản Trị</button>
             <div id="auth-err" style="color:var(--primary); font-size:0.8rem; font-weight:700; margin-top:10px; display:none;">
@@ -184,84 +232,145 @@
             <div class="logo-box">
                 <div class="logo-badge">ADMIN</div>
                 <div class="logo-title">
-                    <h1>LEGO Internal Portal</h1>
-                    <span>Bảng kiểm soát tồn kho & lợi nhuận nội bộ</span>
+                    <h1>LEGO Manager & Sales</h1>
+                    <span>Bảng nhập xuất bán hàng & quản lý kho tức thì</span>
                 </div>
             </div>
 
             <div class="header-actions">
                 <div class="sync-badge">
                     <span class="sync-dot"></span>
-                    <span>Đồng Bộ Realtime Đang Bật</span>
+                    <span>Tự Động Trừ Kho Bên Khách</span>
                 </div>
                 <a href="index.html" target="_blank" style="font-weight: 800; font-size: 0.85rem; color: var(--blue); text-decoration: none;">
-                    🛍️ Xem Trang Khách ↗
+                    🛍️ Mở Trang Khách Xem ↗
                 </a>
             </div>
         </div>
     </header>
 
     <div class="container">
+
+        <!-- FORM NHẬP BÁN HÀNG NHANH -->
+        <div class="sales-entry-panel">
+            <div class="panel-head">
+                <h2>📝 Nhập Hàng Vừa Bán Được</h2>
+                <span>Nhập ở đây xong ➔ Trang web của khách sẽ tự động trừ số lượng ngay tức thì!</span>
+            </div>
+            <div class="entry-form-grid">
+                <div class="form-group">
+                    <label>1. Chọn Mẫu LEGO Vừa Bán</label>
+                    <select class="form-control" id="entry-prod-select" onchange="autoFillPrice()">
+                        <option value="">-- Chọn sản phẩm đã bán --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>2. Số Lượng Bán</label>
+                    <input type="number" class="form-control" id="entry-qty" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>3. Giá Bán Thực Tế (đ)</label>
+                    <input type="number" class="form-control" id="entry-price" placeholder="Giá bán lẻ">
+                </div>
+                <div class="form-group">
+                    <label>4. Ghi Chú (Khách nào / Kênh nào)</label>
+                    <input type="text" class="form-control" id="entry-note" placeholder="VD: Khách Zalo anh Huy">
+                </div>
+                <button class="btn-confirm-sale" onclick="submitSaleEntry()">
+                    ✅ Xác Nhận Bán & Trừ Kho
+                </button>
+            </div>
+        </div>
+
         <!-- KPI METRICS -->
         <div class="kpi-grid">
             <div class="kpi-card">
                 <div class="label">Tổng mẫu mã</div>
                 <div class="val" id="kpi-total-prods">0</div>
-                <div class="sub" id="kpi-active-count">0 mẫu đang bán</div>
+                <div class="sub" id="kpi-active-count">0 mẫu đang mở bán</div>
             </div>
             <div class="kpi-card warn">
                 <div class="label">Tổng tồn kho thực tế</div>
                 <div class="val" id="kpi-total-stock">0</div>
-                <div class="sub" id="kpi-sold-count">Đã xuất bán: 0 bộ</div>
+                <div class="sub" id="kpi-sold-count">Đã bán thực tế: 0 bộ</div>
             </div>
             <div class="kpi-card cost">
-                <div class="label">Tổng vốn tồn kho</div>
-                <div class="val" id="kpi-cost-val">0đ</div>
-                <div class="sub">Giá trị vốn hàng còn lại</div>
+                <div class="label">Tổng doanh thu đã thu</div>
+                <div class="val" id="kpi-actual-revenue" style="color:var(--blue)">0đ</div>
+                <div class="sub" id="kpi-orders-count">Tổng 0 đơn hàng đã chốt</div>
             </div>
             <div class="kpi-card profit">
-                <div class="label">Doanh thu dự kiến</div>
-                <div class="val" id="kpi-retail-val">0đ</div>
-                <div class="sub" id="kpi-profit-est">Lãi dự kiến: 0đ</div>
+                <div class="label">Lợi nhuận thực tế đã bỏ túi</div>
+                <div class="val" id="kpi-actual-profit" style="color:var(--green)">0đ</div>
+                <div class="sub" id="kpi-stock-val">Giá trị kho còn lại: 0đ</div>
             </div>
         </div>
 
-        <!-- TOOLBAR -->
-        <div class="toolbar">
-            <div class="search-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="admin-search" placeholder="Tìm theo mã hàng, tên sản phẩm..." oninput="filterAdminTable()">
-            </div>
-            <button class="btn-export" onclick="exportCSV()">
-                📥 Xuất File Excel (CSV)
-            </button>
+        <!-- TABS -->
+        <div class="admin-tabs">
+            <button class="tab-btn active" id="tab-btn-stock" onclick="switchAdminTab('stock')">📦 Danh Sách Kho & Bán Nhanh</button>
+            <button class="tab-btn" id="tab-btn-orders" onclick="switchAdminTab('orders')">📋 Lịch Sử Đơn Bán Hàng (<span id="orders-badge">0</span>)</button>
         </div>
 
-        <!-- TABLE -->
-        <div class="table-wrap">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Ảnh</th>
-                        <th>Mã SP</th>
-                        <th>Tên Sản Phẩm</th>
-                        <th class="num-right">Tồn Kho Hiện Tại</th>
-                        <th class="num-right">Giá Vốn</th>
-                        <th class="num-right">Giá Bán Lẻ</th>
-                        <th class="num-right">Lợi Nhuận / Bộ</th>
-                        <th class="num-right">Biên Lãi %</th>
-                        <th>Trạng Thái</th>
-                        <th style="text-align: right;">Thao Tác Xuất Kho</th>
-                    </tr>
-                </thead>
-                <tbody id="admin-tbody">
-                    <!-- Rows -->
-                </tbody>
-            </table>
+        <!-- TAB 1: KHO HÀNG -->
+        <div id="tab-content-stock">
+            <div class="toolbar" style="margin-bottom: 14px;">
+                <input type="text" class="form-control" style="max-width:320px;" id="admin-search" placeholder="🔍 Tìm theo mã hoặc tên mẫu..." oninput="renderStockTable()">
+                <button class="btn-confirm-sale" style="background:var(--yellow); color:var(--dark); padding:10px 18px;" onclick="exportCSV()">
+                    📥 Xuất Excel Báo Cáo
+                </button>
+            </div>
+
+            <div class="table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Ảnh</th>
+                            <th>Mã SP</th>
+                            <th>Tên Sản Phẩm</th>
+                            <th class="num-right">Tồn Kho</th>
+                            <th class="num-right">Đã Bán</th>
+                            <th class="num-right">Giá Vốn</th>
+                            <th class="num-right">Giá Bán</th>
+                            <th class="num-right">Lãi / Bộ</th>
+                            <th>Trạng Thái</th>
+                            <th style="text-align: right;">Nhập Bán Nhanh Tại Dòng</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-tbody">
+                        <!-- Stock rows -->
+                    </tbody>
+                </table>
+            </div>
         </div>
+
+        <!-- TAB 2: LỊCH SỬ ĐƠN BÁN -->
+        <div id="tab-content-orders" style="display: none;">
+            <div class="table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Thời Gian</th>
+                            <th>Mã SP - Tên Mẫu</th>
+                            <th class="num-right">Số Lượng</th>
+                            <th class="num-right">Giá Bán</th>
+                            <th class="num-right">Tổng Tiền Thu</th>
+                            <th class="num-right">Tiền Lời</th>
+                            <th>Ghi Chú</th>
+                            <th style="text-align: right;">Hủy Đơn</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-tbody">
+                        <!-- Order rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
-    <div class="toast" id="toast">Đã cập nhật xuất kho thành công!</div>
+    <div class="toast" id="toast">Thông báo</div>
 
     <script>
         let DATA = null;
@@ -290,16 +399,83 @@
                 const res = await fetch('data.json');
                 DATA = await res.json();
                 
-                // Đăng ký lắng nghe realtimeStore
+                populateSelectDropdown();
                 window.realtimeStore.subscribe(() => {
                     renderKPI();
-                    filterAdminTable();
+                    renderStockTable();
+                    renderOrdersTable();
                 });
 
                 renderKPI();
-                filterAdminTable();
+                renderStockTable();
+                renderOrdersTable();
             } catch (err) {
                 console.error("Lỗi nạp dữ liệu:", err);
+            }
+        }
+
+        function populateSelectDropdown() {
+            const sel = document.getElementById('entry-prod-select');
+            sel.innerHTML = '<option value="">-- Chọn sản phẩm đã bán --</option>' +
+                DATA.products.map(p => {
+                    const stock = window.realtimeStore.getProductStock(p).qty;
+                    return `<option value="${p.id}">[${p.id}] ${p.name} (Còn ${stock} bộ)</option>`;
+                }).join('');
+        }
+
+        function autoFillPrice() {
+            const id = document.getElementById('entry-prod-select').value;
+            const p = DATA.products.find(item => item.id === id);
+            if (p) {
+                document.getElementById('entry-price').value = p.price_retail;
+            }
+        }
+
+        // XỬ LÝ NHẬP BÁN HÀNG
+        function submitSaleEntry() {
+            const id = document.getElementById('entry-prod-select').value;
+            if (!id) { alert("Vui lòng chọn sản phẩm đã bán!"); return; }
+
+            const p = DATA.products.find(item => item.id === id);
+            const qty = parseInt(document.getElementById('entry-qty').value) || 1;
+            const price = parseFloat(document.getElementById('entry-price').value) || p.price_retail;
+            const note = document.getElementById('entry-note').value;
+
+            const res = window.realtimeStore.recordSale(p, qty, price, note);
+            if (!res.success) {
+                alert(res.msg);
+                return;
+            }
+
+            showToast(`✅ Đã nhập bán thành công ${qty} bộ [${p.name}]! Tồn kho bên khách đã giảm còn ${res.remainingStock} bộ.`);
+            document.getElementById('entry-qty').value = '1';
+            document.getElementById('entry-note').value = '';
+            populateSelectDropdown();
+        }
+
+        // BÁN NHANH TRỰC TIẾP TRÊN DÒNG SẢN PHẨM
+        function handleRowSell(id) {
+            const p = DATA.products.find(item => item.id === id);
+            const input = document.getElementById(`row-sell-${id}`);
+            const qty = parseInt(input.value) || 1;
+
+            const res = window.realtimeStore.recordSale(p, qty, p.price_retail, 'Bán nhanh tại bảng');
+            if (!res.success) {
+                alert(res.msg);
+                return;
+            }
+
+            showToast(`✅ Đã trừ kho [${id}]: Bán ${qty} bộ, còn lại ${res.remainingStock} bộ.`);
+            input.value = '1';
+            populateSelectDropdown();
+        }
+
+        // HỦY ĐƠN HÀNG
+        function handleUndoOrder(orderId) {
+            if (confirm(`Bạn có chắc muốn hoàn tác đơn hàng [${orderId}]? Tồn kho sẽ được cộng lại.`)) {
+                window.realtimeStore.undoSale(orderId);
+                showToast(`Đã hoàn tác đơn hàng ${orderId}!`);
+                populateSelectDropdown();
             }
         }
 
@@ -307,7 +483,6 @@
             if (!DATA) return;
             let currentStock = 0;
             let currentCost = 0;
-            let currentRetail = 0;
             let totalSold = 0;
             let activeCount = 0;
 
@@ -316,26 +491,32 @@
                 const q = stockInfo.qty;
                 currentStock += q;
                 currentCost += q * p.price_cost;
-                currentRetail += q * p.price_retail;
                 totalSold += stockInfo.sold;
                 if (stockInfo.status === 'active' && q > 0) activeCount++;
             });
 
-            const profitEst = currentRetail - currentCost;
-            const marginPct = currentRetail > 0 ? Math.round((profitEst / currentRetail) * 1000) / 10 : 0;
+            // Tính doanh thu & lợi nhuận thực tế từ sales history
+            let actualRevenue = 0;
+            let actualProfit = 0;
+            window.realtimeStore.salesHistory.forEach(o => {
+                actualRevenue += o.totalRevenue;
+                actualProfit += o.profit;
+            });
 
             document.getElementById('kpi-total-prods').textContent = DATA.products.length;
             document.getElementById('kpi-active-count').textContent = `${activeCount} mẫu đang mở bán`;
             document.getElementById('kpi-total-stock').textContent = `${currentStock} bộ`;
-            document.getElementById('kpi-sold-count').textContent = `Đã xuất bán: ${totalSold} bộ`;
-            document.getElementById('kpi-cost-val').textContent = fmtVND(currentCost);
-            document.getElementById('kpi-retail-val').textContent = fmtVND(currentRetail);
-            document.getElementById('kpi-profit-est').textContent = `Lãi ròng: ${fmtVND(profitEst)} (${marginPct}%)`;
+            document.getElementById('kpi-sold-count').textContent = `Đã bán thực tế: ${totalSold} bộ`;
+            document.getElementById('kpi-actual-revenue').textContent = fmtVND(actualRevenue);
+            document.getElementById('kpi-orders-count').textContent = `${window.realtimeStore.salesHistory.length} đơn hàng đã xuất`;
+            document.getElementById('kpi-actual-profit').textContent = `+${fmtVND(actualProfit)}`;
+            document.getElementById('kpi-stock-val').textContent = `Giá trị vốn còn: ${fmtVND(currentCost)}`;
+            document.getElementById('orders-badge').textContent = window.realtimeStore.salesHistory.length;
         }
 
-        function filterAdminTable() {
+        function renderStockTable() {
             if (!DATA) return;
-            const tbody = document.getElementById('admin-tbody');
+            const tbody = document.getElementById('stock-tbody');
             const q = document.getElementById('admin-search').value.toLowerCase().trim();
 
             const rows = DATA.products.filter(p => {
@@ -345,7 +526,6 @@
             tbody.innerHTML = rows.map(p => {
                 const stockInfo = window.realtimeStore.getProductStock(p);
                 const isOut = stockInfo.qty <= 0 || stockInfo.status === 'out_of_stock';
-                const isDisc = stockInfo.status === 'discontinued';
 
                 return `
                     <tr>
@@ -353,30 +533,24 @@
                         <td><b>${p.id}</b><br><small style="color:var(--text-sub)">${p.code}</small></td>
                         <td><b>${p.name}</b></td>
                         <td class="num-right">
-                            <span style="font-size:1.1rem; font-weight:900; color:${stockInfo.qty <= 2 ? 'var(--primary)' : 'inherit'}">
+                            <span style="font-size:1.15rem; font-weight:900; color:${stockInfo.qty <= 2 ? 'var(--primary)' : 'inherit'}">
                                 ${stockInfo.qty}
                             </span>
-                            ${stockInfo.sold > 0 ? `<br><small style="color:var(--green); font-weight:700">Đã bán: ${stockInfo.sold}</small>` : ''}
                         </td>
+                        <td class="num-right"><b style="color:var(--green)">${stockInfo.sold}</b></td>
                         <td class="num-right">${fmtVND(p.price_cost)}</td>
                         <td class="num-right"><b>${fmtVND(p.price_retail)}</b></td>
-                        <td class="num-right ${p.profit_unit >= 0 ? 'profit-pos' : 'profit-neg'}">
-                            +${fmtVND(p.profit_unit)}
-                        </td>
-                        <td class="num-right"><b>${p.margin_pct}%</b></td>
+                        <td class="num-right profit-pos">+${fmtVND(p.profit_unit)}</td>
                         <td>
-                            <span class="stock-badge ${stockInfo.status === 'active' && stockInfo.qty > 0 ? 'badge-active' : isOut ? 'badge-out' : 'badge-disc'}"
-                                  onclick="window.realtimeStore.toggleStatus('${p.id}', ${stockInfo.qty})"
-                                  title="Bấm để đổi trạng thái">
-                                ${stockInfo.status === 'active' && stockInfo.qty > 0 ? 'Đang bán' : isOut ? 'Hết hàng' : 'Ngưng bán'}
+                            <span class="stock-badge ${stockInfo.status === 'active' && stockInfo.qty > 0 ? 'badge-active' : 'badge-out'}">
+                                ${stockInfo.status === 'active' && stockInfo.qty > 0 ? 'Còn hàng' : 'Hết hàng'}
                             </span>
                         </td>
                         <td>
-                            <div class="stock-control">
-                                <button class="btn-qty-mini" onclick="handleStockAdjust('${p.id}', ${stockInfo.qty}, -1)" title="Giảm 1 tồn kho">-</button>
-                                <button class="btn-qty-mini" onclick="handleStockAdjust('${p.id}', ${stockInfo.qty}, 1)" title="Tăng 1 tồn kho">+</button>
-                                <button class="btn-action-sell" ${stockInfo.qty <= 0 ? 'disabled' : ''} onclick="handleSell('${p.id}', ${stockInfo.qty})">
-                                    💰 Bán 1 bộ
+                            <div class="row-sell-box">
+                                <input type="number" class="sell-input-mini" id="row-sell-${p.id}" value="1" min="1" max="${stockInfo.qty}">
+                                <button class="btn-sell-mini" ${stockInfo.qty <= 0 ? 'disabled' : ''} onclick="handleRowSell('${p.id}')">
+                                    Bán
                                 </button>
                             </div>
                         </td>
@@ -385,35 +559,56 @@
             }).join('');
         }
 
-        function handleSell(id, curQty) {
-            const success = window.realtimeStore.sellOne(id, curQty);
-            if (success) {
-                showToast(`Đã xuất bán 1 bộ [${id}]! Bên trang khách đã tự động trừ kho.`);
+        function renderOrdersTable() {
+            const tbody = document.getElementById('orders-tbody');
+            const history = window.realtimeStore.salesHistory;
+
+            if (history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-sub)">Chưa có đơn hàng nào được nhập bán. Nhập ở bảng trên để bắt đầu ghi nhận!</td></tr>`;
+                return;
             }
+
+            tbody.innerHTML = history.map(o => `
+                <tr>
+                    <td><b>${o.orderId}</b></td>
+                    <td><small>${o.time}</small></td>
+                    <td><b>${o.prodName}</b><br><small style="color:var(--text-sub)">${o.prodId} - ${o.prodCode}</small></td>
+                    <td class="num-right"><b>${o.qty} bộ</b></td>
+                    <td class="num-right">${fmtVND(o.price)}</td>
+                    <td class="num-right"><b style="color:var(--blue)">${fmtVND(o.totalRevenue)}</b></td>
+                    <td class="num-right"><b style="color:var(--green)">+${fmtVND(o.profit)}</b></td>
+                    <td>${o.note}</td>
+                    <td style="text-align:right;">
+                        <button class="btn-undo" onclick="handleUndoOrder('${o.orderId}')">Hoàn tác</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        function handleStockAdjust(id, curQty, delta) {
-            window.realtimeStore.addStock(id, curQty, delta);
-            showToast(`Đã cập nhật tồn kho [${id}]: ${Math.max(0, curQty + delta)} bộ`);
+        function switchAdminTab(tab) {
+            document.getElementById('tab-content-stock').style.display = tab === 'stock' ? 'block' : 'none';
+            document.getElementById('tab-content-orders').style.display = tab === 'orders' ? 'block' : 'none';
+            document.getElementById('tab-btn-stock').classList.toggle('active', tab === 'stock');
+            document.getElementById('tab-btn-orders').classList.toggle('active', tab === 'orders');
         }
 
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 2500);
+            setTimeout(() => { t.style.display = 'none'; }, 3000);
         }
 
         function exportCSV() {
-            let csv = "Mã SP,Mẫu,Tên Sản Phẩm,Tồn Kho,Đã Bán,Giá Vốn,Giá Bán Lẻ,Lợi Nhuận / Bộ,Biên Lãi %,Trạng Thái\n";
+            let csv = "Mã SP,Mẫu,Tên Sản Phẩm,Tồn Kho Thực Tế,Đã Bán,Giá Vốn,Giá Bán Lẻ,Lợi Nhuận / Bộ,Trạng Thái\n";
             DATA.products.forEach(p => {
                 const stockInfo = window.realtimeStore.getProductStock(p);
-                csv += `"${p.id}","${p.code}","${p.name}",${stockInfo.qty},${stockInfo.sold},${p.price_cost},${p.price_retail},${p.profit_unit},${p.margin_pct}%,"${stockInfo.status}"\n`;
+                csv += `"${p.id}","${p.code}","${p.name}",${stockInfo.qty},${stockInfo.sold},${p.price_cost},${p.price_retail},${p.profit_unit},"${stockInfo.status}"\n`;
             });
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `Bao_Cao_Kho_Lego_${new Date().toISOString().slice(0,10)}.csv`;
+            a.download = `Bao_Cao_Ban_Hang_LEGO_${new Date().toISOString().slice(0,10)}.csv`;
             a.click();
         }
     </script>
