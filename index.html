@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="realtime_sync.js"></script>
     <style>
         :root {
             --primary: #D11013;
@@ -598,9 +599,14 @@
 
         async function init() {
             try {
-                // Tải file public (hoàn toàn không có giá vốn hay lợi nhuận)
                 const res = await fetch('products_public.json');
                 DATA = await res.json();
+                
+                // Lắng nghe realtime từ window.realtimeStore
+                window.realtimeStore.subscribe(() => {
+                    renderCatalog();
+                });
+
                 renderCatalog();
             } catch (err) {
                 console.error("Lỗi đọc dữ liệu:", err);
@@ -617,9 +623,14 @@
 
             let filtered = DATA.products.filter(p => {
                 const matchQ = p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+                
+                // Lấy tồn kho thời gian thực
+                const stockInfo = window.realtimeStore.getProductStock(p);
+                const isAvailable = stockInfo.status === 'active' && stockInfo.qty > 0;
+
                 let matchStatus = true;
-                if (statusFlt === 'active') matchStatus = p.status === 'active';
-                if (statusFlt === 'out_of_stock') matchStatus = p.status === 'out_of_stock';
+                if (statusFlt === 'active') matchStatus = isAvailable;
+                if (statusFlt === 'out_of_stock') matchStatus = !isAvailable;
 
                 let matchPrice = true;
                 if (priceFlt === 'under-150') matchPrice = p.price_retail < 150000;
@@ -630,8 +641,10 @@
             });
 
             grid.innerHTML = filtered.map(p => {
-                const isOut = p.status === 'out_of_stock' || p.qty <= 0;
-                const isDisc = p.status === 'discontinued';
+                const stockInfo = window.realtimeStore.getProductStock(p);
+                const isOut = stockInfo.qty <= 0 || stockInfo.status === 'out_of_stock';
+                const isDisc = stockInfo.status === 'discontinued';
+                
                 let badgeClass = 'badge-active', badgeTxt = 'Còn Hàng';
                 if (isOut) { badgeClass = 'badge-out'; badgeTxt = 'Tạm Hết Hàng'; }
                 if (isDisc) { badgeClass = 'badge-disc'; badgeTxt = 'Ngưng Bán'; }
@@ -653,7 +666,7 @@
                                     ${p.price_market ? `<span class="price-market">${fmtVND(p.price_market)}</span>` : ''}
                                 </div>
                                 <div class="stock-info">
-                                    📦 Tình trạng: <b>${isOut ? 'Hết hàng' : isDisc ? 'Ngưng bán' : 'Sẵn kho'}</b>
+                                    📦 Tình trạng: <b>${isOut ? 'Tạm hết hàng' : isDisc ? 'Ngưng bán' : `Còn sẵn (${stockInfo.qty} bộ)`}</b>
                                 </div>
                                 <button class="add-cart-btn" ${isOut || isDisc ? 'disabled' : ''} onclick="addToCart('${p.id}')">
                                     🛒 ${isOut ? 'Tạm Hết Hàng' : isDisc ? 'Ngưng Bán' : 'Thêm Vào Giỏ'}
@@ -669,7 +682,8 @@
 
         function addToCart(id) {
             const p = DATA.products.find(item => item.id === id);
-            if (!p || p.qty <= 0) return;
+            const stockInfo = window.realtimeStore.getProductStock(p);
+            if (!p || stockInfo.qty <= 0) return;
 
             CART[id] = (CART[id] || 0) + 1;
             updateCartUI();

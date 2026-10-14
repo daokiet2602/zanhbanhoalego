@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LEGO Portal - Quản Trị Kinh Doanh & Lãi Lỗ</title>
+    <title>LEGO Portal - Quản Trị Kinh Doanh & Xuất Kho</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="realtime_sync.js"></script>
     <style>
         :root {
             --primary: #D11013;
@@ -59,6 +60,14 @@
         }
         .logo-title h1 { font-size: 1.15rem; font-weight: 800; }
         .logo-title span { font-size: 0.75rem; color: var(--text-sub); }
+
+        .header-actions { display: flex; align-items: center; gap: 14px; }
+        .sync-badge {
+            background: #DCFCE7; color: #15803D; font-size: 0.75rem; font-weight: 800;
+            padding: 5px 12px; border-radius: 999px; display: flex; align-items: center; gap: 6px;
+        }
+        .sync-dot { width: 8px; height: 8px; background: #22C55E; border-radius: 50%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
         .container { max-width: 1320px; margin: 0 auto; padding: 24px; }
 
@@ -114,15 +123,43 @@
         .tbl-thumb { width: 48px; height: 48px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; background: #F1F5F9; }
         .num-right { text-align: right; }
         .profit-pos { color: var(--green); font-weight: 800; }
-        .profit-neg { color: var(--primary); font-weight: 800; }
+
+        /* ACTION BUTTONS (XUẤT KHO / BÁN HÀNG) */
+        .stock-control {
+            display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+        }
+        .btn-action-sell {
+            background: var(--primary); color: #fff; border: none; padding: 6px 12px;
+            border-radius: 8px; font-weight: 800; font-size: 0.78rem; cursor: pointer;
+            box-shadow: 0 2px 6px rgba(209, 16, 19, 0.25); transition: transform 0.1s;
+            white-space: nowrap;
+        }
+        .btn-action-sell:hover { transform: scale(1.05); }
+        .btn-action-sell:disabled { background: #CBD5E1; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-qty-mini {
+            width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border);
+            background: #F1F5F9; font-weight: 800; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .btn-qty-mini:hover { background: #E2E8F0; }
 
         .stock-badge {
             padding: 4px 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 800;
             text-transform: uppercase; letter-spacing: 0.04em; display: inline-block;
+            cursor: pointer;
         }
         .badge-active { background: #DCFCE7; color: #15803D; }
         .badge-out { background: #FEE2E2; color: #B91C1C; }
         .badge-disc { background: #F1F5F9; color: #64748B; }
+
+        /* TOAST NOTIFICATION */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; background: var(--dark); color: #fff;
+            padding: 12px 20px; border-radius: 12px; font-size: 0.88rem; font-weight: 700;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 1000; display: none;
+            border-left: 4px solid var(--green);
+        }
     </style>
 </head>
 <body>
@@ -151,9 +188,16 @@
                     <span>Bảng kiểm soát tồn kho & lợi nhuận nội bộ</span>
                 </div>
             </div>
-            <a href="index.html" style="font-weight: 800; font-size: 0.85rem; color: var(--blue); text-decoration: none;">
-                ← Về Cửa Hàng Khách
-            </a>
+
+            <div class="header-actions">
+                <div class="sync-badge">
+                    <span class="sync-dot"></span>
+                    <span>Đồng Bộ Realtime Đang Bật</span>
+                </div>
+                <a href="index.html" target="_blank" style="font-weight: 800; font-size: 0.85rem; color: var(--blue); text-decoration: none;">
+                    🛍️ Xem Trang Khách ↗
+                </a>
+            </div>
         </div>
     </header>
 
@@ -166,14 +210,14 @@
                 <div class="sub" id="kpi-active-count">0 mẫu đang bán</div>
             </div>
             <div class="kpi-card warn">
-                <div class="label">Tổng tồn kho</div>
+                <div class="label">Tổng tồn kho thực tế</div>
                 <div class="val" id="kpi-total-stock">0</div>
-                <div class="sub">Bộ sản phẩm sẵn có</div>
+                <div class="sub" id="kpi-sold-count">Đã xuất bán: 0 bộ</div>
             </div>
             <div class="kpi-card cost">
-                <div class="label">Tổng vốn nhập kho</div>
+                <div class="label">Tổng vốn tồn kho</div>
                 <div class="val" id="kpi-cost-val">0đ</div>
-                <div class="sub">Tiền hàng đã đầu tư</div>
+                <div class="sub">Giá trị vốn hàng còn lại</div>
             </div>
             <div class="kpi-card profit">
                 <div class="label">Doanh thu dự kiến</div>
@@ -201,12 +245,13 @@
                         <th>Ảnh</th>
                         <th>Mã SP</th>
                         <th>Tên Sản Phẩm</th>
-                        <th class="num-right">Tồn Kho</th>
+                        <th class="num-right">Tồn Kho Hiện Tại</th>
                         <th class="num-right">Giá Vốn</th>
                         <th class="num-right">Giá Bán Lẻ</th>
                         <th class="num-right">Lợi Nhuận / Bộ</th>
                         <th class="num-right">Biên Lãi %</th>
                         <th>Trạng Thái</th>
+                        <th style="text-align: right;">Thao Tác Xuất Kho</th>
                     </tr>
                 </thead>
                 <tbody id="admin-tbody">
@@ -216,11 +261,12 @@
         </div>
     </div>
 
+    <div class="toast" id="toast">Đã cập nhật xuất kho thành công!</div>
+
     <script>
         let DATA = null;
         const fmtVND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
-        // Mật khẩu mặc định là 2602 (theo ngày sinh của anh Kiệt) hoặc 1234
         function verifyPin() {
             const pin = document.getElementById('pin-input').value;
             if (pin === '2602' || pin === '1234') {
@@ -234,7 +280,6 @@
             }
         }
 
-        // Tự động vào nếu phiên trước đã nhập mã PIN
         if (sessionStorage.getItem('lego_admin_auth') === 'true') {
             document.getElementById('auth-overlay').style.display = 'none';
             loadData();
@@ -244,6 +289,13 @@
             try {
                 const res = await fetch('data.json');
                 DATA = await res.json();
+                
+                // Đăng ký lắng nghe realtimeStore
+                window.realtimeStore.subscribe(() => {
+                    renderKPI();
+                    filterAdminTable();
+                });
+
                 renderKPI();
                 filterAdminTable();
             } catch (err) {
@@ -253,13 +305,32 @@
 
         function renderKPI() {
             if (!DATA) return;
-            const s = DATA.summary;
-            document.getElementById('kpi-total-prods').textContent = s.total_products;
-            document.getElementById('kpi-active-count').textContent = `${DATA.products.filter(p => p.status === 'active').length} mẫu đang mở bán`;
-            document.getElementById('kpi-total-stock').textContent = `${s.total_stock} bộ`;
-            document.getElementById('kpi-cost-val').textContent = fmtVND(s.total_cost_val);
-            document.getElementById('kpi-retail-val').textContent = fmtVND(s.total_retail_val);
-            document.getElementById('kpi-profit-est').textContent = `Lãi ròng: ${fmtVND(s.potential_profit)} (${s.avg_margin_pct}%)`;
+            let currentStock = 0;
+            let currentCost = 0;
+            let currentRetail = 0;
+            let totalSold = 0;
+            let activeCount = 0;
+
+            DATA.products.forEach(p => {
+                const stockInfo = window.realtimeStore.getProductStock(p);
+                const q = stockInfo.qty;
+                currentStock += q;
+                currentCost += q * p.price_cost;
+                currentRetail += q * p.price_retail;
+                totalSold += stockInfo.sold;
+                if (stockInfo.status === 'active' && q > 0) activeCount++;
+            });
+
+            const profitEst = currentRetail - currentCost;
+            const marginPct = currentRetail > 0 ? Math.round((profitEst / currentRetail) * 1000) / 10 : 0;
+
+            document.getElementById('kpi-total-prods').textContent = DATA.products.length;
+            document.getElementById('kpi-active-count').textContent = `${activeCount} mẫu đang mở bán`;
+            document.getElementById('kpi-total-stock').textContent = `${currentStock} bộ`;
+            document.getElementById('kpi-sold-count').textContent = `Đã xuất bán: ${totalSold} bộ`;
+            document.getElementById('kpi-cost-val').textContent = fmtVND(currentCost);
+            document.getElementById('kpi-retail-val').textContent = fmtVND(currentRetail);
+            document.getElementById('kpi-profit-est').textContent = `Lãi ròng: ${fmtVND(profitEst)} (${marginPct}%)`;
         }
 
         function filterAdminTable() {
@@ -271,36 +342,78 @@
                 return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
             });
 
-            tbody.innerHTML = rows.map(p => `
-                <tr>
-                    <td><img class="tbl-thumb" src="${p.img}" alt="" loading="lazy"></td>
-                    <td><b>${p.id}</b><br><small style="color:var(--text-sub)">${p.code}</small></td>
-                    <td><b>${p.name}</b></td>
-                    <td class="num-right"><b>${p.qty}</b></td>
-                    <td class="num-right">${fmtVND(p.price_cost)}</td>
-                    <td class="num-right"><b>${fmtVND(p.price_retail)}</b></td>
-                    <td class="num-right ${p.profit_unit >= 0 ? 'profit-pos' : 'profit-neg'}">
-                        +${fmtVND(p.profit_unit)}
-                    </td>
-                    <td class="num-right"><b>${p.margin_pct}%</b></td>
-                    <td>
-                        <span class="stock-badge ${p.status === 'active' ? 'badge-active' : p.status === 'out_of_stock' ? 'badge-out' : 'badge-disc'}">
-                            ${p.status === 'active' ? 'Đang bán' : p.status === 'out_of_stock' ? 'Hết hàng' : 'Ngưng bán'}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = rows.map(p => {
+                const stockInfo = window.realtimeStore.getProductStock(p);
+                const isOut = stockInfo.qty <= 0 || stockInfo.status === 'out_of_stock';
+                const isDisc = stockInfo.status === 'discontinued';
+
+                return `
+                    <tr>
+                        <td><img class="tbl-thumb" src="${p.img}" alt="" loading="lazy"></td>
+                        <td><b>${p.id}</b><br><small style="color:var(--text-sub)">${p.code}</small></td>
+                        <td><b>${p.name}</b></td>
+                        <td class="num-right">
+                            <span style="font-size:1.1rem; font-weight:900; color:${stockInfo.qty <= 2 ? 'var(--primary)' : 'inherit'}">
+                                ${stockInfo.qty}
+                            </span>
+                            ${stockInfo.sold > 0 ? `<br><small style="color:var(--green); font-weight:700">Đã bán: ${stockInfo.sold}</small>` : ''}
+                        </td>
+                        <td class="num-right">${fmtVND(p.price_cost)}</td>
+                        <td class="num-right"><b>${fmtVND(p.price_retail)}</b></td>
+                        <td class="num-right ${p.profit_unit >= 0 ? 'profit-pos' : 'profit-neg'}">
+                            +${fmtVND(p.profit_unit)}
+                        </td>
+                        <td class="num-right"><b>${p.margin_pct}%</b></td>
+                        <td>
+                            <span class="stock-badge ${stockInfo.status === 'active' && stockInfo.qty > 0 ? 'badge-active' : isOut ? 'badge-out' : 'badge-disc'}"
+                                  onclick="window.realtimeStore.toggleStatus('${p.id}', ${stockInfo.qty})"
+                                  title="Bấm để đổi trạng thái">
+                                ${stockInfo.status === 'active' && stockInfo.qty > 0 ? 'Đang bán' : isOut ? 'Hết hàng' : 'Ngưng bán'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="stock-control">
+                                <button class="btn-qty-mini" onclick="handleStockAdjust('${p.id}', ${stockInfo.qty}, -1)" title="Giảm 1 tồn kho">-</button>
+                                <button class="btn-qty-mini" onclick="handleStockAdjust('${p.id}', ${stockInfo.qty}, 1)" title="Tăng 1 tồn kho">+</button>
+                                <button class="btn-action-sell" ${stockInfo.qty <= 0 ? 'disabled' : ''} onclick="handleSell('${p.id}', ${stockInfo.qty})">
+                                    💰 Bán 1 bộ
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function handleSell(id, curQty) {
+            const success = window.realtimeStore.sellOne(id, curQty);
+            if (success) {
+                showToast(`Đã xuất bán 1 bộ [${id}]! Bên trang khách đã tự động trừ kho.`);
+            }
+        }
+
+        function handleStockAdjust(id, curQty, delta) {
+            window.realtimeStore.addStock(id, curQty, delta);
+            showToast(`Đã cập nhật tồn kho [${id}]: ${Math.max(0, curQty + delta)} bộ`);
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 2500);
         }
 
         function exportCSV() {
-            let csv = "Mã SP,Mẫu,Tên Sản Phẩm,Tồn Kho,Giá Vốn,Giá Bán Lẻ,Lợi Nhuận / Bộ,Biên Lãi %,Trạng Thái\n";
+            let csv = "Mã SP,Mẫu,Tên Sản Phẩm,Tồn Kho,Đã Bán,Giá Vốn,Giá Bán Lẻ,Lợi Nhuận / Bộ,Biên Lãi %,Trạng Thái\n";
             DATA.products.forEach(p => {
-                csv += `"${p.id}","${p.code}","${p.name}",${p.qty},${p.price_cost},${p.price_retail},${p.profit_unit},${p.margin_pct}%,"${p.status}"\n`;
+                const stockInfo = window.realtimeStore.getProductStock(p);
+                csv += `"${p.id}","${p.code}","${p.name}",${stockInfo.qty},${stockInfo.sold},${p.price_cost},${p.price_retail},${p.profit_unit},${p.margin_pct}%,"${stockInfo.status}"\n`;
             });
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `Bao_Cao_Lai_Lo_LEGO_${new Date().toISOString().slice(0,10)}.csv`;
+            a.download = `Bao_Cao_Kho_Lego_${new Date().toISOString().slice(0,10)}.csv`;
             a.click();
         }
     </script>
