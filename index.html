@@ -580,24 +580,70 @@
             color: var(--text-sub); font-size: 0.85rem; font-weight: 800; cursor: pointer;
         }
 
-        /* FOOTER */
-        footer {
-            margin-top: 60px;
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-sub);
-            font-weight: 600;
+        /* FLOATING CHAT WIDGET & FOOTER TRUST */
+        .trust-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin: 40px 0 20px;
         }
-        .admin-secret-link {
-            display: inline-block;
-            margin-top: 10px;
-            color: #CBD5E1;
+        .trust-card {
+            background: #fff;
+            padding: 18px 20px;
+            border-radius: 16px;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .trust-icon {
+            font-size: 1.8rem;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: #F8FAFC;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .trust-text h4 { font-size: 0.92rem; font-weight: 800; color: var(--dark); margin-bottom: 2px; }
+        .trust-text p { font-size: 0.78rem; color: var(--text-sub); font-weight: 600; }
+
+        .floating-chat-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #0068FF;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 999px;
+            font-weight: 900;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 6px 20px rgba(0, 104, 255, 0.4);
             text-decoration: none;
-            font-size: 0.72rem;
-            transition: color 0.2s;
+            z-index: 90;
+            transition: transform 0.2s;
         }
-        .admin-secret-link:hover {
-            color: var(--text-sub);
+        .floating-chat-btn:hover { transform: scale(1.05); }
+
+        .toast-notify {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            z-index: 9999;
+            display: none;
+            animation: fadeIn 0.2s;
         }
 
         @media (max-width: 640px) {
@@ -647,6 +693,12 @@
                 <input type="text" id="catalog-search" placeholder="Tìm theo tên mẫu, mã LEGO..." oninput="filterCatalog()">
             </div>
             <div class="filters-group">
+                <select class="filter-select" id="catalog-sort" onchange="filterCatalog()">
+                    <option value="default">Sắp xếp: Mặc định</option>
+                    <option value="price-asc">Giá: Thấp đến Cao</option>
+                    <option value="price-desc">Giá: Cao đến Thấp</option>
+                    <option value="name-asc">Tên: A → Z</option>
+                </select>
                 <select class="filter-select" id="catalog-filter-status" onchange="filterCatalog()">
                     <option value="all">Tất cả sản phẩm</option>
                     <option value="active" selected>Còn hàng (Sẵn sàng giao)</option>
@@ -666,11 +718,53 @@
             <!-- Render products -->
         </div>
 
+        <!-- TRUST SECTION -->
+        <div class="trust-section">
+            <div class="trust-card">
+                <div class="trust-icon">🌸</div>
+                <div class="trust-text">
+                    <h4>Mô Hình Hoa Tinh Tế</h4>
+                    <p>Sản phẩm lắp ráp bền đẹp, không tàn phai</p>
+                </div>
+            </div>
+            <div class="trust-card">
+                <div class="trust-icon">📦</div>
+                <div class="trust-text">
+                    <h4>Đóng Gói Cẩn Thận</h4>
+                    <p>Hộp chống sốc, kèm đầy đủ hướng dẫn lắp</p>
+                </div>
+            </div>
+            <div class="trust-card">
+                <div class="trust-icon">🚚</div>
+                <div class="trust-text">
+                    <h4>Giao Hàng Toàn Quốc</h4>
+                    <p>Hỗ trợ kiểm tra hàng & thanh toán khi nhận (COD)</p>
+                </div>
+            </div>
+            <div class="trust-card">
+                <div class="trust-icon">💬</div>
+                <div class="trust-text">
+                    <h4>Hỗ Trợ Nhanh Chóng</h4>
+                    <p>Tư vấn chọn mẫu & hỗ trợ thiếu mảnh ghép</p>
+                </div>
+            </div>
+        </div>
+
         <footer>
-            <p>© 2026 LEGO Store. Tất cả các sản phẩm đều đảm bảo chất lượng và đóng gói cẩn thận.</p>
-            <a class="admin-secret-link" href="admin.html">🔒 Quản trị hệ thống</a>
+            <p style="font-weight: 800; font-size: 0.95rem; margin-bottom: 6px;">DÁNH BÁN HOA · Tiệm Hoa Lego & Quà Tặng Sáng Tạo</p>
+            <p style="color: var(--text-sub); font-size: 0.8rem; line-height: 1.6;">
+                © 2026 DÁNH BÁN HOA. Tất cả sản phẩm đều đảm bảo chất lượng và đóng gói cẩn thận.<br>
+                <small style="opacity: 0.7;">(Sản phẩm mô hình gạch lắp ráp tương thích tiêu chuẩn)</small>
+            </p>
         </footer>
     </div>
+
+    <!-- NÚT CHAT HỖ TRỢ NỔI -->
+    <a class="floating-chat-btn" href="https://t.me/danhbanhoa_bot" target="_blank" rel="noopener" aria-label="Nhắn tin hỗ trợ qua Telegram">
+        <span>💬</span> Hỗ Trợ Đơn Hàng
+    </a>
+
+    <div class="toast-notify" id="toast-notify">Đã sao chép ✓</div>
 
     <!-- CART DRAWER -->
     <div class="modal-overlay" id="cart-modal" onclick="closeCart(event)">
@@ -718,12 +812,12 @@
                         <div class="pay-method-card active" id="pay-opt-transfer" onclick="selectPayMethod('transfer')">
                             <span class="icon">💳</span>
                             <span class="t">Chuyển Khoản Ngay</span>
-                            <span class="d">Quét mã VietQR (ACB)</span>
+                            <span class="d">Quét mã VietQR (Vietcombank)</span>
                         </div>
                         <div class="pay-method-card" id="pay-opt-cod" onclick="selectPayMethod('cod')">
                             <span class="icon">🚚</span>
                             <span class="t">Nhận Hàng Trả Tiền</span>
-                            <span class="d">Thanh toán COD cho shipper</span>
+                            <span class="d">Thanh toán tiền mặt khi nhận hàng</span>
                         </div>
                     </div>
                 </div>
@@ -786,23 +880,33 @@
         </div>
     </div>
 
-    <script>
+        <script>
         let DATA = null;
         let CART = {};
+        try {
+            const savedCart = localStorage.getItem('danhbanhoa_cart');
+            if (savedCart) CART = JSON.parse(savedCart);
+        } catch(e) {}
 
         const fmtVND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
+
+        function saveCart() {
+            try { localStorage.setItem('danhbanhoa_cart', JSON.stringify(CART)); } catch(e) {}
+        }
 
         async function init() {
             try {
                 const res = await fetch('products_public.json');
                 DATA = await res.json();
                 
-                // Lắng nghe realtime từ window.realtimeStore
                 window.realtimeStore.subscribe(() => {
                     renderCatalog();
+                    updateCartUI();
                 });
 
                 renderCatalog();
+                updateCartUI();
+                restoreSavedCustomerInfo();
             } catch (err) {
                 console.error("Lỗi đọc dữ liệu:", err);
             }
@@ -815,12 +919,12 @@
             const q = document.getElementById('catalog-search').value.toLowerCase().trim();
             const statusFlt = document.getElementById('catalog-filter-status').value;
             const priceFlt = document.getElementById('catalog-filter-price').value;
+            const sortMode = document.getElementById('catalog-sort').value;
 
             let filtered = DATA.products.filter(p => {
                 const matchQ = p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
                 
-                // Lấy tồn kho thời gian thực
-                const stockInfo = window.realtimeStore.getProductStock(p);
+                const stockInfo = window.realtimeStore.getProductData(p);
                 const isAvailable = stockInfo.status === 'active' && stockInfo.qty > 0;
 
                 let matchStatus = true;
@@ -828,12 +932,21 @@
                 if (statusFlt === 'out_of_stock') matchStatus = !isAvailable;
 
                 let matchPrice = true;
-                if (priceFlt === 'under-150') matchPrice = p.price_retail < 150000;
-                if (priceFlt === '150-250') matchPrice = p.price_retail >= 150000 && p.price_retail <= 250000;
-                if (priceFlt === 'above-250') matchPrice = p.price_retail > 250000;
+                if (priceFlt === 'under-150') matchPrice = stockInfo.price_retail < 150000;
+                if (priceFlt === '150-250') matchPrice = stockInfo.price_retail >= 150000 && stockInfo.price_retail <= 250000;
+                if (priceFlt === 'above-250') matchPrice = stockInfo.price_retail > 250000;
 
                 return matchQ && matchStatus && matchPrice;
             });
+
+            // SẮP XẾP SẢN PHẨM
+            if (sortMode === 'price-asc') {
+                filtered.sort((a, b) => window.realtimeStore.getProductData(a).price_retail - window.realtimeStore.getProductData(b).price_retail);
+            } else if (sortMode === 'price-desc') {
+                filtered.sort((a, b) => window.realtimeStore.getProductData(b).price_retail - window.realtimeStore.getProductData(a).price_retail);
+            } else if (sortMode === 'name-asc') {
+                filtered.sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+            }
 
             grid.innerHTML = filtered.map(p => {
                 const stockInfo = window.realtimeStore.getProductData(p);
@@ -848,7 +961,7 @@
                     <div class="prod-card">
                         <div class="prod-thumb-wrap">
                             <span class="stock-badge ${badgeClass}">${badgeTxt}</span>
-                            <img class="prod-thumb" src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/300x300?text=LEGO'">
+                            <img class="prod-thumb" src="${p.img}" alt="${p.name}" loading="lazy" decoding="async" onerror="this.src='https://placehold.co/300x300?text=HOA+LEGO'">
                         </div>
                         <div class="prod-info">
                             <div>
@@ -863,7 +976,7 @@
                                 <div class="stock-info">
                                     📦 Tình trạng: <b>${isOut ? 'Tạm hết hàng' : isDisc ? 'Ngưng bán' : `Còn sẵn (${stockInfo.qty} bộ)`}</b>
                                 </div>
-                                <button class="add-cart-btn" ${isOut || isDisc ? 'disabled' : ''} onclick="addToCart('${p.id}')">
+                                <button class="add-cart-btn" aria-label="Thêm vào giỏ ${p.name}" ${isOut || isDisc ? 'disabled' : ''} onclick="addToCart('${p.id}')">
                                     🛒 ${isOut ? 'Tạm Hết Hàng' : isDisc ? 'Ngưng Bán' : 'Thêm Vào Giỏ'}
                                 </button>
                             </div>
@@ -881,14 +994,17 @@
             if (!p || stockInfo.qty <= 0) return;
 
             CART[id] = (CART[id] || 0) + 1;
+            saveCart();
             updateCartUI();
             toggleCart(true);
+            showToastNotify("Đã thêm vào giỏ hàng 🌸");
         }
 
         function changeQty(id, delta) {
             if (!CART[id]) return;
             CART[id] += delta;
             if (CART[id] <= 0) delete CART[id];
+            saveCart();
             updateCartUI();
         }
 
@@ -897,31 +1013,40 @@
             document.getElementById('cart-badge').textContent = totalCount;
 
             const box = document.getElementById('cart-items');
+            const summaryFoot = document.getElementById('cart-foot-summary');
+
             if (totalCount === 0) {
-                box.innerHTML = `<div style="text-align:center; padding:40px 10px; color:var(--text-sub);">
-                    <div style="font-size:2.5rem; margin-bottom:10px;">🛒</div>
-                    <p>Giỏ hàng của bạn đang trống</p>
+                box.innerHTML = `<div style="text-align:center; padding:50px 10px; color:var(--text-sub);">
+                    <div style="font-size:3rem; margin-bottom:12px;">🛒</div>
+                    <p style="font-weight:700; font-size:1rem; margin-bottom:8px;">Giỏ hàng của bạn đang trống</p>
+                    <button class="add-cart-btn" style="width:auto; margin:0 auto; padding:8px 20px;" onclick="toggleCart(false)">Tiếp tục xem sản phẩm</button>
                 </div>`;
                 document.getElementById('cart-total').textContent = '0đ';
+                if (summaryFoot) summaryFoot.style.display = 'none';
                 return;
+            }
+
+            if (summaryFoot && document.getElementById('checkout-form').style.display !== 'block') {
+                summaryFoot.style.display = 'block';
             }
 
             let totalMoney = 0;
             box.innerHTML = Object.entries(CART).map(([id, qty]) => {
                 const p = DATA.products.find(item => item.id === id);
                 if (!p) return '';
-                const money = p.price_retail * qty;
+                const stockInfo = window.realtimeStore.getProductData(p);
+                const money = stockInfo.price_retail * qty;
                 totalMoney += money;
                 return `
                     <div class="cart-item">
                         <img src="${p.img}" alt="${p.name}">
                         <div class="cart-item-info">
                             <div class="cart-item-name">${p.name}</div>
-                            <div class="cart-item-price">${fmtVND(p.price_retail)}</div>
+                            <div class="cart-item-price">${fmtVND(stockInfo.price_retail)}</div>
                             <div class="cart-item-qty">
-                                <button class="qty-btn" onclick="changeQty('${id}', -1)">-</button>
+                                <button class="qty-btn" aria-label="Giảm số lượng" onclick="changeQty('${id}', -1)">-</button>
                                 <span><b>${qty}</b></span>
-                                <button class="qty-btn" onclick="changeQty('${id}', 1)">+</button>
+                                <button class="qty-btn" aria-label="Tăng số lượng" onclick="changeQty('${id}', 1)">+</button>
                             </div>
                         </div>
                     </div>
@@ -956,8 +1081,36 @@
             document.getElementById('cart-foot-summary').style.display = 'block';
         }
 
-        // BẮN ĐƠN HÀNG VỀ TELEGRAM BOT & TỰ ĐỘNG TRỪ KHO REALTIME
-        // CẤU HÌNH NGÂN HÀNG VIETCOMBANK (VIETQR CHÍNH THỨC)
+        function saveCustomerInfo() {
+            const info = {
+                name: document.getElementById('cust-name').value,
+                phone: document.getElementById('cust-phone').value,
+                address: document.getElementById('cust-address').value,
+                note: document.getElementById('cust-note').value
+            };
+            try { localStorage.setItem('danhbanhoa_cust_info', JSON.stringify(info)); } catch(e){}
+        }
+
+        function restoreSavedCustomerInfo() {
+            try {
+                const saved = localStorage.getItem('danhbanhoa_cust_info');
+                if (saved) {
+                    const info = JSON.parse(saved);
+                    if (info.name) document.getElementById('cust-name').value = info.name;
+                    if (info.phone) document.getElementById('cust-phone').value = info.phone;
+                    if (info.address) document.getElementById('cust-address').value = info.address;
+                    if (info.note) document.getElementById('cust-note').value = info.note;
+                }
+            } catch(e){}
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+
+        // CẤU HÌNH NGÂN HÀNG VIETCOMBANK CHÍNH THỨC
         const BANK_CONFIG = {
             BANK_ID: "VCB", // Vietcombank
             ACCOUNT_NO: "7984193727",
@@ -965,23 +1118,31 @@
             BANK_DISPLAY: "Vietcombank (Ngân Hàng Ngoại Thương)"
         };
 
-        // CẤU HÌNH BẮN ĐƠN TELEGRAM: Hỗ trợ danh sách nhiều người nhận hoặc Group Chat ID
         const TELEGRAM_CONFIG = {
             BOT_TOKEN: "8615110743:AAFWqNOTLgdFQMDelen2WbxPUW-Na5iwDRo",
-            // Danh sách Chat ID nhận thông báo đơn hàng
             RECIPIENTS: [
                 "6401633197", // Anh Kiệt
                 "8687700662"  // Bạn Lee
             ]
         };
 
-        let SELECTED_PAY_METHOD = 'transfer'; // 'transfer' hoặc 'cod'
-        let PENDING_TRANSFER_ORDER = null; // Lưu tạm đơn chờ bấm "Đã Chuyển Khoản"
+        let SELECTED_PAY_METHOD = 'transfer';
+        let PENDING_TRANSFER_ORDER = null;
 
         function selectPayMethod(method) {
             SELECTED_PAY_METHOD = method;
             document.getElementById('pay-opt-transfer').classList.toggle('active', method === 'transfer');
             document.getElementById('pay-opt-cod').classList.toggle('active', method === 'cod');
+        }
+
+        // SINH MÃ ĐƠN DUY NHẤT CHUẨN: DH + YYMMDD + 4 SỐ NGẪU NHIÊN
+        function generateUniqueOrderId() {
+            const now = new Date();
+            const yy = String(now.getFullYear()).slice(-2);
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const rand = Math.floor(1000 + Math.random() * 9000);
+            return `DH${yy}${mm}${dd}-${rand}`;
         }
 
         async function submitOrderToTelegram() {
@@ -990,15 +1151,21 @@
             const address = document.getElementById('cust-address').value.trim();
             const note = document.getElementById('cust-note').value.trim();
 
-            if (!name || !phone || !address) {
-                alert("Vui lòng điền đầy đủ: Họ tên, Số điện thoại và Địa chỉ giao hàng!");
+            if (!name) { alert("Vui lòng nhập họ và tên nhận hàng!"); return; }
+            const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
+            if (!phoneRegex.test(phone.replace(/\s+/g, ''))) {
+                alert("Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại di động 10 chữ số (VD: 0901234567).");
                 return;
             }
+            if (!address) { alert("Vui lòng nhập địa chỉ giao hàng cụ thể!"); return; }
+
+            saveCustomerInfo();
 
             const btn = document.getElementById('btn-submit-order');
-            const isTransfer = SELECTED_PAY_METHOD === 'transfer';
+            btn.disabled = true;
+            btn.textContent = "⏳ Đang xử lý đơn hàng...";
 
-            const orderId = 'DH' + Date.now().toString().slice(-6);
+            const orderId = generateUniqueOrderId();
             let totalAmount = 0;
             let itemsSummaryHtml = '';
             let orderedItems = [];
@@ -1006,20 +1173,28 @@
             Object.entries(CART).forEach(([id, qty]) => {
                 const p = DATA.products.find(item => item.id === id);
                 if (p) {
-                    const lineMoney = p.price_retail * qty;
+                    const stockInfo = window.realtimeStore.getProductData(p);
+                    const lineMoney = stockInfo.price_retail * qty;
                     totalAmount += lineMoney;
-                    itemsSummaryHtml += `• <b>${qty}x</b> [${p.id}] ${p.name}: <code>${fmtVND(lineMoney)}</code>\n`;
+                    itemsSummaryHtml += `• <b>${qty}x</b> [${p.id}] ${escapeHtml(p.name)}: <code>${fmtVND(lineMoney)}</code>\n`;
                     orderedItems.push({ product: p, qty: qty });
                 }
             });
 
             const orderPayload = {
-                orderId, name, phone, address, note,
-                totalAmount, itemsSummaryHtml, orderedItems,
+                orderId,
+                name: escapeHtml(name),
+                phone: escapeHtml(phone),
+                address: escapeHtml(address),
+                note: escapeHtml(note),
+                totalAmount,
+                itemsSummaryHtml,
+                orderedItems,
                 timeStr: new Date().toLocaleString('vi-VN')
             };
 
-            // NẾU LÀ CHUYỂN KHOẢN: CHƯA TRỪ KHO, CHƯA BẮN TELEGRAM, CHỈ MỞ MÃ QR CHO KHÁCH
+            const isTransfer = SELECTED_PAY_METHOD === 'transfer';
+
             if (isTransfer) {
                 PENDING_TRANSFER_ORDER = orderPayload;
 
@@ -1035,36 +1210,33 @@
 
                 toggleCart(false);
                 hideCheckoutForm();
+                btn.disabled = false;
+                btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
                 document.getElementById('payment-modal').style.display = 'flex';
                 return;
             }
 
-            // NẾU LÀ THANH TOÁN KHI NHẬN HÀNG (COD): XÁC NHẬN LUÔN
-            btn.disabled = true;
-            btn.textContent = "⏳ Đang ghi nhận đơn hàng...";
-
+            // XỬ LÝ THANH TOÁN KHI NHẬN HÀNG (COD)
             await executeOrderConfirmation(orderPayload, '🚚 Thanh toán khi nhận hàng (COD)');
 
             CART = {};
+            saveCart();
             updateCartUI();
             toggleCart(false);
             hideCheckoutForm();
             btn.disabled = false;
             btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
 
-            alert(`🎉 Đặt hàng thành công!\n\nĐơn hàng #${orderId} của bạn đã được chuyển đến shop DÁNH BÁN HOA.\nShop sẽ liên hệ số điện thoại ${phone} để xác nhận và giao hàng nhanh nhất cho bạn.\n\nBạn sẽ thanh toán số tiền ${fmtVND(totalAmount)} trực tiếp cho nhân viên giao hàng.`);
+            alert(`🎉 Đặt hàng thành công!\n\nĐơn hàng #${orderId} đã được chuyển tới DÁNH BÁN HOA.\nShop sẽ liên hệ SĐT ${phone} để xác nhận và gửi hàng.\n\nBạn sẽ thanh toán số tiền ${fmtVND(totalAmount)} trực tiếp cho nhân viên giao hàng khi nhận hàng.`);
         }
 
-        // HÀM CHÍNH THỨC GHI NHẬN ĐƠN, TRỪ KHO & BẮN TELEGRAM
         async function executeOrderConfirmation(payload, payMethodText) {
-            // 1. Tự động trừ kho Realtime trên hệ thống
             if (window.realtimeStore && payload.orderedItems) {
                 payload.orderedItems.forEach(item => {
                     window.realtimeStore.recordSale(item.product, item.qty, item.product.price_retail, `${payMethodText}: ${payload.name} (${payload.phone}) - ${payload.address}`);
                 });
             }
 
-            // 2. Bắn tin nhắn về Telegram của anh Kiệt
             const teleMsg = `🌸 <b>ĐƠN HÀNG MỚI - DÁNH BÁN HOA!</b>\n` +
                 `━━━━━━━━━━━━━━━━━━\n` +
                 `📦 <b>Mã đơn:</b> <code>#${payload.orderId}</code>\n` +
@@ -1080,7 +1252,6 @@
                 `⏰ <b>Thời gian:</b> ${payload.timeStr}`;
 
             try {
-                // Tự động bắn thông báo tới TẤT CẢ người nhận trong danh sách RECIPIENTS
                 const sendPromises = TELEGRAM_CONFIG.RECIPIENTS.map(targetChatId => {
                     return fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
                         method: 'POST',
@@ -1098,7 +1269,6 @@
             }
         }
 
-        // KHI KHÁCH BẤM "TÔI ĐÃ CHUYỂN KHOẢN THÀNH CÔNG"
         async function finishPayment() {
             if (!PENDING_TRANSFER_ORDER) {
                 document.getElementById('payment-modal').style.display = 'none';
@@ -1106,36 +1276,48 @@
             }
 
             const doneBtn = document.querySelector('.btn-paid-done');
-            if (doneBtn) { doneBtn.disabled = true; doneBtn.textContent = "⏳ Đang xác nhận..."; }
+            if (doneBtn) { doneBtn.disabled = true; doneBtn.textContent = "⏳ Đang gửi đơn tới shop..."; }
 
-            // LÚC NÀY MỚI CHÍNH THỨC TRỪ KHO & BẮN TELEGRAM
-            await executeOrderConfirmation(PENDING_TRANSFER_ORDER, '💳 Chuyển khoản VietQR (Khách báo ĐÃ CK)');
+            await executeOrderConfirmation(PENDING_TRANSFER_ORDER, '💳 Chuyển khoản VietQR (Khách báo ĐÃ CHUYỂN)');
 
             const orderId = PENDING_TRANSFER_ORDER.orderId;
             PENDING_TRANSFER_ORDER = null;
             CART = {};
+            saveCart();
             updateCartUI();
 
             if (doneBtn) { doneBtn.disabled = false; doneBtn.textContent = "✅ Tôi Đã Chuyển Khoản Thành Công"; }
             document.getElementById('payment-modal').style.display = 'none';
 
-            alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được ghi nhận thành công.\nCửa hàng sẽ kiểm tra biến động tài khoản và đóng gói gửi hàng sớm nhất cho bạn!`);
+            alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được gửi thành công.\nShop DÁNH BÁN HOA sẽ kiểm tra thông báo chuyển khoản và liên hệ đóng gói gửi hàng sớm nhất cho bạn!`);
         }
 
-        // KHI KHÁCH BẤM "ĐÓNG / THANH TOÁN SAU" -> TUYỆT ĐỐI KHÔNG GHI NHẬN ĐƠN, KHÔNG TRỪ KHO
         function closePaymentModal() {
-            if (confirm("Bạn có muốn đóng lại và thanh toán sau? (Đơn hàng chưa được ghi nhận cho đến khi bạn hoàn tất chuyển khoản)")) {
-                PENDING_TRANSFER_ORDER = null; // HỦY BỎ ĐƠN CHỜ
+            if (confirm("Đóng lại và thanh toán sau?\n(Đơn hàng chỉ được shop giữ và chuẩn bị khi bạn hoàn tất chuyển khoản)")) {
+                PENDING_TRANSFER_ORDER = null;
                 document.getElementById('payment-modal').style.display = 'none';
-                toggleCart(true); // Mở lại giỏ hàng để khách không bị mất món đã chọn
+                toggleCart(true);
             }
         }
 
         function copyText(elemId) {
             const txt = document.getElementById(elemId).textContent;
-            navigator.clipboard.writeText(txt).then(() => {
-                alert(`Đã sao chép: ${txt}`);
-            });
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(txt).then(() => showToastNotify("Đã sao chép: " + txt));
+            } else {
+                const ta = document.createElement("textarea");
+                ta.value = txt; document.body.appendChild(ta);
+                ta.select(); document.execCommand("copy");
+                document.body.removeChild(ta);
+                showToastNotify("Đã sao chép: " + txt);
+            }
+        }
+
+        function showToastNotify(msg) {
+            const t = document.getElementById('toast-notify');
+            t.textContent = msg;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 2200);
         }
 
         init();
