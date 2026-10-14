@@ -483,6 +483,37 @@
         }
         .checkout-btn:hover { background: var(--primary-hover); }
 
+        /* SHIPPING METHODS BOX */
+        .shipping-methods-box {
+            display: flex; flex-direction: column; gap: 8px; margin: 8px 0 14px;
+        }
+        .ship-method-card {
+            border: 2px solid var(--border); border-radius: 12px; padding: 10px 14px;
+            cursor: pointer; background: #fff; transition: all 0.15s;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .ship-method-card.active {
+            border-color: var(--blue); background: #F0F9FF; box-shadow: 0 0 0 1px var(--blue);
+        }
+        .ship-info-left { display: flex; align-items: center; gap: 10px; }
+        .ship-icon { font-size: 1.3rem; }
+        .ship-title { font-size: 0.85rem; font-weight: 800; color: var(--dark); }
+        .ship-desc { font-size: 0.72rem; color: var(--text-sub); font-weight: 600; margin-top: 1px; }
+        .ship-fee { font-size: 0.92rem; font-weight: 900; color: var(--primary); }
+
+        .price-breakdown-box {
+            background: #F1F5F9; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+        }
+        .breakdown-row {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+            font-size: 0.85rem; color: var(--text-sub); font-weight: 700;
+        }
+        .breakdown-row:last-child { margin-bottom: 0; }
+        .breakdown-row.final {
+            border-top: 1.5px dashed #CBD5E1; padding-top: 8px; margin-top: 8px;
+            font-size: 1.05rem; font-weight: 900; color: var(--dark);
+        }
+
         /* PAYMENT METHOD RADIO BUTTONS */
         .payment-methods-box {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 16px;
@@ -908,20 +939,42 @@
             <div class="checkout-form" id="checkout-form">
                 <h4>📦 Thông Tin Nhận Hàng</h4>
                 <div class="form-row">
-                    <label>Họ và tên của bạn *</label>
+                    <label>Họ và tên người nhận *</label>
                     <input type="text" class="form-input" id="cust-name" placeholder="VD: Nguyễn Văn A">
                 </div>
                 <div class="form-row">
                     <label>Số điện thoại nhận hàng *</label>
                     <input type="tel" class="form-input" id="cust-phone" placeholder="VD: 0901234567">
                 </div>
+
                 <div class="form-row">
-                    <label>Địa chỉ nhận hàng chi tiết *</label>
-                    <input type="text" class="form-input" id="cust-address" placeholder="Số nhà, tên đường, phường/xã, quận/huyện...">
+                    <label>Tỉnh / Thành phố nhận hàng *</label>
+                    <select class="form-input" id="cust-city" onchange="handleCityChange()" style="cursor:pointer; font-weight:700;">
+                        <option value="HCM">TP. Hồ Chí Minh (Nội thành & Ngoại thành)</option>
+                        <option value="HN">Hà Nội</option>
+                        <option value="DN">Đà Nẵng</option>
+                        <option value="BD">Bình Dương</option>
+                        <option value="DNAI">Đồng Nai</option>
+                        <option value="CT">Cần Thơ</option>
+                        <option value="HP">Hải Phòng</option>
+                        <option value="OTHER">Các Tỉnh / Thành Phố Khác Toàn Quốc</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <label>Phương thức giao hàng *</label>
+                    <div class="shipping-methods-box" id="shipping-options-container">
+                        <!-- Shipping options injected by JS -->
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label>Địa chỉ nhận hàng cụ thể (Số nhà, đường, phường, quận) *</label>
+                    <input type="text" class="form-input" id="cust-address" placeholder="VD: 123 Lê Lợi, Phường Bến Nghé, Quận 1">
                 </div>
                 <div class="form-row">
                     <label>Ghi chú đơn hàng (nếu có)</label>
-                    <input type="text" class="form-input" id="cust-note" placeholder="VD: Giao giờ hành chính, gọi trước khi giao...">
+                    <input type="text" class="form-input" id="cust-note" placeholder="VD: Giao trước 5h chiều, gọi trước khi giao...">
                 </div>
 
                 <div class="form-row" style="margin-top: 14px;">
@@ -937,6 +990,26 @@
                             <span class="t">Nhận Hàng Trả Tiền</span>
                             <span class="d">Thanh toán tiền mặt khi nhận hàng</span>
                         </div>
+                    </div>
+                </div>
+
+                <!-- BẢNG TÍNH TIỀN MINH BẠCH (BREAKDOWN) -->
+                <div class="price-breakdown-box">
+                    <div class="breakdown-row">
+                        <span>Tiền hàng (Tạm tính):</span>
+                        <b id="bill-subtotal">0đ</b>
+                    </div>
+                    <div class="breakdown-row">
+                        <span>Phí vận chuyển:</span>
+                        <b id="bill-shipping-fee" style="color:var(--primary);">25.000đ</b>
+                    </div>
+                    <div class="breakdown-row">
+                        <span>Dự kiến giao:</span>
+                        <span id="bill-estimate" style="color:var(--dark);">1 - 2 ngày</span>
+                    </div>
+                    <div class="breakdown-row final">
+                        <span>Tổng thanh toán:</span>
+                        <span id="bill-total" style="color:var(--primary);">0đ</span>
                     </div>
                 </div>
 
@@ -1184,6 +1257,98 @@
             if (e.target.id === 'cart-modal') toggleCart();
         }
 
+        // CẤU HÌNH VẬN CHUYỂN & GIAO HÀNG
+        let SELECTED_CITY = 'HCM';
+        let SELECTED_SHIP_METHOD = 'hcm_std'; // 'hcm_std' (25k), 'hcm_express' (0đ/cước app), 'prov_std' (35k)
+
+        function handleCityChange() {
+            SELECTED_CITY = document.getElementById('cust-city').value;
+            renderShippingOptions();
+            updateBillSummary();
+        }
+
+        function renderShippingOptions() {
+            const container = document.getElementById('shipping-options-container');
+            if (SELECTED_CITY === 'HCM') {
+                if (SELECTED_SHIP_METHOD !== 'hcm_std' && SELECTED_SHIP_METHOD !== 'hcm_express') {
+                    SELECTED_SHIP_METHOD = 'hcm_std';
+                }
+                container.innerHTML = `
+                    <div class="ship-method-card ${SELECTED_SHIP_METHOD === 'hcm_std' ? 'active' : ''}" onclick="selectShipping('hcm_std')">
+                        <div class="ship-info-left">
+                            <span class="ship-icon">🛵</span>
+                            <div>
+                                <div class="ship-title">Giao Tiêu Chuẩn TP.HCM</div>
+                                <div class="ship-desc">Giao tận nơi trong 1 - 2 ngày</div>
+                            </div>
+                        </div>
+                        <div class="ship-fee">25.000đ</div>
+                    </div>
+                    <div class="ship-method-card ${SELECTED_SHIP_METHOD === 'hcm_express' ? 'active' : ''}" onclick="selectShipping('hcm_express')">
+                        <div class="ship-info-left">
+                            <span class="ship-icon">⚡</span>
+                            <div>
+                                <div class="ship-title">Giao Hỏa Tốc Nội Thành (2 - 4h)</div>
+                                <div class="ship-desc">Nhận ngay trong ngày qua Grab/AhaMove</div>
+                            </div>
+                        </div>
+                        <div class="ship-fee" style="font-size:0.75rem; color:var(--text-sub);">Cước App (Trả Shipper)</div>
+                    </div>
+                `;
+            } else {
+                SELECTED_SHIP_METHOD = 'prov_std';
+                container.innerHTML = `
+                    <div class="ship-method-card active" onclick="selectShipping('prov_std')">
+                        <div class="ship-info-left">
+                            <span class="ship-icon">🚚</span>
+                            <div>
+                                <div class="ship-title">Giao Hàng Tiêu Chuẩn Toàn Quốc</div>
+                                <div class="ship-desc">Chuyển phát nhanh bưu điện 2 - 4 ngày</div>
+                            </div>
+                        </div>
+                        <div class="ship-fee">35.000đ</div>
+                    </div>
+                `;
+            }
+        }
+
+        function selectShipping(method) {
+            SELECTED_SHIP_METHOD = method;
+            renderShippingOptions();
+            updateBillSummary();
+        }
+
+        function getShippingDetails() {
+            if (SELECTED_SHIP_METHOD === 'hcm_std') {
+                return { fee: 25000, name: 'Giao Tiêu Chuẩn HCM (1 - 2 ngày)', estimate: '1 - 2 ngày', feeDisplay: '25.000đ' };
+            }
+            if (SELECTED_SHIP_METHOD === 'hcm_express') {
+                return { fee: 0, name: 'Giao Hỏa Tốc HCM (2 - 4 tiếng)', estimate: '2 - 4 tiếng (trong ngày)', feeDisplay: 'Cước App (Trả Shipper)' };
+            }
+            return { fee: 35000, name: 'Giao Toàn Quốc (2 - 4 ngày)', estimate: '2 - 4 ngày', feeDisplay: '35.000đ' };
+        }
+
+        function updateBillSummary() {
+            let subtotal = 0;
+            Object.entries(CART).forEach(([id, qty]) => {
+                const p = DATA ? DATA.products.find(item => item.id === id) : null;
+                if (p) {
+                    const stockInfo = window.realtimeStore.getProductData(p);
+                    subtotal += stockInfo.price_retail * qty;
+                }
+            });
+
+            const ship = getShippingDetails();
+            const total = subtotal + ship.fee;
+
+            document.getElementById('bill-subtotal').textContent = fmtVND(subtotal);
+            document.getElementById('bill-shipping-fee').textContent = ship.feeDisplay;
+            document.getElementById('bill-estimate').textContent = ship.estimate;
+            document.getElementById('bill-total').textContent = fmtVND(total);
+
+            return { subtotal, ship, total };
+        }
+
         function openCheckoutForm() {
             if (Object.keys(CART).length === 0) {
                 alert("Giỏ hàng đang trống! Vui lòng chọn sản phẩm trước.");
@@ -1191,6 +1356,8 @@
             }
             document.getElementById('cart-foot-summary').style.display = 'none';
             document.getElementById('checkout-form').style.display = 'block';
+            renderShippingOptions();
+            updateBillSummary();
             document.getElementById('cust-name').focus();
         }
 
@@ -1268,6 +1435,7 @@
             const phone = document.getElementById('cust-phone').value.trim();
             const address = document.getElementById('cust-address').value.trim();
             const note = document.getElementById('cust-note').value.trim();
+            const cityText = document.getElementById('cust-city').options[document.getElementById('cust-city').selectedIndex].text;
 
             if (!name) { alert("Vui lòng nhập họ và tên nhận hàng!"); return; }
             const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
@@ -1284,7 +1452,10 @@
             btn.textContent = "⏳ Đang xử lý đơn hàng...";
 
             const orderId = generateUniqueOrderId();
-            let totalAmount = 0;
+            const bill = updateBillSummary();
+            const totalAmount = bill.total;
+            const ship = bill.ship;
+
             let itemsSummaryHtml = '';
             let orderedItems = [];
 
@@ -1293,19 +1464,23 @@
                 if (p) {
                     const stockInfo = window.realtimeStore.getProductData(p);
                     const lineMoney = stockInfo.price_retail * qty;
-                    totalAmount += lineMoney;
                     itemsSummaryHtml += `• <b>${qty}x</b> [${p.id}] ${escapeHtml(p.name)}: <code>${fmtVND(lineMoney)}</code>\n`;
                     orderedItems.push({ product: p, qty: qty });
                 }
             });
 
+            const fullAddress = `${escapeHtml(address)} (${cityText})`;
+
             const orderPayload = {
                 orderId,
                 name: escapeHtml(name),
                 phone: escapeHtml(phone),
-                address: escapeHtml(address),
+                address: fullAddress,
                 note: escapeHtml(note),
-                totalAmount,
+                subtotal: bill.subtotal,
+                shipName: ship.name,
+                shipFeeDisplay: ship.feeDisplay,
+                totalAmount: totalAmount,
                 itemsSummaryHtml,
                 orderedItems,
                 timeStr: new Date().toLocaleString('vi-VN')
@@ -1345,7 +1520,7 @@
             btn.disabled = false;
             btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
 
-            alert(`🎉 Đặt hàng thành công!\n\nĐơn hàng #${orderId} đã được chuyển tới DÁNH BÁN HOA.\nShop sẽ liên hệ SĐT ${phone} để xác nhận và gửi hàng.\n\nBạn sẽ thanh toán số tiền ${fmtVND(totalAmount)} trực tiếp cho nhân viên giao hàng khi nhận hàng.`);
+            alert(`🎉 Đặt hàng thành công!\n\nĐơn hàng #${orderId} đã được chuyển tới DÁNH BÁN HOA.\n\n• Địa chỉ: ${fullAddress}\n• Hình thức ship: ${ship.name}\n• Tổng tiền: ${fmtVND(totalAmount)}\n\nShop sẽ liên hệ SĐT ${phone} để xác nhận và gửi hàng nhanh nhất cho bạn!`);
         }
 
         async function executeOrderConfirmation(payload, payMethodText) {
@@ -1361,12 +1536,15 @@
                 `👤 <b>Khách hàng:</b> ${payload.name}\n` +
                 `📞 <b>Điện thoại:</b> <code>${payload.phone}</code>\n` +
                 `📍 <b>Địa chỉ:</b> ${payload.address}\n` +
+                `🚚 <b>Vận chuyển:</b> ${payload.shipName} (${payload.shipFeeDisplay})\n` +
                 `${payload.note ? `📝 <b>Ghi chú:</b> <i>${payload.note}</i>\n` : ''}` +
                 `💵 <b>Hình thức:</b> <b>${payMethodText}</b>\n` +
                 `━━━━━━━━━━━━━━━━━━\n` +
                 `🛍️ <b>CHI TIẾT SẢN PHẨM:</b>\n${payload.itemsSummaryHtml}` +
                 `━━━━━━━━━━━━━━━━━━\n` +
-                `💰 <b>TỔNG CỘNG:</b> <b>${fmtVND(payload.totalAmount)}</b>\n` +
+                `💵 <b>Tiền hàng:</b> ${fmtVND(payload.subtotal)}\n` +
+                `🚚 <b>Phí ship:</b> ${payload.shipFeeDisplay}\n` +
+                `💰 <b>TỔNG THANH TOÁN:</b> <b>${fmtVND(payload.totalAmount)}</b>\n` +
                 `⏰ <b>Thời gian:</b> ${payload.timeStr}`;
 
             try {
