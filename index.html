@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>DÁNH BÁN HOA - Tiệm Hoa Lego & Quà Tặng Sáng Tạo</title>
     <link rel="icon" type="image/jpeg" href="logo.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,6 +36,7 @@
             color: var(--dark);
             min-height: 100vh;
             padding-bottom: 80px;
+            touch-action: pan-x pan-y; /* KHÓA TOÀN TRANG KHÔNG CHO PINCH ZOOM IN / ZOOM OUT */
         }
 
         /* HEADER */
@@ -368,66 +369,96 @@
             transform: none;
         }
 
-        /* CART DRAWER */
+        /* MODAL OVERLAY & MODAL GIỎ HÀNG Ở GIỮA MÀN HÌNH (DESKTOP) */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             z-index: 100;
             display: none;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: center;
+            padding: 20px;
         }
         .modal-overlay.active { display: flex; }
 
         .cart-drawer {
             width: 100%;
-            max-width: 480px;
-            height: 100%;
+            max-width: 580px;
+            max-height: min(90vh, 760px);
             background: #fff;
-            box-shadow: -5px 0 25px rgba(0,0,0,0.15);
+            border-radius: 24px;
+            border: 3px solid var(--dark);
+            box-shadow: 10px 10px 0 var(--yellow);
             display: flex;
             flex-direction: column;
-            animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            animation: modalPop 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            overflow: hidden;
+            position: relative;
         }
-        @keyframes slideIn {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
+        @keyframes modalPop {
+            from { transform: scale(0.92); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
 
         .cart-head {
-            padding: 18px 20px;
-            border-bottom: 1.5px solid var(--border);
+            padding: 18px 24px;
+            border-bottom: 2px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: #fff;
-            position: sticky;
-            top: 0;
-            z-index: 20;
+            flex-shrink: 0;
         }
-        .cart-head h3 { font-size: 1.2rem; font-weight: 900; }
+        .cart-head h3 { font-size: 1.25rem; font-weight: 900; color: var(--dark); }
         .close-cart {
             background: #F1F5F9;
-            border: none;
-            width: 36px;
-            height: 36px;
+            border: 2px solid var(--dark);
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             font-size: 1.2rem;
             cursor: pointer;
-            font-weight: 800;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 2px 2px 0 var(--dark);
+            transition: transform 0.15s;
+        }
+        .close-cart:hover {
+            transform: scale(1.1) rotate(90deg);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        /* KHUNG CUỘN CHỨA NỘI DUNG SẢN PHẨM & FORM */
+        .cart-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px 24px 30px;
         }
 
         .cart-body {
-            padding: 20px;
-            flex: 1;
-            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 640px) {
+            .modal-overlay { padding: 10px; }
+            .cart-drawer {
+                max-width: 100%;
+                max-height: 94vh;
+                border-radius: 20px;
+                box-shadow: 6px 6px 0 var(--yellow);
+            }
+            .cart-head { padding: 14px 16px; }
+            .cart-scroll-area { padding: 14px 16px 24px; }
         }
         .cart-item {
             display: flex;
@@ -933,110 +964,114 @@
 
     <div class="toast-notify" id="toast-notify">Đã sao chép ✓</div>
 
-    <!-- CART DRAWER -->
+    <!-- CART MODAL (CĂN GIỮA MÀN HÌNH CHỮ NHẬT TRÊN DESKTOP) -->
     <div class="modal-overlay" id="cart-modal" onclick="closeCart(event)">
         <div class="cart-drawer" onclick="event.stopPropagation()">
             <div class="cart-head">
                 <h3>Giỏ Hàng Của Bạn</h3>
-                <button class="close-cart" onclick="toggleCart()">✕</button>
-            </div>
-            <div class="cart-body" id="cart-items">
-                <!-- Cart items -->
-            </div>
-            <div class="cart-foot" id="cart-foot-summary">
-                <div class="total-row">
-                    <span>Tổng đơn hàng:</span>
-                    <span id="cart-total" style="color: var(--primary);">0đ</span>
-                </div>
-                <button class="checkout-btn" onclick="openCheckoutForm()">
-                    🛍️ Tiến Hành Đặt Hàng Ngay
-                </button>
+                <button class="close-cart" onclick="toggleCart()" aria-label="Đóng giỏ hàng">✕</button>
             </div>
 
-            <!-- FORM ĐIỀN THÔNG TIN GIAO HÀNG -->
-            <div class="checkout-form" id="checkout-form">
-                <h4>📦 Thông Tin Nhận Hàng</h4>
-                <div class="form-row">
-                    <label>Họ và tên người nhận *</label>
-                    <input type="text" class="form-input" id="cust-name" placeholder="VD: Nguyễn Văn A">
-                </div>
-                <div class="form-row">
-                    <label>Số điện thoại nhận hàng *</label>
-                    <input type="tel" class="form-input" id="cust-phone" placeholder="VD: 0901234567">
+            <div class="cart-scroll-area">
+                <div class="cart-body" id="cart-items">
+                    <!-- Cart items -->
                 </div>
 
-                <div class="form-row">
-                    <label>Tỉnh / Thành phố nhận hàng *</label>
-                    <select class="form-input" id="cust-city" onchange="handleCityChange()" style="cursor:pointer; font-weight:700;">
-                        <!-- Injected dynamically from vietnam_wards.json -->
-                    </select>
-                </div>
-
-                <div class="form-row">
-                    <label>Phường / Xã nhận hàng *</label>
-                    <select class="form-input" id="cust-ward" onchange="handleWardChange()" style="cursor:pointer; font-weight:700;">
-                        <!-- Injected dynamically -->
-                    </select>
-                </div>
-
-                <div class="form-row">
-                    <label>Phương thức giao hàng *</label>
-                    <div class="shipping-methods-box" id="shipping-options-container">
-                        <!-- Shipping options injected by JS -->
+                <div class="cart-foot" id="cart-foot-summary">
+                    <div class="total-row">
+                        <span>Tổng đơn hàng:</span>
+                        <span id="cart-total" style="color: var(--primary);">0đ</span>
                     </div>
+                    <button class="checkout-btn" onclick="openCheckoutForm()">
+                        🛍️ Tiến Hành Đặt Hàng Ngay
+                    </button>
                 </div>
 
-                <div class="form-row">
-                    <label>Số nhà, Tên đường cụ thể *</label>
-                    <input type="text" class="form-input" id="cust-address" placeholder="VD: Số 123 đường Lê Lợi, Hẻm 45...">
-                </div>
-                <div class="form-row">
-                    <label>Ghi chú đơn hàng (nếu có)</label>
-                    <input type="text" class="form-input" id="cust-note" placeholder="VD: Giao trước 5h chiều, gọi trước khi giao...">
-                </div>
+                <!-- FORM ĐIỀN THÔNG TIN GIAO HÀNG -->
+                <div class="checkout-form" id="checkout-form">
+                    <h4>📦 Thông Tin Nhận Hàng</h4>
+                    <div class="form-row">
+                        <label>Họ và tên người nhận *</label>
+                        <input type="text" class="form-input" id="cust-name" placeholder="VD: Nguyễn Văn A">
+                    </div>
+                    <div class="form-row">
+                        <label>Số điện thoại nhận hàng *</label>
+                        <input type="tel" class="form-input" id="cust-phone" placeholder="VD: 0901234567">
+                    </div>
 
-                <div class="form-row" style="margin-top: 14px;">
-                    <label>Phương thức thanh toán *</label>
-                    <div class="payment-methods-box">
-                        <div class="pay-method-card active" id="pay-opt-transfer" onclick="selectPayMethod('transfer')">
-                            <span class="icon">💳</span>
-                            <span class="t">Chuyển Khoản Ngay</span>
-                            <span class="d">Quét mã VietQR (Vietcombank)</span>
-                        </div>
-                        <div class="pay-method-card" id="pay-opt-cod" onclick="selectPayMethod('cod')">
-                            <span class="icon">🚚</span>
-                            <span class="t">Nhận Hàng Trả Tiền</span>
-                            <span class="d">Thanh toán tiền mặt khi nhận hàng</span>
+                    <div class="form-row">
+                        <label>Tỉnh / Thành phố nhận hàng *</label>
+                        <select class="form-input" id="cust-city" onchange="handleCityChange()" style="cursor:pointer; font-weight:700;">
+                            <!-- Injected dynamically from vietnam_wards.json -->
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Phường / Xã nhận hàng *</label>
+                        <select class="form-input" id="cust-ward" onchange="handleWardChange()" style="cursor:pointer; font-weight:700;">
+                            <!-- Injected dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Phương thức giao hàng *</label>
+                        <div class="shipping-methods-box" id="shipping-options-container">
+                            <!-- Shipping options injected by JS -->
                         </div>
                     </div>
-                </div>
 
-                <!-- BẢNG TÍNH TIỀN MINH BẠCH (BREAKDOWN) -->
-                <div class="price-breakdown-box">
-                    <div class="breakdown-row">
-                        <span>Tiền hàng (Tạm tính):</span>
-                        <b id="bill-subtotal">0đ</b>
+                    <div class="form-row">
+                        <label>Số nhà, Tên đường cụ thể *</label>
+                        <input type="text" class="form-input" id="cust-address" placeholder="VD: Số 123 đường Lê Lợi, Hẻm 45...">
                     </div>
-                    <div class="breakdown-row">
-                        <span>Phí vận chuyển:</span>
-                        <b id="bill-shipping-fee" style="color:var(--primary);">25.000đ</b>
+                    <div class="form-row">
+                        <label>Ghi chú đơn hàng (nếu có)</label>
+                        <input type="text" class="form-input" id="cust-note" placeholder="VD: Giao trước 5h chiều, gọi trước khi giao...">
                     </div>
-                    <div class="breakdown-row">
-                        <span>Dự kiến giao:</span>
-                        <span id="bill-estimate" style="color:var(--dark);">1 - 2 ngày</span>
-                    </div>
-                    <div class="breakdown-row final">
-                        <span>Tổng thanh toán:</span>
-                        <span id="bill-total" style="color:var(--primary);">0đ</span>
-                    </div>
-                </div>
 
-                <button class="btn-submit-order" id="btn-submit-order" onclick="submitOrderToTelegram()">
-                    🚀 Xác Nhận Đặt Hàng Ngay
-                </button>
-                <button type="button" style="width:100%; margin-top:8px; background:transparent; border:none; color:var(--text-sub); font-size:0.8rem; font-weight:700; cursor:pointer;" onclick="hideCheckoutForm()">
-                    ← Quay lại xem giỏ hàng
-                </button>
+                    <div class="form-row" style="margin-top: 14px;">
+                        <label>Phương thức thanh toán *</label>
+                        <div class="payment-methods-box">
+                            <div class="pay-method-card active" id="pay-opt-transfer" onclick="selectPayMethod('transfer')">
+                                <span class="icon">💳</span>
+                                <span class="t">Chuyển Khoản Ngay</span>
+                                <span class="d">Quét mã VietQR (Vietcombank)</span>
+                            </div>
+                            <div class="pay-method-card" id="pay-opt-cod" onclick="selectPayMethod('cod')">
+                                <span class="icon">🚚</span>
+                                <span class="t">Nhận Hàng Trả Tiền</span>
+                                <span class="d">Thanh toán tiền mặt khi nhận hàng</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BẢNG TÍNH TIỀN MINH BẠCH (BREAKDOWN) -->
+                    <div class="price-breakdown-box">
+                        <div class="breakdown-row">
+                            <span>Tiền hàng (Tạm tính):</span>
+                            <b id="bill-subtotal">0đ</b>
+                        </div>
+                        <div class="breakdown-row">
+                            <span>Phí vận chuyển:</span>
+                            <b id="bill-shipping-fee" style="color:var(--primary);">25.000đ</b>
+                        </div>
+                        <div class="breakdown-row">
+                            <span>Dự kiến giao:</span>
+                            <span id="bill-estimate" style="color:var(--dark);">1 - 2 ngày</span>
+                        </div>
+                        <div class="breakdown-row final">
+                            <span>Tổng thanh toán:</span>
+                            <span id="bill-total" style="color:var(--primary);">0đ</span>
+                        </div>
+                    </div>
+
+                    <button class="btn-submit-order" id="btn-submit-order" onclick="submitOrderToTelegram()">
+                        🚀 Xác Nhận Đặt Hàng Ngay
+                    </button>
+                    <button type="button" style="width:100%; margin-top:8px; background:transparent; border:none; color:var(--text-sub); font-size:0.8rem; font-weight:700; cursor:pointer;" onclick="hideCheckoutForm()">
+                        ← Quay lại xem giỏ hàng
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1751,6 +1786,14 @@
                 if (menu) menu.classList.remove('active');
             }
         });
+
+        // KHÓA TRIỆT ĐỂ ZOOM IN / ZOOM OUT TOÀN TRANG
+        document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+        document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
+        document.addEventListener('gestureend', function(e) { e.preventDefault(); });
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) { e.preventDefault(); }
+        }, { passive: false });
 
         init();
     </script>
