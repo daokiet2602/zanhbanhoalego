@@ -115,7 +115,10 @@ class RealtimeStore {
             updatedAt: Date.now()
         };
 
-        // 2. Ghi nhật ký đơn bán hàng
+        // 2. Ghi nhật ký đơn bán hàng kèm timestamp chuẩn
+        const now = new Date();
+        const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+
         const orderRecord = {
             orderId: 'DH-' + Date.now().toString().slice(-6),
             prodId: product.id,
@@ -127,7 +130,9 @@ class RealtimeStore {
             totalRevenue: price * qtyToSell,
             profit: profit,
             note: note || 'Bán trực tiếp',
-            time: new Date().toLocaleString('vi-VN')
+            time: now.toLocaleString('vi-VN'),
+            timestamp: Date.now(),
+            monthKey: monthKey
         };
 
         this.salesHistory.unshift(orderRecord);

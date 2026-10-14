@@ -344,6 +344,7 @@
         <div class="admin-tabs">
             <button class="tab-btn active" id="tab-btn-stock" onclick="switchAdminTab('stock')">📦 Danh Sách Kho & Bán Nhanh</button>
             <button class="tab-btn" id="tab-btn-orders" onclick="switchAdminTab('orders')">📋 Lịch Sử Đơn Bán Hàng (<span id="orders-badge">0</span>)</button>
+            <button class="tab-btn" id="tab-btn-monthly" onclick="switchAdminTab('monthly')">📈 Báo Cáo Doanh Thu Tháng</button>
         </div>
 
         <!-- TAB 1: KHO HÀNG -->
@@ -397,6 +398,38 @@
                     </thead>
                     <tbody id="orders-tbody">
                         <!-- Order rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: BÁO CÁO DOANH THU THEO THÁNG -->
+        <div id="tab-content-monthly" style="display: none;">
+            <div class="toolbar" style="margin-bottom: 14px;">
+                <div style="font-weight: 800; font-size: 1.05rem;">
+                    📊 Thống Kê Doanh Thu & Lợi Nhuận Từng Tháng
+                </div>
+                <button class="btn-confirm-sale" style="background:var(--green); color:#fff; padding:10px 18px;" onclick="exportMonthlyCSV()">
+                    📥 Xuất Báo Cáo Tháng (CSV)
+                </button>
+            </div>
+
+            <div class="table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Tháng / Năm</th>
+                            <th class="num-right">Số Đơn Hàng</th>
+                            <th class="num-right">Số Bộ Đã Bán</th>
+                            <th class="num-right" style="color:var(--blue)">Tổng Doanh Thu</th>
+                            <th class="num-right">Tiền Vốn Xuất Kho</th>
+                            <th class="num-right" style="color:var(--green)">Lợi Nhuận Ròng</th>
+                            <th class="num-right">Tỷ Suất Lợi Nhuận</th>
+                            <th style="text-align: center;">Đánh Giá</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthly-tbody">
+                        <!-- Monthly rows -->
                     </tbody>
                 </table>
             </div>
@@ -673,8 +706,101 @@
         function switchAdminTab(tab) {
             document.getElementById('tab-content-stock').style.display = tab === 'stock' ? 'block' : 'none';
             document.getElementById('tab-content-orders').style.display = tab === 'orders' ? 'block' : 'none';
+            document.getElementById('tab-content-monthly').style.display = tab === 'monthly' ? 'block' : 'none';
             document.getElementById('tab-btn-stock').classList.toggle('active', tab === 'stock');
             document.getElementById('tab-btn-orders').classList.toggle('active', tab === 'orders');
+            document.getElementById('tab-btn-monthly').classList.toggle('active', tab === 'monthly');
+
+            if (tab === 'monthly') renderMonthlyTable();
+        }
+
+        // BÁO CÁO DOANH THU THEO THÁNG
+        function getMonthlyAnalytics() {
+            const history = window.realtimeStore.salesHistory;
+            const months = {}; // { '2026-10': { month: '10/2026', orders: 0, items: 0, revenue: 0, cost: 0, profit: 0 } }
+
+            history.forEach(o => {
+                let mKey = o.monthKey;
+                if (!mKey && o.time) {
+                    // Cố gắng parse từ chuỗi thời gian nếu đơn cũ chưa có monthKey
+                    const parts = o.time.split(' ')[1] ? o.time.split(' ')[1].split('/') : o.time.split('/');
+                    if (parts.length >= 3) {
+                        mKey = `${parts[2]}-${parts[1].padStart(2, '0')}`;
+                    }
+                }
+                if (!mKey) {
+                    const d = new Date(o.timestamp || Date.now());
+                    mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                }
+
+                if (!months[mKey]) {
+                    const [y, m] = mKey.split('-');
+                    months[mKey] = {
+                        monthKey: mKey,
+                        monthDisplay: `Tháng ${m}/${y}`,
+                        ordersCount: 0,
+                        itemsSold: 0,
+                        totalRevenue: 0,
+                        totalCost: 0,
+                        totalProfit: 0
+                    };
+                }
+
+                months[mKey].ordersCount += 1;
+                months[mKey].itemsSold += o.qty;
+                months[mKey].totalRevenue += o.totalRevenue;
+                months[mKey].totalCost += (o.cost || 0) * o.qty;
+                months[mKey].totalProfit += o.profit;
+            });
+
+            // Sắp xếp các tháng mới nhất lên đầu
+            return Object.values(months).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+        }
+
+        function renderMonthlyTable() {
+            const tbody = document.getElementById('monthly-tbody');
+            const monthlyData = getMonthlyAnalytics();
+
+            if (monthlyData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:32px; color:var(--text-sub)">Chưa có dữ liệu bán hàng để lập báo cáo tháng. Hãy nhập bán đơn hàng đầu tiên!</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = monthlyData.map(m => {
+                const margin = m.totalRevenue > 0 ? Math.round((m.totalProfit / m.totalRevenue) * 1000) / 10 : 0;
+                let evalBadge = '<span class="stock-badge badge-active">Kinh doanh tốt 🌟</span>';
+                if (margin < 20) evalBadge = '<span class="stock-badge" style="background:#FEF3C7; color:#B45309">Biên lãi mỏng</span>';
+
+                return `
+                    <tr>
+                        <td><b style="font-size:1.05rem;">${m.monthDisplay}</b></td>
+                        <td class="num-right"><b>${m.ordersCount} đơn</b></td>
+                        <td class="num-right"><b>${m.itemsSold} bộ</b></td>
+                        <td class="num-right"><b style="color:var(--blue); font-size:1.05rem;">${fmtVND(m.totalRevenue)}</b></td>
+                        <td class="num-right">${fmtVND(m.totalCost)}</td>
+                        <td class="num-right"><b style="color:var(--green); font-size:1.1rem;">+${fmtVND(m.totalProfit)}</b></td>
+                        <td class="num-right"><b>${margin}%</b></td>
+                        <td style="text-align:center;">${evalBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportMonthlyCSV() {
+            const monthlyData = getMonthlyAnalytics();
+            if (monthlyData.length === 0) { alert("Chưa có dữ liệu tháng nào để xuất!"); return; }
+
+            let csv = "Tháng,Số Đơn Hàng,Số Bộ Đã Bán,Tổng Doanh Thu,Tiền Vốn Xuất Kho,Lợi Nhuận Ròng,Biên Lãi %\n";
+            monthlyData.forEach(m => {
+                const margin = m.totalRevenue > 0 ? Math.round((m.totalProfit / m.totalRevenue) * 1000) / 10 : 0;
+                csv += `"${m.monthDisplay}",${m.ordersCount},${m.itemsSold},${m.totalRevenue},${m.totalCost},${m.totalProfit},${margin}%\n`;
+            });
+
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Bao_Cao_Doanh_Thu_Thang_LEGO_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
         }
 
         function showToast(msg) {
