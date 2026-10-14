@@ -1115,7 +1115,7 @@
             <p class="sub-tip">Mở App Ngân Hàng bất kỳ quét mã QR bên dưới để thanh toán tự động</p>
 
             <div class="qr-wrap">
-                <img class="qr-img" id="pay-qr-img" src="" alt="Mã VietQR thanh toán" onerror="handleQrError()">
+                <img class="qr-img" id="pay-qr-img" src="" alt="Mã VietQR thanh toán" onload="handleQrSuccess()" onerror="handleQrError()">
                 <div id="qr-fallback-msg" style="display:none; font-size:0.8rem; color:#B45309; background:#FEF3C7; padding:8px 12px; border-radius:8px; margin-top:8px; font-weight:700;">
                     ⚠️ Không tải được mã QR. Vui lòng sao chép STK & Nội dung bên dưới để chuyển khoản thủ công!
                 </div>
@@ -1750,6 +1750,7 @@
                 hideCheckoutForm();
                 btn.disabled = false;
                 btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
+                document.getElementById('qr-fallback-msg').style.display = 'none';
                 document.getElementById('payment-modal').style.display = 'flex';
 
                 // Gửi thông báo Telegram chạy ngầm (không để nghẽn luồng mở mã QR)
@@ -1905,9 +1906,18 @@
             if (contactWidget) contactWidget.style.display = 'flex';
         }
 
-        function handleQrError() {
+        function handleQrSuccess() {
             const fallback = document.getElementById('qr-fallback-msg');
-            if (fallback) fallback.style.display = 'block';
+            if (fallback) fallback.style.display = 'none';
+        }
+
+        function handleQrError() {
+            const img = document.getElementById('pay-qr-img');
+            // Chỉ hiển thị cảnh báo nếu img.src có giá trị thật sự mà bị lỗi mạng
+            if (img && img.src && img.src.length > 20 && !img.src.endsWith('/')) {
+                const fallback = document.getElementById('qr-fallback-msg');
+                if (fallback) fallback.style.display = 'block';
+            }
         }
 
         function copyAmountOnly() {
