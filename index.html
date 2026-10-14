@@ -477,6 +477,62 @@
         }
         .checkout-btn:hover { background: var(--primary-hover); }
 
+        /* CHECKOUT FORM */
+        .checkout-form {
+            background: #F8FAFC;
+            border-top: 1px solid var(--border);
+            padding: 18px 20px;
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .checkout-form h4 {
+            font-size: 0.95rem; font-weight: 900; margin-bottom: 12px; color: var(--dark); display: flex; align-items: center; gap: 6px;
+        }
+        .form-row { margin-bottom: 10px; }
+        .form-row label { display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
+        .form-input {
+            width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px;
+            font-size: 0.9rem; font-weight: 600; outline: none; background: #fff;
+        }
+        .form-input:focus { border-color: var(--primary); }
+        .btn-submit-order {
+            width: 100%; padding: 14px; border-radius: 12px; border: 2px solid var(--dark);
+            background: var(--green); color: #fff; font-size: 1rem; font-weight: 900;
+            cursor: pointer; box-shadow: 3px 3px 0 var(--dark); margin-top: 10px;
+            transition: all 0.15s;
+        }
+        .btn-submit-order:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--dark); }
+
+        /* SUCCESS MODAL */
+        #success-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
+            display: none; align-items: center; justify-content: center; padding: 20px;
+            backdrop-filter: blur(6px);
+        }
+        .success-card {
+            background: #fff; width: 100%; max-width: 420px; border-radius: 24px;
+            padding: 32px 24px; text-align: center; border: 3px solid var(--dark);
+            box-shadow: 8px 8px 0 var(--green); animation: popIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .success-card h3 { font-size: 1.4rem; font-weight: 900; margin: 12px 0 8px; color: var(--dark); }
+        .success-card p { font-size: 0.88rem; color: var(--text-sub); line-height: 1.5; margin-bottom: 20px; }
+        .order-summary-box {
+            background: #F8FAFC; border: 1.5px solid var(--border); border-radius: 14px;
+            padding: 14px; text-align: left; font-size: 0.82rem; margin-bottom: 20px;
+        }
+        .btn-done-zalo {
+            width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--dark);
+            background: #0068FF; color: #fff; font-weight: 800; font-size: 0.95rem;
+            cursor: pointer; box-shadow: 3px 3px 0 var(--dark); text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;
+        }
+        .btn-close-success {
+            width: 100%; padding: 10px; border-radius: 10px; border: none;
+            background: #F1F5F9; color: var(--text-sub); font-weight: 800; font-size: 0.85rem; cursor: pointer;
+        }
+
         /* FOOTER */
         footer {
             margin-top: 60px;
@@ -579,15 +635,60 @@
             <div class="cart-body" id="cart-items">
                 <!-- Cart items -->
             </div>
-            <div class="cart-foot">
+            <div class="cart-foot" id="cart-foot-summary">
                 <div class="total-row">
                     <span>Tổng đơn hàng:</span>
                     <span id="cart-total" style="color: var(--primary);">0đ</span>
                 </div>
-                <button class="checkout-btn" onclick="sendOrderZalo()">
-                    📲 Đặt Hàng Ngay Qua Zalo
+                <button class="checkout-btn" onclick="openCheckoutForm()">
+                    🛍️ Tiến Hành Đặt Hàng Ngay
                 </button>
             </div>
+
+            <!-- FORM ĐIỀN THÔNG TIN GIAO HÀNG -->
+            <div class="checkout-form" id="checkout-form">
+                <h4>📦 Thông Tin Nhận Hàng</h4>
+                <div class="form-row">
+                    <label>Họ và tên của bạn *</label>
+                    <input type="text" class="form-input" id="cust-name" placeholder="VD: Nguyễn Văn A">
+                </div>
+                <div class="form-row">
+                    <label>Số điện thoại nhận hàng *</label>
+                    <input type="tel" class="form-input" id="cust-phone" placeholder="VD: 0901234567">
+                </div>
+                <div class="form-row">
+                    <label>Địa chỉ nhận hàng chi tiết *</label>
+                    <input type="text" class="form-input" id="cust-address" placeholder="Số nhà, tên đường, phường/xã, quận/huyện...">
+                </div>
+                <div class="form-row">
+                    <label>Ghi chú đơn hàng (nếu có)</label>
+                    <input type="text" class="form-input" id="cust-note" placeholder="VD: Giao giờ hành chính, gọi trước khi giao...">
+                </div>
+                <button class="btn-submit-order" id="btn-submit-order" onclick="submitOrderToTelegram()">
+                    🚀 Xác Nhận Đặt Hàng Ngay
+                </button>
+                <button type="button" style="width:100%; margin-top:8px; background:transparent; border:none; color:var(--text-sub); font-size:0.8rem; font-weight:700; cursor:pointer;" onclick="hideCheckoutForm()">
+                    ← Quay lại xem giỏ hàng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUCCESS MODAL -->
+    <div id="success-modal">
+        <div class="success-card">
+            <div style="font-size: 3rem;">🎉</div>
+            <h3>Đặt Hàng Thành Công!</h3>
+            <p>Cảm ơn bạn đã ủng hộ <b>DÁNH BÁN HOA</b>! Thông tin đơn hàng đã được gửi trực tiếp đến cửa hàng để chuẩn bị gói và giao hàng cho bạn.</p>
+            <div class="order-summary-box" id="success-summary">
+                <!-- Summary info -->
+            </div>
+            <a class="btn-done-zalo" id="success-zalo-link" href="#" target="_blank">
+                💬 Nhắn Tin Xác Nhận Qua Zalo
+            </a>
+            <button class="btn-close-success" onclick="closeSuccessModal()">
+                Tiếp tục xem sản phẩm
+            </button>
         </div>
     </div>
 
@@ -746,22 +847,125 @@
             if (e.target.id === 'cart-modal') toggleCart();
         }
 
-        function sendOrderZalo() {
+        function openCheckoutForm() {
             if (Object.keys(CART).length === 0) {
-                alert("Giỏ hàng đang trống!");
+                alert("Giỏ hàng đang trống! Vui lòng chọn sản phẩm trước.");
                 return;
             }
-            let msg = "Chào shop, mình muốn đặt các mẫu LEGO sau:\n";
-            let total = 0;
+            document.getElementById('cart-foot-summary').style.display = 'none';
+            document.getElementById('checkout-form').style.display = 'block';
+            document.getElementById('cust-name').focus();
+        }
+
+        function hideCheckoutForm() {
+            document.getElementById('checkout-form').style.display = 'none';
+            document.getElementById('cart-foot-summary').style.display = 'block';
+        }
+
+        // BẮN ĐƠN HÀNG VỀ TELEGRAM BOT & TỰ ĐỘNG TRỪ KHO REALTIME
+        const TELEGRAM_CONFIG = {
+            BOT_TOKEN: "8615110743:AAFWqNOTLgdFQMDelen2WbxPUW-Na5iwDRo",
+            CHAT_ID: "6401633197"
+        };
+
+        async function submitOrderToTelegram() {
+            const name = document.getElementById('cust-name').value.trim();
+            const phone = document.getElementById('cust-phone').value.trim();
+            const address = document.getElementById('cust-address').value.trim();
+            const note = document.getElementById('cust-note').value.trim();
+
+            if (!name || !phone || !address) {
+                alert("Vui lòng điền đầy đủ: Họ tên, Số điện thoại và Địa chỉ giao hàng!");
+                return;
+            }
+
+            const btn = document.getElementById('btn-submit-order');
+            btn.disabled = true;
+            btn.textContent = "⏳ Đang gửi đơn hàng...";
+
+            const orderId = 'DH-' + Date.now().toString().slice(-6);
+            let totalAmount = 0;
+            let itemsSummaryHtml = '';
+            let itemsSummaryZalo = '';
+
+            // Chuẩn bị nội dung đơn hàng & tự động trừ kho
             Object.entries(CART).forEach(([id, qty]) => {
                 const p = DATA.products.find(item => item.id === id);
                 if (p) {
-                    msg += `- [${p.id}] ${p.name}: ${qty} bộ (${fmtVND(p.price_retail * qty)})\n`;
-                    total += p.price_retail * qty;
+                    const lineMoney = p.price_retail * qty;
+                    totalAmount += lineMoney;
+                    itemsSummaryHtml += `• <b>${qty}x</b> [${p.id}] ${p.name}: <code>${fmtVND(lineMoney)}</code>\n`;
+                    itemsSummaryZalo += `- ${qty}x ${p.name} (${fmtVND(lineMoney)})\n`;
+
+                    // TỰ ĐỘNG TRỪ KHO REALTIME TRÊN HỆ THỐNG
+                    if (window.realtimeStore) {
+                        window.realtimeStore.recordSale(p, qty, p.price_retail, `Khách web: ${name} (${phone}) - ${address}`);
+                    }
                 }
             });
-            msg += `\nTổng cộng: ${fmtVND(total)}`;
-            window.open(`https://zalo.me/?text=${encodeURIComponent(msg)}`, '_blank');
+
+            const nowStr = new Date().toLocaleString('vi-VN');
+
+            // Tin nhắn gửi về Telegram của anh Kiệt
+            const teleMsg = `🌸 <b>ĐƠN HÀNG MỚI - DÁNH BÁN HOA!</b>\n` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `📦 <b>Mã đơn:</b> <code>#${orderId}</code>\n` +
+                `👤 <b>Khách hàng:</b> ${name}\n` +
+                `📞 <b>Điện thoại:</b> <code>${phone}</code>\n` +
+                `📍 <b>Địa chỉ:</b> ${address}\n` +
+                `${note ? `📝 <b>Ghi chú:</b> <i>${note}</i>\n` : ''}` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `🛍️ <b>CHI TIẾT SẢN PHẨM:</b>\n${itemsSummaryHtml}` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `💰 <b>TỔNG CỘNG:</b> <b>${fmtVND(totalAmount)}</b>\n` +
+                `⏰ <b>Thời gian:</b> ${nowStr}`;
+
+            try {
+                // Gọi API Telegram
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CONFIG.CHAT_ID,
+                        text: teleMsg,
+                        parse_mode: 'HTML'
+                    })
+                });
+            } catch (err) {
+                console.warn("Lỗi gửi Telegram:", err);
+            }
+
+            // Mở link Zalo kèm lời nhắn soạn sẵn
+            const zaloText = `Chào DÁNH BÁN HOA, mình là ${name} (SĐT: ${phone}). Mình vừa đặt đơn hàng #${orderId} trên website:\n${itemsSummaryZalo}Tổng cộng: ${fmtVND(totalAmount)}.\nĐịa chỉ nhận hàng: ${address}.\nNhờ shop kiểm tra và xác nhận đơn giúp mình nhé!`;
+            const zaloLink = `https://zalo.me/?text=${encodeURIComponent(zaloText)}`;
+            document.getElementById('success-zalo-link').href = zaloLink;
+
+            // Hiển thị tóm tắt trong modal thành công
+            document.getElementById('success-summary').innerHTML = `
+                <div><b>Mã đơn hàng:</b> #${orderId}</div>
+                <div><b>Người nhận:</b> ${name} (${phone})</div>
+                <div><b>Địa chỉ:</b> ${address}</div>
+                <div style="margin-top:6px; color:var(--primary); font-weight:800; font-size:0.95rem;">Tổng thanh toán: ${fmtVND(totalAmount)}</div>
+            `;
+
+            // Xóa giỏ hàng & reset form
+            CART = {};
+            updateCartUI();
+            toggleCart(false);
+            hideCheckoutForm();
+            btn.disabled = false;
+            btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
+
+            // Hiện modal đặt hàng thành công
+            document.getElementById('success-modal').style.display = 'flex';
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('success-modal').style.display = 'none';
+        }
+
+        function sendOrderZalo() {
+            openCheckoutForm();
         }
 
         init();
