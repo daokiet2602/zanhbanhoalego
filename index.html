@@ -2,9 +2,25 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>DÁNH BÁN HOA - Tiệm Hoa Lego & Quà Tặng Sáng Tạo</title>
+    <meta name="description" content="DÁNH BÁN HOA - Chuyên các mẫu mô hình hoa Lego rực rỡ không tàn, botanical decor và quà tặng sáng tạo tinh tế, giao hàng nhanh toàn quốc.">
+    <link rel="canonical" href="https://daokiet2602.github.io/zanhbanhoalego/">
     <link rel="icon" type="image/jpeg" href="logo.jpg">
+
+    <!-- OPEN GRAPH (ZALO / FACEBOOK / MESSENGER PREVIEW) -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://daokiet2602.github.io/zanhbanhoalego/">
+    <meta property="og:title" content="DÁNH BÁN HOA - Tiệm Hoa Lego & Quà Tặng Sáng Tạo">
+    <meta property="og:description" content="Những đóa hoa Lego không bao giờ tàn – Món quà tinh tế, độc đáo và đầy cảm hứng dành riêng cho bạn.">
+    <meta property="og:image" content="https://daokiet2602.github.io/zanhbanhoalego/logo.jpg">
+    <meta property="og:locale" content="vi_VN">
+
+    <!-- TWITTER CARD -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="DÁNH BÁN HOA - Tiệm Hoa Lego & Quà Tặng Sáng Tạo">
+    <meta name="twitter:description" content="Khám phá hơn 90 bộ mô hình hoa Lego tinh xảo, quà tặng sáng tạo không tàn phai.">
+    <meta name="twitter:image" content="https://daokiet2602.github.io/zanhbanhoalego/logo.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -36,7 +52,6 @@
             color: var(--dark);
             min-height: 100vh;
             padding-bottom: 80px;
-            touch-action: pan-x pan-y; /* KHÓA TOÀN TRANG KHÔNG CHO PINCH ZOOM IN / ZOOM OUT */
         }
 
         /* HEADER */
@@ -934,6 +949,12 @@
                 </a>
             </div>
 
+            <div style="margin: 14px 0 10px;">
+                <a href="policy.html" style="font-weight: 800; font-size: 0.85rem; color: var(--primary); text-decoration: none; margin: 0 8px;">📖 Chính Sách Đổi Trả & Bảo Hành</a>
+                <span style="opacity: 0.3;">|</span>
+                <a href="policy.html" style="font-weight: 800; font-size: 0.85rem; color: var(--primary); text-decoration: none; margin: 0 8px;">🚚 Chính Sách Vận Chuyển</a>
+            </div>
+
             <p style="color: var(--text-sub); font-size: 0.8rem; line-height: 1.6;">
                 © 2026 DÁNH BÁN HOA. Tất cả sản phẩm đều đảm bảo chất lượng và đóng gói cẩn thận.<br>
                 <small style="opacity: 0.7;">(Sản phẩm mô hình gạch lắp ráp tương thích tiêu chuẩn)</small>
@@ -1029,6 +1050,17 @@
                         <input type="text" class="form-input" id="cust-note" placeholder="VD: Giao trước 5h chiều, gọi trước khi giao...">
                     </div>
 
+                    <!-- T10: QUYỀN RIÊNG TƯ & LƯU THÔNG TIN KHÁCH HÀNG -->
+                    <div class="form-row" style="margin: 12px 0 6px; display: flex; align-items: center; justify-content: space-between;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; text-transform:none; color:var(--dark); font-size:0.85rem; margin:0;">
+                            <input type="checkbox" id="save-info-check" style="width:16px; height:16px; accent-color:var(--primary); cursor:pointer;">
+                            <span>Nhớ thông tin nhận hàng cho lần sau</span>
+                        </label>
+                        <button type="button" onclick="clearSavedCustomerInfo()" style="background:transparent; border:none; color:#EF4444; font-size:0.75rem; font-weight:800; cursor:pointer;" title="Xóa dữ liệu đã lưu">
+                            Xóa thông tin
+                        </button>
+                    </div>
+
                     <div class="form-row" style="margin-top: 14px;">
                         <label>Phương thức thanh toán *</label>
                         <div class="payment-methods-box">
@@ -1083,7 +1115,10 @@
             <p class="sub-tip">Mở App Ngân Hàng bất kỳ quét mã QR bên dưới để thanh toán tự động</p>
 
             <div class="qr-wrap">
-                <img class="qr-img" id="pay-qr-img" src="" alt="Mã VietQR thanh toán">
+                <img class="qr-img" id="pay-qr-img" src="" alt="Mã VietQR thanh toán" onerror="handleQrError()">
+                <div id="qr-fallback-msg" style="display:none; font-size:0.8rem; color:#B45309; background:#FEF3C7; padding:8px 12px; border-radius:8px; margin-top:8px; font-weight:700;">
+                    ⚠️ Không tải được mã QR. Vui lòng sao chép STK & Nội dung bên dưới để chuyển khoản thủ công!
+                </div>
             </div>
 
             <div class="bank-info-box">
@@ -1104,7 +1139,10 @@
                 </div>
                 <div class="info-line">
                     <span class="lbl">Số tiền cần chuyển:</span>
-                    <b class="val" id="pay-amount" style="color:var(--primary); font-size:1.05rem;">0đ</b>
+                    <span style="display:flex; align-items:center;">
+                        <b class="val" id="pay-amount" style="color:var(--primary); font-size:1.05rem;">0đ</b>
+                        <button class="btn-copy" onclick="copyAmountOnly()">Copy</button>
+                    </span>
                 </div>
                 <div class="info-line">
                     <span class="lbl">Nội dung chuyển khoản:</span>
@@ -1229,7 +1267,7 @@
                                     ${p.price_market ? `<span class="price-market">${fmtVND(p.price_market)}</span>` : ''}
                                 </div>
                                 <div class="stock-info">
-                                    📦 Tình trạng: <b>${isOut ? 'Tạm hết hàng' : isDisc ? 'Ngưng bán' : `Còn sẵn (${stockInfo.qty} bộ)`}</b>
+                                    📦 Tình trạng: <b>${isOut ? 'Tạm hết hàng' : isDisc ? 'Ngưng bán' : stockInfo.qty <= 5 ? `<span style="color:var(--primary)">Chỉ còn ${stockInfo.qty} bộ!</span>` : 'Còn hàng'}</b>
                                 </div>
                                 <button class="add-cart-btn" aria-label="Thêm vào giỏ ${p.name}" ${isOut || isDisc ? 'disabled' : ''} onclick="addToCart('${p.id}')">
                                     🛒 ${isOut ? 'Tạm Hết Hàng' : isDisc ? 'Ngưng Bán' : 'Thêm Vào Giỏ'}
@@ -1520,14 +1558,18 @@
             document.getElementById('cart-foot-summary').style.display = 'block';
         }
 
+        // T10: QUYỀN RIÊNG TƯ - CHỈ LƯU THÔNG TIN KHI KHÁCH ĐỒNG Ý
         function saveCustomerInfo() {
-            const info = {
-                name: document.getElementById('cust-name').value,
-                phone: document.getElementById('cust-phone').value,
-                address: document.getElementById('cust-address').value,
-                note: document.getElementById('cust-note').value
-            };
-            try { localStorage.setItem('danhbanhoa_cust_info', JSON.stringify(info)); } catch(e){}
+            const check = document.getElementById('save-info-check');
+            if (check && check.checked) {
+                const info = {
+                    name: document.getElementById('cust-name').value,
+                    phone: document.getElementById('cust-phone').value,
+                    address: document.getElementById('cust-address').value,
+                    note: document.getElementById('cust-note').value
+                };
+                try { localStorage.setItem('danhbanhoa_cust_info', JSON.stringify(info)); } catch(e){}
+            }
         }
 
         function restoreSavedCustomerInfo() {
@@ -1539,7 +1581,22 @@
                     if (info.phone) document.getElementById('cust-phone').value = info.phone;
                     if (info.address) document.getElementById('cust-address').value = info.address;
                     if (info.note) document.getElementById('cust-note').value = info.note;
+                    const check = document.getElementById('save-info-check');
+                    if (check) check.checked = true;
                 }
+            } catch(e){}
+        }
+
+        function clearSavedCustomerInfo() {
+            try {
+                localStorage.removeItem('danhbanhoa_cust_info');
+                document.getElementById('cust-name').value = '';
+                document.getElementById('cust-phone').value = '';
+                document.getElementById('cust-address').value = '';
+                document.getElementById('cust-note').value = '';
+                const check = document.getElementById('save-info-check');
+                if (check) check.checked = false;
+                showToastNotify("Đã xóa thông tin đã lưu!");
             } catch(e){}
         }
 
@@ -1556,6 +1613,9 @@
             ACCOUNT_NAME: "ZHANG TINH HUY",
             BANK_DISPLAY: "Vietcombank (Ngân Hàng Ngoại Thương)"
         };
+
+        // HỢP ĐỒNG API GỬI ĐƠN HÀNG (T01: Hỗ trợ cả Server Proxy Worker lẫn Direct Fallback an toàn)
+        const ORDER_API_URL = ""; // Điền URL Cloudflare Worker sau khi deploy theo server/README.md
 
         const TELEGRAM_CONFIG = {
             BOT_TOKEN: "8615110743:AAFWqNOTLgdFQMDelen2WbxPUW-Na5iwDRo",
@@ -1585,6 +1645,13 @@
         }
 
         async function submitOrderToTelegram() {
+            // T13: Chặn đặt hàng khi giỏ rỗng
+            if (!CART || Object.keys(CART).length === 0) {
+                alert("Giỏ hàng của bạn đang trống! Vui lòng chọn sản phẩm trước khi đặt hàng.");
+                toggleCart(false);
+                return;
+            }
+
             const name = document.getElementById('cust-name').value.trim();
             const phone = document.getElementById('cust-phone').value.trim();
             const address = document.getElementById('cust-address').value.trim();
@@ -1592,9 +1659,12 @@
             const cityText = document.getElementById('cust-city').options[document.getElementById('cust-city').selectedIndex].text;
 
             if (!name) { alert("Vui lòng nhập họ và tên nhận hàng!"); return; }
-            const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
-            if (!phoneRegex.test(phone.replace(/\s+/g, ''))) {
-                alert("Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại di động 10 chữ số (VD: 0901234567).");
+            
+            // T06: Chuẩn hóa và siết chặt kiểm tra SĐT Việt Nam: /^(0|\+?84)(3|5|7|8|9)\d{8}$/
+            const cleanPhone = phone.replace(/[\s\.\-_]/g, '');
+            const phoneRegex = /^(0|\+?84)(3|5|7|8|9)\d{8}$/;
+            if (!phoneRegex.test(cleanPhone)) {
+                alert("Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại di động 10 chữ số (VD: 0901234567, 0343076043).");
                 return;
             }
             if (!address) { alert("Vui lòng nhập địa chỉ giao hàng cụ thể!"); return; }
@@ -1613,15 +1683,29 @@
             let itemsSummaryHtml = '';
             let orderedItems = [];
 
-            Object.entries(CART).forEach(([id, qty]) => {
+            // T13 & T04: Kiểm tra lại tồn kho và lấy giá bán thực tế đang áp dụng
+            for (const [id, qty] of Object.entries(CART)) {
                 const p = DATA.products.find(item => item.id === id);
-                if (p) {
-                    const stockInfo = window.realtimeStore.getProductData(p);
-                    const lineMoney = stockInfo.price_retail * qty;
-                    itemsSummaryHtml += `• <b>${qty}x</b> [${p.id}] ${escapeHtml(p.name)}: <code>${fmtVND(lineMoney)}</code>\n`;
-                    orderedItems.push({ product: p, qty: qty });
+                if (!p) {
+                    alert(`Sản phẩm [${id}] không còn tồn tại trong hệ thống. Vui lòng kiểm tra lại giỏ hàng!`);
+                    btn.disabled = false;
+                    btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
+                    return;
                 }
-            });
+                const stockInfo = window.realtimeStore.getProductData(p);
+                if (stockInfo.qty <= 0) {
+                    alert(`Rất tiếc! Mẫu [${p.name}] vừa tạm hết hàng. Vui lòng chọn mẫu khác!`);
+                    delete CART[id];
+                    saveCart();
+                    updateCartUI();
+                    btn.disabled = false;
+                    btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
+                    return;
+                }
+                const lineMoney = stockInfo.price_retail * qty;
+                itemsSummaryHtml += `• <b>${qty}x</b> [${p.id}] ${escapeHtml(p.name)}: <code>${fmtVND(lineMoney)}</code>\n`;
+                orderedItems.push({ product: p, qty: qty, price_applied: stockInfo.price_retail });
+            }
 
             const wardSel = document.getElementById('cust-ward');
             const wardText = (wardSel && wardSel.value) ? wardSel.value : '';
@@ -1642,10 +1726,12 @@
                 timeStr: new Date().toLocaleString('vi-VN')
             };
 
-            const isTransfer = SELECTED_PAY_METHOD === 'transfer';
-
+            // T03: ĐƠN CHUYỂN KHOẢN: GỬI NGAY ĐƠN HÀNG Ở TRẠNG THÁI "CHỜ THANH TOÁN (PENDING_PAYMENT)"
             if (isTransfer) {
                 PENDING_TRANSFER_ORDER = orderPayload;
+
+                // 1. Trừ kho tạm giữ hàng & gửi thông báo Telegram 'CHỜ CHUYỂN KHOẢN' ngay
+                await executeOrderConfirmation(orderPayload, '💳 Chuyển khoản VietQR (PENDING_PAYMENT - Chờ chuyển khoản)');
 
                 const memo = `${orderId} ${phone}`;
                 const qrUrl = `https://img.vietqr.io/image/${BANK_CONFIG.BANK_ID}-${BANK_CONFIG.ACCOUNT_NO}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(BANK_CONFIG.ACCOUNT_NAME)}`;
@@ -1656,6 +1742,10 @@
                 document.getElementById('pay-acc-name').textContent = BANK_CONFIG.ACCOUNT_NAME;
                 document.getElementById('pay-amount').textContent = fmtVND(totalAmount);
                 document.getElementById('pay-memo').textContent = memo;
+
+                CART = {};
+                saveCart();
+                updateCartUI();
 
                 toggleCart(false);
                 hideCheckoutForm();
@@ -1704,23 +1794,48 @@
                 `⏰ <b>Thời gian:</b> ${payload.timeStr}`;
 
             try {
-                const sendPromises = TELEGRAM_CONFIG.RECIPIENTS.map(targetChatId => {
-                    return fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
+                if (ORDER_API_URL) {
+                    // T01: Gửi qua Server Proxy an toàn
+                    await fetch(`${ORDER_API_URL}/order`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            chat_id: targetChatId,
-                            text: teleMsg,
-                            parse_mode: 'HTML'
+                            orderId: payload.orderId,
+                            status: 'PENDING_PAYMENT',
+                            payMethodText: payMethodText,
+                            name: payload.name,
+                            phone: payload.phone,
+                            address: payload.address,
+                            note: payload.note,
+                            subtotal: payload.subtotal,
+                            shipName: payload.shipName,
+                            shipFeeDisplay: payload.shipFeeDisplay,
+                            totalAmount: payload.totalAmount,
+                            itemsSummaryHtml: payload.itemsSummaryHtml,
+                            timeStr: payload.timeStr
                         })
                     });
-                });
-                await Promise.all(sendPromises);
+                } else {
+                    // Fallback gửi trực tiếp nếu chưa cấu hình Worker
+                    const sendPromises = TELEGRAM_CONFIG.RECIPIENTS.map(targetChatId => {
+                        return fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                chat_id: targetChatId,
+                                text: teleMsg,
+                                parse_mode: 'HTML'
+                            })
+                        });
+                    });
+                    await Promise.all(sendPromises);
+                }
             } catch (err) {
-                console.warn("Lỗi gửi Telegram:", err);
+                console.warn("Lỗi gửi thông báo đơn hàng:", err);
             }
         }
 
+        // T03: KHI KHÁCH BẤM "TÔI ĐÃ CHUYỂN KHOẢN THÀNH CÔNG" -> BẮN BẢN CẬP NHẬT (CUSTOMER_CLAIMED_PAID) KHÔNG TẠO ĐƠN MỚI
         async function finishPayment() {
             if (!PENDING_TRANSFER_ORDER) {
                 document.getElementById('payment-modal').style.display = 'none';
@@ -1728,43 +1843,96 @@
             }
 
             const doneBtn = document.querySelector('.btn-paid-done');
-            if (doneBtn) { doneBtn.disabled = true; doneBtn.textContent = "⏳ Đang gửi đơn tới shop..."; }
-
-            await executeOrderConfirmation(PENDING_TRANSFER_ORDER, '💳 Chuyển khoản VietQR (Khách báo ĐÃ CHUYỂN)');
+            if (doneBtn) { doneBtn.disabled = true; doneBtn.textContent = "⏳ Đang gửi xác nhận tới shop..."; }
 
             const orderId = PENDING_TRANSFER_ORDER.orderId;
+            const updateMsg = `🔔 <b>KHÁCH BÁO ĐÃ CHUYỂN KHOẢN!</b>\n` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `📦 <b>Mã đơn:</b> <code>#${orderId}</code>\n` +
+                `👤 <b>Khách hàng:</b> ${PENDING_TRANSFER_ORDER.name} (<code>${PENDING_TRANSFER_ORDER.phone}</code>)\n` +
+                `💰 <b>Số tiền:</b> <b>${fmtVND(PENDING_TRANSFER_ORDER.totalAmount)}</b>\n` +
+                `⏰ <b>Thời gian báo:</b> ${new Date().toLocaleString('vi-VN')}\n` +
+                `👉 <i>Vui lòng kiểm tra app Vietcombank để xác nhận tiền về!</i>`;
+
+            try {
+                if (ORDER_API_URL) {
+                    await fetch(`${ORDER_API_URL}/order`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            orderId: orderId,
+                            status: 'CUSTOMER_CLAIMED_PAID',
+                            name: PENDING_TRANSFER_ORDER.name,
+                            phone: PENDING_TRANSFER_ORDER.phone,
+                            totalAmount: PENDING_TRANSFER_ORDER.totalAmount,
+                            timeStr: new Date().toLocaleString('vi-VN')
+                        })
+                    });
+                } else {
+                    const sendPromises = TELEGRAM_CONFIG.RECIPIENTS.map(targetChatId => {
+                        return fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                chat_id: targetChatId,
+                                text: updateMsg,
+                                parse_mode: 'HTML'
+                            })
+                        });
+                    });
+                    await Promise.all(sendPromises);
+                }
+            } catch(e) {
+                console.warn("Lỗi gửi xác nhận:", e);
+            }
+
             PENDING_TRANSFER_ORDER = null;
-            CART = {};
-            saveCart();
-            updateCartUI();
 
             if (doneBtn) { doneBtn.disabled = false; doneBtn.textContent = "✅ Tôi Đã Chuyển Khoản Thành Công"; }
             document.getElementById('payment-modal').style.display = 'none';
 
-            alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được gửi thành công.\nShop DÁNH BÁN HOA sẽ kiểm tra thông báo chuyển khoản và liên hệ đóng gói gửi hàng sớm nhất cho bạn!`);
+            alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được shop DÁNH BÁN HOA ghi nhận.\nShop sẽ kiểm tra thông báo chuyển khoản và liên hệ đóng gói gửi hàng sớm nhất cho bạn!`);
         }
 
+        const PENDING_HOLD_HOURS = 24; // Giữ đơn chuyển khoản trong 24 giờ
         function closePaymentModal() {
-            if (confirm("Đóng lại và thanh toán sau?\n(Đơn hàng chỉ được shop giữ và chuẩn bị khi bạn hoàn tất chuyển khoản)")) {
-                PENDING_TRANSFER_ORDER = null;
-                document.getElementById('payment-modal').style.display = 'none';
-                const contactWidget = document.querySelector('.contact-widget-wrap');
-                if (contactWidget) contactWidget.style.display = 'flex';
-                toggleCart(true);
+            alert(`Đơn hàng #${PENDING_TRANSFER_ORDER ? PENDING_TRANSFER_ORDER.orderId : ''} của bạn đã được lưu tạm trên hệ thống trong ${PENDING_HOLD_HOURS} giờ.\nBạn có thể chuyển khoản sau qua số tài khoản Vietcombank 7984193727. Shop sẽ liên hệ để xác nhận giữ hàng!`);
+            PENDING_TRANSFER_ORDER = null;
+            document.getElementById('payment-modal').style.display = 'none';
+            const contactWidget = document.querySelector('.contact-widget-wrap');
+            if (contactWidget) contactWidget.style.display = 'flex';
+        }
+
+        function handleQrError() {
+            const fallback = document.getElementById('qr-fallback-msg');
+            if (fallback) fallback.style.display = 'block';
+        }
+
+        function copyAmountOnly() {
+            if (CURRENT_ORDER && CURRENT_ORDER.totalAmount) {
+                copyRawString(String(CURRENT_ORDER.totalAmount));
+            } else if (PENDING_TRANSFER_ORDER && PENDING_TRANSFER_ORDER.totalAmount) {
+                copyRawString(String(PENDING_TRANSFER_ORDER.totalAmount));
+            } else {
+                copyText('pay-amount');
+            }
+        }
+
+        function copyRawString(str) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(str).then(() => showToastNotify("Đã sao chép: " + str));
+            } else {
+                const ta = document.createElement("textarea");
+                ta.value = str; document.body.appendChild(ta);
+                ta.select(); document.execCommand("copy");
+                document.body.removeChild(ta);
+                showToastNotify("Đã sao chép: " + str);
             }
         }
 
         function copyText(elemId) {
             const txt = document.getElementById(elemId).textContent;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(txt).then(() => showToastNotify("Đã sao chép: " + txt));
-            } else {
-                const ta = document.createElement("textarea");
-                ta.value = txt; document.body.appendChild(ta);
-                ta.select(); document.execCommand("copy");
-                document.body.removeChild(ta);
-                showToastNotify("Đã sao chép: " + txt);
-            }
+            copyRawString(txt);
         }
 
         function showToastNotify(msg) {
@@ -1786,14 +1954,6 @@
                 if (menu) menu.classList.remove('active');
             }
         });
-
-        // KHÓA TRIỆT ĐỂ ZOOM IN / ZOOM OUT TOÀN TRANG
-        document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
-        document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
-        document.addEventListener('gestureend', function(e) { e.preventDefault(); });
-        document.addEventListener('wheel', function(e) {
-            if (e.ctrlKey) { e.preventDefault(); }
-        }, { passive: false });
 
         init();
     </script>
