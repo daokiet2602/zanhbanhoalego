@@ -1186,10 +1186,16 @@
 
         async function init() {
             try {
+                // 1. Nạp danh mục sản phẩm gốc
                 const res = await fetch('products_public.json');
                 DATA = await res.json();
 
-                // Nạp danh mục đơn vị hành chính chuẩn từ file Excel
+                // 2. Kéo dữ liệu kho hàng & sản phẩm mới nhất từ mây Cloud Worker
+                if (window.realtimeStore) {
+                    await window.realtimeStore.syncWithCloudWorker();
+                }
+
+                // 3. Nạp danh mục đơn vị hành chính chuẩn từ file Excel
                 try {
                     const wRes = await fetch('vietnam_wards.json');
                     WARDS_DATA = await wRes.json();

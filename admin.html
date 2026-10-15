@@ -351,7 +351,10 @@
         <div id="tab-content-stock">
             <div class="toolbar" style="margin-bottom: 14px;">
                 <input type="text" class="form-control" style="max-width:320px;" id="admin-search" placeholder="🔍 Tìm theo mã hoặc tên mẫu..." oninput="renderStockTable()">
-                <div style="display:flex; gap:10px;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn-confirm-sale" style="background:#22C55E; color:#fff; padding:10px 18px;" onclick="syncNowToCloud()">
+                        ☁️ Đồng Bộ Kho Lên Mây Ngay
+                    </button>
                     <button class="btn-confirm-sale" style="background:var(--blue); color:#fff; padding:10px 18px;" onclick="openNewProductModal()">
                         ➕ Thêm Mặt Hàng Mới
                     </button>
@@ -572,6 +575,11 @@
                 const res = await fetch('data.json');
                 DATA = await res.json();
                 
+                // Tự động đẩy đồng bộ dữ liệu đang có lên Cloud Worker nếu trên máy đã có chỉnh sửa
+                if (window.realtimeStore) {
+                    window.realtimeStore.pushToCloudWorker();
+                }
+
                 populateSelectDropdown();
                 window.realtimeStore.subscribe(() => {
                     renderKPI();
@@ -584,6 +592,14 @@
                 renderOrdersTable();
             } catch (err) {
                 console.error("Lỗi nạp dữ liệu:", err);
+            }
+        }
+
+        async function syncNowToCloud() {
+            if (window.realtimeStore) {
+                showToast("⏳ Đang đồng bộ toàn bộ kho hàng lên Cloudflare...");
+                await window.realtimeStore.pushToCloudWorker();
+                showToast("✅ ĐÃ ĐỒNG BỘ THÀNH CÔNG! Mọi máy và khách hàng đều đã thấy kho mới.");
             }
         }
 
