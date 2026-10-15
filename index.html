@@ -1312,6 +1312,7 @@
             if (CART[id] <= 0) delete CART[id];
             saveCart();
             updateCartUI();
+            updateBillSummary(); // CẬP NHẬT TỨC THÌ TIỀN HÀNG VÀ TỔNG THANH TOÁN TRONG FORM
         }
 
         function updateCartUI() {
@@ -1536,20 +1537,25 @@
         function updateBillSummary() {
             let subtotal = 0;
             Object.entries(CART).forEach(([id, qty]) => {
-                const p = DATA ? DATA.products.find(item => item.id === id) : null;
+                const p = findProductAnywhere(id);
                 if (p) {
                     const stockInfo = window.realtimeStore.getProductData(p);
-                    subtotal += stockInfo.price_retail * qty;
+                    subtotal += (stockInfo.price_retail || p.price_retail || 0) * qty;
                 }
             });
 
             const ship = getShippingDetails();
             const total = subtotal + ship.fee;
 
-            document.getElementById('bill-subtotal').textContent = fmtVND(subtotal);
-            document.getElementById('bill-shipping-fee').textContent = ship.feeDisplay;
-            document.getElementById('bill-estimate').textContent = ship.estimate;
-            document.getElementById('bill-total').textContent = fmtVND(total);
+            const elSub = document.getElementById('bill-subtotal');
+            const elFee = document.getElementById('bill-shipping-fee');
+            const elEst = document.getElementById('bill-estimate');
+            const elTot = document.getElementById('bill-total');
+
+            if (elSub) elSub.textContent = fmtVND(subtotal);
+            if (elFee) elFee.textContent = ship.feeDisplay;
+            if (elEst) elEst.textContent = ship.estimate;
+            if (elTot) elTot.textContent = fmtVND(total);
 
             return { subtotal, ship, total };
         }
