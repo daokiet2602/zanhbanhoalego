@@ -1879,7 +1879,7 @@
                 `👤 <b>Khách hàng:</b> ${PENDING_TRANSFER_ORDER.name} (<code>${PENDING_TRANSFER_ORDER.phone}</code>)\n` +
                 `💰 <b>Số tiền:</b> <b>${fmtVND(PENDING_TRANSFER_ORDER.totalAmount)}</b>\n` +
                 `⏰ <b>Thời gian báo:</b> ${new Date().toLocaleString('vi-VN')}\n` +
-                `👉 <i>Vui lòng kiểm tra app Vietcombank để xác nhận tiền về!</i>`;
+                `👉 <i>Vui lòng kiểm tra app MBBank để xác nhận tiền về!</i>`;
 
             try {
                 if (ORDER_API_URL) {
@@ -1921,48 +1921,48 @@
             alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được shop DÁNH BÁN HOA ghi nhận.\nShop sẽ kiểm tra thông báo chuyển khoản và liên hệ đóng gói gửi hàng sớm nhất cho bạn!`);
         }
 
+        async function checkSepayTransactions() {
+            // Danh sách các cổng proxy kết nối SePay không bị chặn CORS
+            const endpoints = [
+                'https://my.sepay.vn/userapi/transactions/list',
+                'https://corsproxy.io/?' + encodeURIComponent('https://my.sepay.vn/userapi/transactions/list'),
+                'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://my.sepay.vn/userapi/transactions/list')
+            ];
+
+            for (const ep of endpoints) {
+                try {
+                    const res = await fetch(ep, {
+                        headers: {
+                            'Authorization': `Bearer ${SEPAY_CONFIG.API_TOKEN}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json && json.transactions) return json.transactions;
+                    }
+                } catch(e) {}
+            }
+            return null;
+        }
+
         // TỰ ĐỘNG ĐỐI SOÁT SEPAY REALTIME (AUTO BANKING)
         function startSepayAutoCheck(targetOrderId, expectedAmount) {
             stopSepayAutoCheck();
             const statusEl = document.getElementById('sepay-status-text');
             if (statusEl) statusEl.textContent = "Đang tự động kiểm tra biến động tài khoản MBBank...";
 
-            // Chuẩn hóa mã đơn hàng để đối soát (ví dụ: DH261015-8787 -> DH2610158787)
+            // Chuẩn hóa mã đơn hàng để đối soát (ví dụ: DH261015-8963 -> DH2610158963)
             const cleanOrderId = targetOrderId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
             // Kiểm tra mỗi 3 giây một lần
             SEPAY_POLL_TIMER = setInterval(async () => {
                 try {
-                    // Gọi qua cổng API SePay
-                    const targetUrl = 'https://my.sepay.vn/userapi/transactions/list';
-                    let data = null;
-
-                    try {
-                        const res = await fetch(targetUrl, {
-                            headers: {
-                                'Authorization': `Bearer ${SEPAY_CONFIG.API_TOKEN}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                        if (res.ok) data = await res.json();
-                    } catch (corsErr) {
-                        // Nếu trình duyệt bị chặn CORS khi gọi trực tiếp SePay, dùng worker/proxy fallback
-                        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                        const pRes = await fetch(proxyUrl, {
-                            headers: {
-                                'Authorization': `Bearer ${SEPAY_CONFIG.API_TOKEN}`
-                            }
-                        });
-                        if (pRes.ok) {
-                            const pJson = await pRes.json();
-                            data = JSON.parse(pJson.contents);
-                        }
-                    }
-
-                    if (!data || !data.transactions) return;
+                    const transactions = await checkSepayTransactions();
+                    if (!transactions || !transactions.length) return;
 
                     // Tìm giao dịch chuyển tiền vào tài khoản MBBank khớp mã đơn hàng hoặc số tiền
-                    const matchedTx = data.transactions.find(tx => {
+                    const matchedTx = transactions.find(tx => {
                         const inAmount = parseFloat(tx.amount_in || tx.amount || 0);
                         const desc = (tx.transaction_content || tx.description || '').toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
                         const txCode = (tx.code || '').toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
