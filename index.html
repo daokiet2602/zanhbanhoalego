@@ -1124,18 +1124,18 @@
             <div class="bank-info-box">
                 <div class="info-line">
                     <span class="lbl">Ngân hàng:</span>
-                    <b class="val" id="pay-bank-name">Vietcombank (Ngân Hàng Ngoại Thương)</b>
+                    <b class="val" id="pay-bank-name">MBBank (Ngân Hàng Quân Đội)</b>
                 </div>
                 <div class="info-line">
                     <span class="lbl">Số tài khoản:</span>
                     <span style="display:flex; align-items:center;">
-                        <b class="val" id="pay-acc-num">7984193727</b>
+                        <b class="val" id="pay-acc-num">260220068</b>
                         <button class="btn-copy" onclick="copyText('pay-acc-num')">Copy</button>
                     </span>
                 </div>
                 <div class="info-line">
                     <span class="lbl">Chủ tài khoản:</span>
-                    <b class="val" id="pay-acc-name">ZHANG TINH HUY</b>
+                    <b class="val" id="pay-acc-name">DAO GIA KIET</b>
                 </div>
                 <div class="info-line">
                     <span class="lbl">Số tiền cần chuyển:</span>
@@ -1151,6 +1151,12 @@
                         <button class="btn-copy" onclick="copyText('pay-memo')">Copy</button>
                     </span>
                 </div>
+            </div>
+
+            <!-- TRẠNG THÁI TỰ ĐỘNG ĐỐI SOÁT SEPAY -->
+            <div id="sepay-waiting-box" style="margin-bottom:14px; background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:12px; padding:10px 14px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <span class="sync-dot" style="width:10px; height:10px; background:#22C55E; border-radius:50%; animation:pulse 1.2s infinite;"></span>
+                <span style="font-size:0.82rem; color:#15803D; font-weight:800;" id="sepay-status-text">Đang tự động kiểm tra biến động tài khoản MBBank...</span>
             </div>
 
             <button class="btn-paid-done" onclick="finishPayment()">
@@ -1617,6 +1623,14 @@
         // HỢP ĐỒNG API GỬI ĐƠN HÀNG (T01: Hỗ trợ cả Server Proxy Worker lẫn Direct Fallback an toàn)
         const ORDER_API_URL = ""; // Điền URL Cloudflare Worker sau khi deploy theo server/README.md
 
+        // CẤU HÌNH ĐỐI SOÁT TỰ ĐỘNG SEPAY
+        const SEPAY_CONFIG = {
+            API_TOKEN: "2WBXRD7DRRJUJN2PH1OIMKA5JTVO3AEEYJDMLPCGHGOVF676PMS9L8KANFGUQQR1",
+            ACCOUNT_NUMBER: "260220068",
+            POLL_INTERVAL_MS: 3000 // Tự động kiểm tra mỗi 3 giây
+        };
+        let SEPAY_POLL_TIMER = null;
+
         const TELEGRAM_CONFIG = {
             BOT_TOKEN: "8615110743:AAFWqNOTLgdFQMDelen2WbxPUW-Na5iwDRo",
             RECIPIENTS: [
@@ -1752,6 +1766,9 @@
                 btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
                 document.getElementById('qr-fallback-msg').style.display = 'none';
                 document.getElementById('payment-modal').style.display = 'flex';
+
+                // KÍCH HOẠT TỰ ĐỘNG ĐỐI SOÁT SEPAY REALTIME (AUTO BANKING)
+                startSepayAutoCheck(orderId, totalAmount);
 
                 // Gửi thông báo Telegram chạy ngầm (không để nghẽn luồng mở mã QR)
                 executeOrderConfirmation(orderPayload, '💳 Chuyển khoản VietQR (PENDING_PAYMENT - Chờ chuyển khoản)');
@@ -1897,8 +1914,102 @@
             alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được shop DÁNH BÁN HOA ghi nhận.\nShop sẽ kiểm tra thông báo chuyển khoản và liên hệ đóng gói gửi hàng sớm nhất cho bạn!`);
         }
 
+        // TỰ ĐỘNG ĐỐI SOÁT SEPAY REALTIME (AUTO BANKING)
+        function startSepayAutoCheck(targetOrderId, expectedAmount) {
+            stopSepayAutoCheck();
+            const statusEl = document.getElementById('sepay-status-text');
+            if (statusEl) statusEl.textContent = "Đang tự động kiểm tra biến động tài khoản MBBank...";
+
+            // Kiểm tra mỗi 3 giây một lần
+            SEPAY_POLL_TIMER = setInterval(async () => {
+                try {
+                    const res = await fetch('https://my.sepay.vn/userapi/transactions/list', {
+                        headers: {
+                            'Authorization': `Bearer ${SEPAY_CONFIG.API_TOKEN}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    if (!res.ok) return;
+
+                    const data = await res.json();
+                    if (!data || !data.transactions) return;
+
+                    // Tìm giao dịch chuyển tiền vào tài khoản MBBank khớp mã đơn hàng hoặc số tiền
+                    const cleanOrderId = targetOrderId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                    const matchedTx = data.transactions.find(tx => {
+                        const inAmount = parseFloat(tx.amount_in || tx.amount || 0);
+                        const desc = (tx.transaction_content || tx.description || '').toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+                        
+                        // Kiểm tra: tiền vào >= tổng đơn và nội dung có chứa mã đơn hàng
+                        const isAmountMatch = inAmount >= expectedAmount;
+                        const isContentMatch = desc.includes(cleanOrderId);
+                        return isAmountMatch && isContentMatch;
+                    });
+
+                    if (matchedTx) {
+                        stopSepayAutoCheck();
+                        handleSepaySuccessAuto(targetOrderId, matchedTx);
+                    }
+                } catch (e) {
+                    console.warn("Lỗi kiểm tra SePay:", e);
+                }
+            }, SEPAY_CONFIG.POLL_INTERVAL_MS);
+
+            // Tự động dừng sau 12 phút để tránh lãng phí request
+            setTimeout(() => { stopSepayAutoCheck(); }, 12 * 60 * 1000);
+        }
+
+        function stopSepayAutoCheck() {
+            if (SEPAY_POLL_TIMER) {
+                clearInterval(SEPAY_POLL_TIMER);
+                SEPAY_POLL_TIMER = null;
+            }
+        }
+
+        async function handleSepaySuccessAuto(orderId, tx) {
+            const statusBox = document.getElementById('sepay-waiting-box');
+            if (statusBox) {
+                statusBox.style.background = "#DCFCE7";
+                statusBox.style.borderColor = "#22C55E";
+                document.getElementById('sepay-status-text').innerHTML = "🎉 <b>ĐÃ NHẬN THANH TOÁN THÀNH CÔNG TỪ SEPAY!</b>";
+            }
+
+            // Gửi tin nhắn Telegram chúc mừng đơn đã nhận tiền thành công
+            const teleMsg = `💰 <b>[TỰ ĐỘNG SEPAY] ĐƠN HÀNG #${orderId} ĐÃ THANH TOÁN THÀNH CÔNG!</b>\n` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `🏦 <b>Ngân hàng:</b> MBBank (260220068)\n` +
+                `💵 <b>Số tiền nhận được:</b> <b>${fmtVND(tx.amount_in || tx.amount)}</b>\n` +
+                `📝 <b>Nội dung chuyển:</b> <i>${escapeHtml(tx.transaction_content || tx.description)}</i>\n` +
+                `⏰ <b>Thời gian giao dịch:</b> ${tx.transaction_date || new Date().toLocaleString('vi-VN')}\n` +
+                `✅ <i>Hệ thống đã tự động xác nhận đơn và sẵn sàng đóng gói giao hàng!</i>`;
+
+            try {
+                const sendPromises = TELEGRAM_CONFIG.RECIPIENTS.map(targetChatId => {
+                    return fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chat_id: targetChatId,
+                            text: teleMsg,
+                            parse_mode: 'HTML'
+                        })
+                    });
+                });
+                await Promise.all(sendPromises);
+            } catch (err) {
+                console.warn("Lỗi gửi Telegram SePay:", err);
+            }
+
+            setTimeout(() => {
+                document.getElementById('payment-modal').style.display = 'none';
+                PENDING_TRANSFER_ORDER = null;
+                alert(`🎉 ĐÃ NHẬN ĐƯỢC TIỀN THANH TOÁN!\n\nĐơn hàng #${orderId} đã được hệ thống SePay tự động xác nhận thành công.\nShop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`);
+            }, 1000);
+        }
+
         const PENDING_HOLD_HOURS = 24; // Giữ đơn chuyển khoản trong 24 giờ
         function closePaymentModal() {
+            stopSepayAutoCheck();
             alert(`Đơn hàng #${PENDING_TRANSFER_ORDER ? PENDING_TRANSFER_ORDER.orderId : ''} của bạn đã được lưu tạm trên hệ thống trong ${PENDING_HOLD_HOURS} giờ.\nBạn có thể chuyển khoản sau qua số tài khoản MBBank 260220068. Shop sẽ liên hệ để xác nhận giữ hàng!`);
             PENDING_TRANSFER_ORDER = null;
             document.getElementById('payment-modal').style.display = 'none';
