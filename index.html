@@ -1630,11 +1630,12 @@
         // HỢP ĐỒNG API GỬI ĐƠN HÀNG (T01: Hỗ trợ cả Server Proxy Worker lẫn Direct Fallback an toàn)
         const ORDER_API_URL = ""; // Điền URL Cloudflare Worker sau khi deploy theo server/README.md
 
-        // CẤU HÌNH ĐỐI SOÁT TỰ ĐỘNG SEPAY
+        // CẤU HÌNH ĐỐI SOÁT SEPAY AUTO BANKING
         const SEPAY_CONFIG = {
             API_TOKEN: "2WBXRD7DRRJUJN2PH1OIMKA5JTVO3AEEYJDMLPCGHGOVF676PMS9L8KANFGUQQR1",
             ACCOUNT_NUMBER: "260220068",
-            POLL_INTERVAL_MS: 3000 // Tự động kiểm tra mỗi 3 giây
+            // Sử dụng Worker trung gian hoặc API Direct để đối soát
+            PROXY_URL: "https://sepay-checker.daokiet2602.workers.dev"
         };
         let SEPAY_POLL_TIMER = null;
 
@@ -1922,14 +1923,14 @@
         }
 
         async function checkSepayTransactions() {
-            // Danh sách các cổng proxy kết nối SePay không bị chặn CORS
+            // Danh sách các endpoint đối soát tự động
             const endpoints = [
-                'https://my.sepay.vn/userapi/transactions/list',
-                'https://corsproxy.io/?' + encodeURIComponent('https://my.sepay.vn/userapi/transactions/list'),
+                SEPAY_CONFIG.PROXY_URL,
                 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://my.sepay.vn/userapi/transactions/list')
             ];
 
             for (const ep of endpoints) {
+                if (!ep) continue;
                 try {
                     const res = await fetch(ep, {
                         headers: {
