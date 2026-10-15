@@ -1067,7 +1067,7 @@
                             <div class="pay-method-card active" id="pay-opt-transfer" onclick="selectPayMethod('transfer')">
                                 <span class="icon">💳</span>
                                 <span class="t">Chuyển Khoản Ngay</span>
-                                <span class="d">Quét mã VietQR (Vietcombank)</span>
+                                <span class="d">Quét mã VietQR (MBBank)</span>
                             </div>
                             <div class="pay-method-card" id="pay-opt-cod" onclick="selectPayMethod('cod')">
                                 <span class="icon">🚚</span>
@@ -1606,12 +1606,12 @@
             });
         }
 
-        // CẤU HÌNH NGÂN HÀNG VIETCOMBANK CHÍNH THỨC
+        // CẤU HÌNH NGÂN HÀNG MBBANK (SEPAY AUTO BANKING)
         const BANK_CONFIG = {
-            BANK_ID: "VCB", // Vietcombank
-            ACCOUNT_NO: "7984193727",
-            ACCOUNT_NAME: "ZHANG TINH HUY",
-            BANK_DISPLAY: "Vietcombank (Ngân Hàng Ngoại Thương)"
+            BANK_ID: "MB", // Ngân hàng Quân Đội MB
+            ACCOUNT_NO: "260220068",
+            ACCOUNT_NAME: "DAO GIA KIET",
+            BANK_DISPLAY: "MBBank (Ngân Hàng Quân Đội)"
         };
 
         // HỢP ĐỒNG API GỬI ĐƠN HÀNG (T01: Hỗ trợ cả Server Proxy Worker lẫn Direct Fallback an toàn)
@@ -1899,7 +1899,7 @@
 
         const PENDING_HOLD_HOURS = 24; // Giữ đơn chuyển khoản trong 24 giờ
         function closePaymentModal() {
-            alert(`Đơn hàng #${PENDING_TRANSFER_ORDER ? PENDING_TRANSFER_ORDER.orderId : ''} của bạn đã được lưu tạm trên hệ thống trong ${PENDING_HOLD_HOURS} giờ.\nBạn có thể chuyển khoản sau qua số tài khoản Vietcombank 7984193727. Shop sẽ liên hệ để xác nhận giữ hàng!`);
+            alert(`Đơn hàng #${PENDING_TRANSFER_ORDER ? PENDING_TRANSFER_ORDER.orderId : ''} của bạn đã được lưu tạm trên hệ thống trong ${PENDING_HOLD_HOURS} giờ.\nBạn có thể chuyển khoản sau qua số tài khoản MBBank 260220068. Shop sẽ liên hệ để xác nhận giữ hàng!`);
             PENDING_TRANSFER_ORDER = null;
             document.getElementById('payment-modal').style.display = 'none';
             const contactWidget = document.querySelector('.contact-widget-wrap');
