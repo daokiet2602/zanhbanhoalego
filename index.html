@@ -1215,12 +1215,13 @@
             const grid = document.getElementById('catalog-grid');
             if (!DATA || !DATA.products) return;
 
+            const allProds = window.realtimeStore.getAllMergedProducts(DATA ? DATA.products : []);
             const q = document.getElementById('catalog-search').value.toLowerCase().trim();
             const statusFlt = document.getElementById('catalog-filter-status').value;
             const priceFlt = document.getElementById('catalog-filter-price').value;
             const sortMode = document.getElementById('catalog-sort').value;
 
-            let filtered = DATA.products.filter(p => {
+            let filtered = allProds.filter(p => {
                 const matchQ = p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
                 
                 const stockInfo = window.realtimeStore.getProductData(p);
@@ -1287,10 +1288,16 @@
 
         function filterCatalog() { renderCatalog(); }
 
+        function findProductAnywhere(id) {
+            const allProds = window.realtimeStore.getAllMergedProducts(DATA ? DATA.products : []);
+            return allProds.find(item => item.id === id);
+        }
+
         function addToCart(id) {
-            const p = DATA.products.find(item => item.id === id);
+            const p = findProductAnywhere(id);
+            if (!p) return;
             const stockInfo = window.realtimeStore.getProductData(p);
-            if (!p || stockInfo.qty <= 0) return;
+            if (stockInfo.qty <= 0) return;
 
             CART[id] = (CART[id] || 0) + 1;
             saveCart();
@@ -1331,7 +1338,7 @@
 
             let totalMoney = 0;
             box.innerHTML = Object.entries(CART).map(([id, qty]) => {
-                const p = DATA.products.find(item => item.id === id);
+                const p = findProductAnywhere(id);
                 if (!p) return '';
                 const stockInfo = window.realtimeStore.getProductData(p);
                 const money = stockInfo.price_retail * qty;
@@ -1699,7 +1706,7 @@
 
             // T13 & T04: Kiểm tra lại tồn kho và lấy giá bán thực tế đang áp dụng
             for (const [id, qty] of Object.entries(CART)) {
-                const p = DATA.products.find(item => item.id === id);
+                const p = findProductAnywhere(id);
                 if (!p) {
                     alert(`Sản phẩm [${id}] không còn tồn tại trong hệ thống. Vui lòng kiểm tra lại giỏ hàng!`);
                     btn.disabled = false;

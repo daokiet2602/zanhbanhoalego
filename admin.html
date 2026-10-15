@@ -351,9 +351,14 @@
         <div id="tab-content-stock">
             <div class="toolbar" style="margin-bottom: 14px;">
                 <input type="text" class="form-control" style="max-width:320px;" id="admin-search" placeholder="🔍 Tìm theo mã hoặc tên mẫu..." oninput="renderStockTable()">
-                <button class="btn-confirm-sale" style="background:var(--yellow); color:var(--dark); padding:10px 18px;" onclick="exportCSV()">
-                    📥 Xuất Excel Báo Cáo
-                </button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-confirm-sale" style="background:var(--blue); color:#fff; padding:10px 18px;" onclick="openNewProductModal()">
+                        ➕ Thêm Mặt Hàng Mới
+                    </button>
+                    <button class="btn-confirm-sale" style="background:var(--yellow); color:var(--dark); padding:10px 18px;" onclick="exportCSV()">
+                        📥 Xuất Excel Báo Cáo
+                    </button>
+                </div>
             </div>
 
             <div class="table-wrap">
@@ -437,6 +442,60 @@
 
     </div>
 
+    <!-- MODAL THÊM MẶT HÀNG MỚI -->
+    <div id="new-prod-modal" style="position:fixed; inset:0; background:rgba(15,23,42,0.7); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(6px);">
+        <div style="background:#fff; width:100%; max-width:520px; border-radius:24px; border:3px solid var(--dark); padding:24px; box-shadow:8px 8px 0 var(--blue); max-height:90vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:2px solid var(--border); padding-bottom:12px;">
+                <h3 style="font-size:1.25rem; font-weight:900;">➕ Thêm Mặt Hàng LEGO Mới</h3>
+                <button type="button" onclick="closeNewProductModal()" style="background:#F1F5F9; border:2px solid var(--dark); width:32px; height:32px; border-radius:50%; font-weight:900; cursor:pointer;">✕</button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <div class="form-group">
+                    <label>Tên Sản Phẩm / Mẫu Hoa *</label>
+                    <input type="text" class="form-control" id="new-p-name" placeholder="VD: Hoa Tulip Hồng Lego Decor">
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label>Mã Sản Phẩm (Tùy chọn)</label>
+                        <input type="text" class="form-control" id="new-p-id" placeholder="Tự động: LG-92...">
+                    </div>
+                    <div class="form-group">
+                        <label>Số Lượng Nhập Kho *</label>
+                        <input type="number" class="form-control" id="new-p-qty" value="10" min="0">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label>Giá Vốn Nhập (đ) *</label>
+                        <input type="number" class="form-control" id="new-p-cost" placeholder="VD: 85000" oninput="calcNewProdPreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>Giá Bán Lẻ (đ) *</label>
+                        <input type="number" class="form-control" id="new-p-retail" placeholder="VD: 165000" oninput="calcNewProdPreview()">
+                    </div>
+                </div>
+
+                <!-- XEM TRƯỚC LÃI -->
+                <div style="background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:12px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.85rem; font-weight:700; color:#15803D;">Tiền lời dự kiến / bộ:</span>
+                    <b style="font-size:1.1rem; color:var(--green);" id="new-p-profit-preview">+0đ (0%)</b>
+                </div>
+
+                <div class="form-group">
+                    <label>Link Hình Ảnh (URL hoặc để trống dùng ảnh mẫu)</label>
+                    <input type="text" class="form-control" id="new-p-img" placeholder="https://... hoặc images/prod_row_2.jpeg">
+                </div>
+
+                <button class="btn-confirm-sale" style="width:100%; padding:14px; margin-top:8px;" onclick="submitNewProduct()">
+                    💾 Lưu Vào Kho & Mở Bán Ngay
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="toast" id="toast">Thông báo</div>
 
     <script>
@@ -461,6 +520,53 @@
             loadData();
         }
 
+        function openNewProductModal() {
+            document.getElementById('new-prod-modal').style.display = 'flex';
+            document.getElementById('new-p-name').focus();
+        }
+
+        function closeNewProductModal() {
+            document.getElementById('new-prod-modal').style.display = 'none';
+        }
+
+        function calcNewProdPreview() {
+            const cost = parseFloat(document.getElementById('new-p-cost').value) || 0;
+            const retail = parseFloat(document.getElementById('new-p-retail').value) || 0;
+            const profit = retail - cost;
+            const margin = retail > 0 ? Math.round((profit / retail) * 1000) / 10 : 0;
+            document.getElementById('new-p-profit-preview').textContent = `${profit >= 0 ? '+' : ''}${fmtVND(profit)} (${margin}%)`;
+        }
+
+        function submitNewProduct() {
+            const name = document.getElementById('new-p-name').value.trim();
+            const cost = parseFloat(document.getElementById('new-p-cost').value) || 0;
+            const retail = parseFloat(document.getElementById('new-p-retail').value) || 0;
+            const qty = parseInt(document.getElementById('new-p-qty').value) || 0;
+            const id = document.getElementById('new-p-id').value.trim();
+            const img = document.getElementById('new-p-img').value.trim();
+
+            if (!name) { alert("Vui lòng nhập tên sản phẩm / mẫu hoa mới!"); return; }
+            if (retail <= 0) { alert("Vui lòng nhập giá bán lẻ hợp lệ!"); return; }
+
+            const newProd = window.realtimeStore.addNewProduct({
+                id: id,
+                name: name,
+                qty: qty,
+                price_cost: cost,
+                price_retail: retail,
+                img: img
+            });
+
+            closeNewProductModal();
+            showToast(`✅ Đã thêm thành công mẫu mới [${newProd.name}] vào kho hàng!`);
+            document.getElementById('new-p-name').value = '';
+            document.getElementById('new-p-cost').value = '';
+            document.getElementById('new-p-retail').value = '';
+            document.getElementById('new-p-id').value = '';
+            document.getElementById('new-p-img').value = '';
+            document.getElementById('new-p-profit-preview').textContent = '+0đ (0%)';
+        }
+
         async function loadData() {
             try {
                 const res = await fetch('data.json');
@@ -483,18 +589,21 @@
 
         function populateSelectDropdown() {
             const sel = document.getElementById('entry-prod-select');
+            const allProds = window.realtimeStore.getAllMergedProducts(DATA ? DATA.products : []);
             sel.innerHTML = '<option value="">-- Chọn sản phẩm đã bán --</option>' +
-                DATA.products.map(p => {
-                    const stock = window.realtimeStore.getProductStock(p).qty;
+                allProds.map(p => {
+                    const stock = window.realtimeStore.getProductData(p).qty;
                     return `<option value="${p.id}">[${p.id}] ${p.name} (Còn ${stock} bộ)</option>`;
                 }).join('');
         }
 
         function autoFillPrice() {
             const id = document.getElementById('entry-prod-select').value;
-            const p = DATA.products.find(item => item.id === id);
+            const allProds = window.realtimeStore.getAllMergedProducts(DATA ? DATA.products : []);
+            const p = allProds.find(item => item.id === id);
             if (p) {
-                document.getElementById('entry-price').value = p.price_retail;
+                const stockInfo = window.realtimeStore.getProductData(p);
+                document.getElementById('entry-price').value = stockInfo.price_retail;
             }
         }
 
@@ -503,7 +612,8 @@
             const id = document.getElementById('entry-prod-select').value;
             if (!id) { alert("Vui lòng chọn sản phẩm đã bán!"); return; }
 
-            const p = DATA.products.find(item => item.id === id);
+            const allProds = window.realtimeStore.getAllMergedProducts(DATA ? DATA.products : []);
+            const p = allProds.find(item => item.id === id);
             const qty = parseInt(document.getElementById('entry-qty').value) || 1;
             const price = parseFloat(document.getElementById('entry-price').value) || p.price_retail;
             const note = document.getElementById('entry-note').value;
@@ -585,16 +695,17 @@
 
         function renderKPI() {
             if (!DATA) return;
+            const allProds = window.realtimeStore.getAllMergedProducts(DATA ? DATA.products : []);
             let currentStock = 0;
             let currentCost = 0;
             let totalSold = 0;
             let activeCount = 0;
 
-            DATA.products.forEach(p => {
-                const stockInfo = window.realtimeStore.getProductStock(p);
+            allProds.forEach(p => {
+                const stockInfo = window.realtimeStore.getProductData(p);
                 const q = stockInfo.qty;
                 currentStock += q;
-                currentCost += q * p.price_cost;
+                currentCost += q * stockInfo.price_cost;
                 totalSold += stockInfo.sold;
                 if (stockInfo.status === 'active' && q > 0) activeCount++;
             });
@@ -607,7 +718,7 @@
                 actualProfit += o.profit;
             });
 
-            document.getElementById('kpi-total-prods').textContent = DATA.products.length;
+            document.getElementById('kpi-total-prods').textContent = allProds.length;
             document.getElementById('kpi-active-count').textContent = `${activeCount} mẫu đang mở bán`;
             document.getElementById('kpi-total-stock').textContent = `${currentStock} bộ`;
             document.getElementById('kpi-sold-count').textContent = `Đã bán thực tế: ${totalSold} bộ`;
@@ -622,8 +733,9 @@
             if (!DATA) return;
             const tbody = document.getElementById('stock-tbody');
             const q = document.getElementById('admin-search').value.toLowerCase().trim();
+            const allProds = window.realtimeStore.getAllMergedProducts(DATA ? DATA.products : []);
 
-            const rows = DATA.products.filter(p => {
+            const rows = allProds.filter(p => {
                 return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
             });
 

@@ -2,13 +2,14 @@
 const CLOUD_CONFIG = {
     STORAGE_KEY: "lego_store_realtime_inventory",
     SALES_KEY: "lego_store_sales_history",
-    PRICE_OVERRIDE_KEY: "lego_store_price_overrides"
+    NEW_PRODUCTS_KEY: "lego_store_new_products"
 };
 
 class RealtimeStore {
     constructor() {
         this.inventoryState = {}; // { [id]: { qty: number, status: string, sold: number, cost: number, retail: number } }
         this.salesHistory = [];   // [ { orderId, prodId, name, qty, price, cost, profit, note, time } ]
+        this.newProducts = [];    // Danh sách các sản phẩm mới do chủ shop thêm trực tiếp
         this.listeners = [];
         this.loadInitialState();
     }
@@ -20,6 +21,9 @@ class RealtimeStore {
 
             const localSales = localStorage.getItem(CLOUD_CONFIG.SALES_KEY);
             if (localSales) this.salesHistory = JSON.parse(localSales);
+
+            const localNewProds = localStorage.getItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY);
+            if (localNewProds) this.newProducts = JSON.parse(localNewProds);
         } catch (e) {
             console.warn("Chưa có cache:", e);
         }
@@ -30,7 +34,52 @@ class RealtimeStore {
     }
 
     notify() {
-        this.listeners.forEach(cb => cb({ inventory: this.inventoryState, sales: this.salesHistory }));
+        this.listeners.forEach(cb => cb({ 
+            inventory: this.inventoryState, 
+            sales: this.salesHistory,
+            newProducts: this.newProducts 
+        }));
+    }
+
+    // THÊM SẢN PHẨM MỚI VÀO HỆ THỐNG
+    addNewProduct(productData) {
+        const id = productData.id || ('LG-' + (92 + this.newProducts.length));
+        const newProd = {
+            id: id,
+            code: productData.code || ('Mẫu #' + id.replace('LG-', '')),
+            name: productData.name || 'Mẫu Hoa Lego Mới',
+            qty: Math.max(0, parseInt(productData.qty) || 0),
+            sold_qty: 0,
+            price_retail: parseFloat(productData.price_retail) || 0,
+            price_market: parseFloat(productData.price_market) || (parseFloat(productData.price_retail) * 1.3),
+            price_cost: parseFloat(productData.price_cost) || 0,
+            status: (parseInt(productData.qty) || 0) > 0 ? 'active' : 'out_of_stock',
+            img: productData.img || 'images/prod_row_2.jpeg',
+            createdAt: Date.now()
+        };
+
+        this.newProducts.unshift(newProd);
+
+        // Lưu thông số vào inventoryState
+        this.inventoryState[id] = {
+            qty: newProd.qty,
+            cost: newProd.price_cost,
+            retail: newProd.price_retail,
+            status: newProd.status,
+            sold: 0,
+            updatedAt: Date.now()
+        };
+
+        this.saveAndBroadcast();
+        return newProd;
+    }
+
+    // Lấy toàn bộ sản phẩm (Gồm sản phẩm gốc trong JSON + Sản phẩm mới thêm)
+    getAllMergedProducts(baseProducts = []) {
+        // Tránh trùng ID
+        const existingIds = new Set(this.newProducts.map(p => p.id));
+        const filteredBase = (baseProducts || []).filter(p => !existingIds.has(p.id));
+        return [...this.newProducts, ...filteredBase];
     }
 
     // Lấy thông tin sản phẩm (Ưu tiên thông tin tùy chỉnh mới nhất)
@@ -165,6 +214,7 @@ class RealtimeStore {
     saveAndBroadcast() {
         localStorage.setItem(CLOUD_CONFIG.STORAGE_KEY, JSON.stringify(this.inventoryState));
         localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
+        localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
         this.notify();
 
         if (window.BroadcastChannel) {
@@ -172,7 +222,8 @@ class RealtimeStore {
             bc.postMessage({
                 type: 'SYNC_UPDATE',
                 inventory: this.inventoryState,
-                sales: this.salesHistory
+                sales: this.salesHistory,
+                newProducts: this.newProducts
             });
         }
     }
@@ -184,6 +235,7 @@ class RealtimeStore {
                 if (ev.data && ev.data.type === 'SYNC_UPDATE') {
                     if (ev.data.inventory) this.inventoryState = ev.data.inventory;
                     if (ev.data.sales) this.salesHistory = ev.data.sales;
+                    if (ev.data.newProducts) this.newProducts = ev.data.newProducts;
                     this.notify();
                 }
             };
@@ -194,6 +246,9 @@ class RealtimeStore {
             }
             if (e.key === CLOUD_CONFIG.SALES_KEY && e.newValue) {
                 try { this.salesHistory = JSON.parse(e.newValue); this.notify(); } catch(err){}
+            }
+            if (e.key === CLOUD_CONFIG.NEW_PRODUCTS_KEY && e.newValue) {
+                try { this.newProducts = JSON.parse(e.newValue); this.notify(); } catch(err){}
             }
         });
     }
