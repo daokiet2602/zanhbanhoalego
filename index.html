@@ -1750,7 +1750,8 @@
 
             const isTransfer = SELECTED_PAY_METHOD === 'transfer';
 
-            // T03: ĐƠN CHUYỂN KHOẢN: GỬI NGAY ĐƠN HÀNG Ở TRẠNG THÁI "CHỜ THANH TOÁN (PENDING_PAYMENT)"
+            // ĐỐI VỚI ĐƠN CHUYỂN KHOẢN: CHƯA GHI NHẬN ĐƠN, CHƯA TRỪ KHO, CHƯA BẮN TELEGRAM!
+            // CHỈ MỞ MÃ VIETQR ĐỂ KHÁCH CHUYỂN KHOẢN
             if (isTransfer) {
                 PENDING_TRANSFER_ORDER = orderPayload;
 
@@ -1764,10 +1765,6 @@
                 document.getElementById('pay-amount').textContent = fmtVND(totalAmount);
                 document.getElementById('pay-memo').textContent = memo;
 
-                CART = {};
-                saveCart();
-                updateCartUI();
-
                 toggleCart(false);
                 hideCheckoutForm();
                 btn.disabled = false;
@@ -1777,9 +1774,6 @@
 
                 // KÍCH HOẠT TỰ ĐỘNG ĐỐI SOÁT SEPAY REALTIME (AUTO BANKING)
                 startSepayAutoCheck(orderId, totalAmount);
-
-                // Gửi thông báo Telegram chạy ngầm (không để nghẽn luồng mở mã QR)
-                executeOrderConfirmation(orderPayload, '💳 Chuyển khoản VietQR (PENDING_PAYMENT - Chờ chuyển khoản)');
                 return;
             }
 
@@ -1863,7 +1857,7 @@
             }
         }
 
-        // T03: KHI KHÁCH BẤM "TÔI ĐÃ CHUYỂN KHOẢN THÀNH CÔNG" -> BẮN BẢN CẬP NHẬT (CUSTOMER_CLAIMED_PAID) KHÔNG TẠO ĐƠN MỚI
+        // KHI KHÁCH BẤM "TÔI ĐÃ CHUYỂN KHOẢN THÀNH CÔNG" -> CHÍNH THỨC GHI NHẬN ĐƠN, TRỪ KHO & BẮN TELEGRAM (CHỈ 1 TIN DUY NHẤT)
         async function finishPayment() {
             if (!PENDING_TRANSFER_ORDER) {
                 document.getElementById('payment-modal').style.display = 'none';
@@ -1871,55 +1865,21 @@
             }
 
             const doneBtn = document.querySelector('.btn-paid-done');
-            if (doneBtn) { doneBtn.disabled = true; doneBtn.textContent = "⏳ Đang gửi xác nhận tới shop..."; }
+            if (doneBtn) { doneBtn.disabled = true; doneBtn.textContent = "⏳ Đang gửi đơn tới shop..."; }
+
+            // LÚC NÀY MỚI CHÍNH THỨC GHI NHẬN ĐƠN, TRỪ KHO & BẮN TELEGRAM
+            await executeOrderConfirmation(PENDING_TRANSFER_ORDER, '💳 Chuyển khoản VietQR (Khách báo ĐÃ CHUYỂN)');
 
             const orderId = PENDING_TRANSFER_ORDER.orderId;
-            const updateMsg = `🔔 <b>KHÁCH BÁO ĐÃ CHUYỂN KHOẢN!</b>\n` +
-                `━━━━━━━━━━━━━━━━━━\n` +
-                `📦 <b>Mã đơn:</b> <code>#${orderId}</code>\n` +
-                `👤 <b>Khách hàng:</b> ${PENDING_TRANSFER_ORDER.name} (<code>${PENDING_TRANSFER_ORDER.phone}</code>)\n` +
-                `💰 <b>Số tiền:</b> <b>${fmtVND(PENDING_TRANSFER_ORDER.totalAmount)}</b>\n` +
-                `⏰ <b>Thời gian báo:</b> ${new Date().toLocaleString('vi-VN')}\n` +
-                `👉 <i>Vui lòng kiểm tra app MBBank để xác nhận tiền về!</i>`;
-
-            try {
-                if (ORDER_API_URL) {
-                    await fetch(`${ORDER_API_URL}/order`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            orderId: orderId,
-                            status: 'CUSTOMER_CLAIMED_PAID',
-                            name: PENDING_TRANSFER_ORDER.name,
-                            phone: PENDING_TRANSFER_ORDER.phone,
-                            totalAmount: PENDING_TRANSFER_ORDER.totalAmount,
-                            timeStr: new Date().toLocaleString('vi-VN')
-                        })
-                    });
-                } else {
-                    const sendPromises = TELEGRAM_CONFIG.RECIPIENTS.map(targetChatId => {
-                        return fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                chat_id: targetChatId,
-                                text: updateMsg,
-                                parse_mode: 'HTML'
-                            })
-                        });
-                    });
-                    await Promise.all(sendPromises);
-                }
-            } catch(e) {
-                console.warn("Lỗi gửi xác nhận:", e);
-            }
-
             PENDING_TRANSFER_ORDER = null;
+            CART = {};
+            saveCart();
+            updateCartUI();
 
             if (doneBtn) { doneBtn.disabled = false; doneBtn.textContent = "✅ Tôi Đã Chuyển Khoản Thành Công"; }
             document.getElementById('payment-modal').style.display = 'none';
 
-            alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được shop DÁNH BÁN HOA ghi nhận.\nShop sẽ kiểm tra thông báo chuyển khoản và liên hệ đóng gói gửi hàng sớm nhất cho bạn!`);
+            alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được shop DÁNH BÁN HOA ghi nhận thành công.\nShop sẽ kiểm tra app ngân hàng và đóng gói gửi hàng sớm nhất cho bạn!`);
         }
 
         async function checkSepayTransactions() {
@@ -2002,37 +1962,19 @@
                 document.getElementById('sepay-status-text').innerHTML = "🎉 <b>ĐÃ NHẬN THANH TOÁN THÀNH CÔNG TỪ SEPAY!</b>";
             }
 
-            // Gửi tin nhắn Telegram chúc mừng đơn đã nhận tiền thành công
-            const teleMsg = `💰 <b>[TỰ ĐỘNG SEPAY] ĐƠN HÀNG #${orderId} ĐÃ THANH TOÁN THÀNH CÔNG!</b>\n` +
-                `━━━━━━━━━━━━━━━━━━\n` +
-                `🏦 <b>Ngân hàng:</b> MBBank (260220068)\n` +
-                `💵 <b>Số tiền nhận được:</b> <b>${fmtVND(tx.amount_in || tx.amount)}</b>\n` +
-                `📝 <b>Nội dung chuyển:</b> <i>${escapeHtml(tx.transaction_content || tx.description)}</i>\n` +
-                `⏰ <b>Thời gian giao dịch:</b> ${tx.transaction_date || new Date().toLocaleString('vi-VN')}\n` +
-                `✅ <i>Hệ thống đã tự động xác nhận đơn và sẵn sàng đóng gói giao hàng!</i>`;
-
-            try {
-                const sendPromises = TELEGRAM_CONFIG.RECIPIENTS.map(targetChatId => {
-                    return fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            chat_id: targetChatId,
-                            text: teleMsg,
-                            parse_mode: 'HTML'
-                        })
-                    });
-                });
-                await Promise.all(sendPromises);
-            } catch (err) {
-                console.warn("Lỗi gửi Telegram SePay:", err);
+            // CHÍNH THỨC GHI NHẬN ĐƠN, TRỪ KHO & LƯU VÀO HỆ THỐNG
+            if (PENDING_TRANSFER_ORDER) {
+                await executeOrderConfirmation(PENDING_TRANSFER_ORDER, `💳 Chuyển khoản VietQR (SePay tự động khớp: ${fmtVND(tx.amount_in || tx.amount)})`);
+                PENDING_TRANSFER_ORDER = null;
+                CART = {};
+                saveCart();
+                updateCartUI();
             }
 
             setTimeout(() => {
                 document.getElementById('payment-modal').style.display = 'none';
-                PENDING_TRANSFER_ORDER = null;
                 alert(`🎉 ĐÃ NHẬN ĐƯỢC TIỀN THANH TOÁN!\n\nĐơn hàng #${orderId} đã được hệ thống SePay tự động xác nhận thành công.\nShop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`);
-            }, 1000);
+            }, 1200);
         }
 
         const PENDING_HOLD_HOURS = 24; // Giữ đơn chuyển khoản trong 24 giờ
