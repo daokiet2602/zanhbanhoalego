@@ -1640,9 +1640,11 @@
         const SEPAY_CONFIG = {
             API_TOKEN: "2WBXRD7DRRJUJN2PH1OIMKA5JTVO3AEEYJDMLPCGHGOVF676PMS9L8KANFGUQQR1",
             ACCOUNT_NUMBER: "260220068",
-            // Sử dụng Worker trung gian Cloudflare của anh Kiệt
-            PROXY_URL: "https://sepay-checker.daokiet-work.workers.dev"
+            PROXY_URL: "https://sepay-checker.daokiet-work.workers.dev",
+            POLL_INTERVAL_MS: 2000 // Kiểm tra mỗi 2 giây
         };
+        let SEPAY_POLL_TIMER = null;
+        let IS_SEPAY_SUCCESS_HANDLED = false; // CỜ KHÓA CHỐNG SPAM TELEGRAM & CHỐNG LẶP POPUP THÀNH CÔNG
         let SEPAY_POLL_TIMER = null;
 
         const TELEGRAM_CONFIG = {
@@ -1916,17 +1918,23 @@
         // TỰ ĐỘNG ĐỐI SOÁT SEPAY REALTIME (AUTO BANKING)
         function startSepayAutoCheck(targetOrderId, expectedAmount) {
             stopSepayAutoCheck();
+            IS_SEPAY_SUCCESS_HANDLED = false; // Reset cờ khóa đơn mới
             const statusEl = document.getElementById('sepay-status-text');
             if (statusEl) statusEl.textContent = "Đang tự động kiểm tra biến động tài khoản MBBank...";
 
-            // Chuẩn hóa mã đơn hàng để đối soát (ví dụ: DH261015-8963 -> DH2610158963)
+            // Chuẩn hóa mã đơn hàng để đối soát (ví dụ: DH261015-8963 -> dh2610158963)
             const cleanOrderId = targetOrderId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
-            // Kiểm tra mỗi 3 giây một lần
+            // Kiểm tra mỗi 2 giây một lần qua Cloudflare Worker
             SEPAY_POLL_TIMER = setInterval(async () => {
+                if (IS_SEPAY_SUCCESS_HANDLED) {
+                    stopSepayAutoCheck();
+                    return;
+                }
+
                 try {
                     const transactions = await checkSepayTransactions();
-                    if (!transactions || !transactions.length) return;
+                    if (!transactions || !transactions.length || IS_SEPAY_SUCCESS_HANDLED) return;
 
                     // Tìm giao dịch chuyển tiền vào tài khoản MBBank khớp mã đơn hàng hoặc số tiền
                     const matchedTx = transactions.find(tx => {
@@ -1940,7 +1948,8 @@
                         return isAmountMatch && isContentMatch;
                     });
 
-                    if (matchedTx) {
+                    if (matchedTx && !IS_SEPAY_SUCCESS_HANDLED) {
+                        IS_SEPAY_SUCCESS_HANDLED = true; // KHÓA CỜ NGAY TỨC THÌ ĐỂ CHỐNG SPAM
                         stopSepayAutoCheck();
                         handleSepaySuccessAuto(targetOrderId, matchedTx);
                     }
@@ -1949,8 +1958,8 @@
                 }
             }, SEPAY_CONFIG.POLL_INTERVAL_MS);
 
-            // Tự động dừng sau 12 phút để tránh lãng phí request
-            setTimeout(() => { stopSepayAutoCheck(); }, 12 * 60 * 1000);
+            // Tự động dừng sau 10 phút để tránh lãng phí request
+            setTimeout(() => { stopSepayAutoCheck(); }, 10 * 60 * 1000);
         }
 
         function stopSepayAutoCheck() {
@@ -1961,6 +1970,7 @@
         }
 
         async function handleSepaySuccessAuto(orderId, tx) {
+            stopSepayAutoCheck();
             const statusBox = document.getElementById('sepay-waiting-box');
             if (statusBox) {
                 statusBox.style.background = "#DCFCE7";
@@ -1968,10 +1978,13 @@
                 document.getElementById('sepay-status-text').innerHTML = "🎉 <b>ĐÃ NHẬN THANH TOÁN THÀNH CÔNG TỪ SEPAY!</b>";
             }
 
-            // CHÍNH THỨC GHI NHẬN ĐƠN, TRỪ KHO & LƯU VÀO HỆ THỐNG
+            // CHÍNH THỨC GHI NHẬN ĐƠN, TRỪ KHO & LƯU VÀO HỆ THỐNG - ĐÚNG 1 LẦN DUY NHẤT
             if (PENDING_TRANSFER_ORDER) {
-                await executeOrderConfirmation(PENDING_TRANSFER_ORDER, `💳 Chuyển khoản VietQR (SePay tự động khớp: ${fmtVND(tx.amount_in || tx.amount)})`);
-                PENDING_TRANSFER_ORDER = null;
+                const orderSnapshot = { ...PENDING_TRANSFER_ORDER };
+                PENDING_TRANSFER_ORDER = null; // Xóa ngay để không bị re-trigger
+                
+                await executeOrderConfirmation(orderSnapshot, `💳 Chuyển khoản VietQR (SePay tự động khớp: ${fmtVND(tx.amount_in || tx.amount)})`);
+                
                 CART = {};
                 saveCart();
                 updateCartUI();
@@ -1980,7 +1993,7 @@
             setTimeout(() => {
                 document.getElementById('payment-modal').style.display = 'none';
                 alert(`🎉 ĐÃ NHẬN ĐƯỢC TIỀN THANH TOÁN!\n\nĐơn hàng #${orderId} đã được hệ thống SePay tự động xác nhận thành công.\nShop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`);
-            }, 1200);
+            }, 800);
         }
 
         const PENDING_HOLD_HOURS = 24; // Giữ đơn chuyển khoản trong 24 giờ

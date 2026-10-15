@@ -2,7 +2,8 @@
 const CLOUD_CONFIG = {
     STORAGE_KEY: "lego_store_realtime_inventory",
     SALES_KEY: "lego_store_sales_history",
-    NEW_PRODUCTS_KEY: "lego_store_new_products"
+    NEW_PRODUCTS_KEY: "lego_store_new_products",
+    CLOUD_STORE_URL: "https://sepay-checker.daokiet-work.workers.dev/api/cloud-store"
 };
 
 class RealtimeStore {
@@ -12,6 +13,7 @@ class RealtimeStore {
         this.newProducts = [];    // Danh sách các sản phẩm mới do chủ shop thêm trực tiếp
         this.listeners = [];
         this.loadInitialState();
+        this.syncWithCloudWorker(); // Tự động kéo dữ liệu mới nhất từ Cloud Worker
     }
 
     loadInitialState() {
@@ -26,6 +28,45 @@ class RealtimeStore {
             if (localNewProds) this.newProducts = JSON.parse(localNewProds);
         } catch (e) {
             console.warn("Chưa có cache:", e);
+        }
+    }
+
+    // KÉO DỮ LIỆU DÙNG CHUNG TỪ CLOUD WORKER (GIÚP KHÁCH VÀ ADMIN ĐỒNG BỘ 100% TRÊN MỌI MÁY)
+    async syncWithCloudWorker() {
+        try {
+            const res = await fetch(CLOUD_CONFIG.CLOUD_STORE_URL);
+            if (res.ok) {
+                const cloudData = await res.json();
+                if (cloudData) {
+                    if (cloudData.inventory && Object.keys(cloudData.inventory).length > 0) {
+                        this.inventoryState = { ...this.inventoryState, ...cloudData.inventory };
+                        localStorage.setItem(CLOUD_CONFIG.STORAGE_KEY, JSON.stringify(this.inventoryState));
+                    }
+                    if (cloudData.newProducts && cloudData.newProducts.length > 0) {
+                        this.newProducts = cloudData.newProducts;
+                        localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
+                    }
+                    this.notify();
+                }
+            }
+        } catch(e) {
+            console.warn("Không kết nối được Cloud Worker:", e);
+        }
+    }
+
+    // ĐẨY DỮ LIỆU LÊN CLOUD WORKER KHI ADMIN CẬP NHẬT
+    async pushToCloudWorker() {
+        try {
+            await fetch(CLOUD_CONFIG.CLOUD_STORE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    inventory: this.inventoryState,
+                    newProducts: this.newProducts
+                })
+            });
+        } catch(e) {
+            console.warn("Lỗi lưu lên Cloud Worker:", e);
         }
     }
 
@@ -216,6 +257,7 @@ class RealtimeStore {
         localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
         localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
         this.notify();
+        this.pushToCloudWorker(); // Đẩy ngay lên mây Cloud Worker
 
         if (window.BroadcastChannel) {
             const bc = new BroadcastChannel('lego_inventory_sync');
