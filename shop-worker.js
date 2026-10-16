@@ -32,7 +32,7 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': isAllowed ? origin : 'null',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Key, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Key, Authorization, Cache-Control, Pragma',
       'Vary': 'Origin'
     };
 
@@ -359,7 +359,7 @@ async function handleAdminRoute(pathname, method, req, env) {
   const store = await getGlobalStore(kv);
 
   // N5: Liệt kê đơn hàng từ các key tiền tố order:
-  if (pathname === '/admin/orders') {
+  if (pathname === '/admin/orders' && method === 'GET') {
     let ordersList = [];
     if (kv && kv.list) {
       const listRes = await kv.list({ prefix: 'order:' });
@@ -370,6 +370,37 @@ async function handleAdminRoute(pathname, method, req, env) {
       ordersList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     }
     return { ok: true, orders: ordersList };
+  }
+
+  // HỦY ĐƠN HÀNG TRÊN CLOUDFLARE KV & HOÀN TỒN KHO LẬP TỨC
+  if (pathname === '/admin/orders/cancel' && method === 'POST') {
+    const body = await req.json();
+    const orderId = String(body.orderId || '').toUpperCase().trim();
+    if (!orderId) return { ok: false, error: 'MISSING_ORDER_ID' };
+
+    const raw = await kv.get(`order:${orderId}`);
+    if (!raw) return { ok: false, error: 'NOT_FOUND', message: 'Không tìm thấy đơn hàng' };
+
+    const order = JSON.parse(raw);
+    if (order.status !== 'CANCELLED') {
+      order.status = 'CANCELLED';
+      order.cancelledAt = Date.now();
+      await kv.put(`order:${orderId}`, JSON.stringify(order), { expirationTtl: 180 * 24 * 3600 });
+
+      // Hoàn lại số lượng tồn kho trên đám mây
+      const store = await getGlobalStore(kv);
+      if (store.inventory && order.lines && Array.isArray(order.lines)) {
+        order.lines.forEach(l => {
+          if (store.inventory[l.id]) {
+            store.inventory[l.id].qty = (store.inventory[l.id].qty || 0) + (l.qty || 1);
+            store.inventory[l.id].sold = Math.max(0, (store.inventory[l.id].sold || 0) - (l.qty || 1));
+          }
+        });
+        await kv.put('lego_global_store', JSON.stringify(store));
+      }
+    }
+
+    return { ok: true, orderId: orderId, status: 'CANCELLED' };
   }
 
   if (pathname === '/admin/store' && method === 'POST') {

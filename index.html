@@ -1239,12 +1239,12 @@
                 updateCartUI();
                 restoreSavedCustomerInfo();
 
-                // 2. TỰ ĐỘNG LÀM MỚI NGẦM MỖI 15 GIÂY (Auto-refresh realtime khi khách đang xem trang)
+                // 2. TỰ ĐỘNG LÀM MỚI NGẦM MỖI 3 GIÂY (Auto-refresh realtime siêu tốc cho khách)
                 setInterval(() => {
                     if (window.realtimeStore && !document.hidden) {
                         window.realtimeStore.syncWithCloudWorker();
                     }
-                }, 15000);
+                }, 3000);
 
             } catch (err) {
                 console.error("Lỗi đọc dữ liệu:", err);

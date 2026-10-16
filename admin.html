@@ -605,6 +605,16 @@
                 renderKPI();
                 renderStockTable();
                 renderOrdersTable();
+
+                // Tự động làm mới dữ liệu đơn và kho từ Cloud mỗi 4 giây
+                if (!window.ADMIN_POLL_INTERVAL) {
+                    window.ADMIN_POLL_INTERVAL = setInterval(() => {
+                        if (window.realtimeStore && !document.hidden) {
+                            window.realtimeStore.syncWithCloudWorker();
+                            window.realtimeStore.fetchAdminOrders();
+                        }
+                    }, 4000);
+                }
             } catch (err) {
                 console.error("Lỗi nạp dữ liệu:", err);
             }
@@ -719,12 +729,20 @@
             populateSelectDropdown();
         }
 
-        // HỦY ĐƠN HÀNG
-        function handleUndoOrder(orderId) {
-            if (confirm(`Bạn có chắc muốn hoàn tác đơn hàng [${orderId}]? Tồn kho sẽ được cộng lại.`)) {
-                window.realtimeStore.undoSale(orderId);
-                showToast(`Đã hoàn tác đơn hàng ${orderId}!`);
+        // HỦY ĐƠN HÀNG TRỰC TIẾP LÊN MÂY CLOUDFLARE
+        async function handleUndoOrder(orderId) {
+            if (!confirm(`Bạn có chắc muốn hủy đơn hàng #${orderId}? Tồn kho của các món trong đơn sẽ được tự động cộng trả lại trên Cloudflare.`)) {
+                return;
+            }
+            showToast(`⏳ Đang xử lý hủy đơn #${orderId}...`);
+            const ok = await window.realtimeStore.cancelOrderOnCloud(orderId);
+            if (ok) {
+                showToast(`✅ Đã hủy đơn #${orderId} và hoàn kho thành công trên đám mây!`);
+                await window.realtimeStore.syncWithCloudWorker();
+                await window.realtimeStore.fetchAdminOrders();
                 populateSelectDropdown();
+            } else {
+                showToast(`❌ Không thể hủy đơn #${orderId}. Vui lòng thử lại!`);
             }
         }
 

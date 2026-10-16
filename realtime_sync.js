@@ -6,7 +6,8 @@ const CLOUD_CONFIG = {
     // Worker Endpoints chuẩn hoá theo Đặc tả V2:
     PUBLIC_STORE_URL: "https://sepay-checker.daokiet-work.workers.dev/store",
     ADMIN_STORE_URL: "https://sepay-checker.daokiet-work.workers.dev/admin/store",
-    ADMIN_ORDERS_URL: "https://sepay-checker.daokiet-work.workers.dev/admin/orders"
+    ADMIN_ORDERS_URL: "https://sepay-checker.daokiet-work.workers.dev/admin/orders",
+    ADMIN_CANCEL_ORDER_URL: "https://sepay-checker.daokiet-work.workers.dev/admin/orders/cancel"
 };
 
 class RealtimeStore {
@@ -15,6 +16,7 @@ class RealtimeStore {
         this.salesHistory = [];   // Danh sách đơn hàng
         this.newProducts = [];    // Danh sách các sản phẩm mới do chủ shop thêm trực tiếp
         this.listeners = [];
+        this._pushDebounceTimer = null;
         this.loadInitialState();
         this.syncWithCloudWorker(); // Kéo dữ liệu từ /store
     }
@@ -78,6 +80,25 @@ class RealtimeStore {
             return res.ok;
         } catch(e) {
             console.warn("Lỗi lưu lên Cloud Worker:", e);
+            return false;
+        }
+    }
+
+    // HỦY ĐƠN HÀNG TRÊN CLOUDFLARE KV
+    async cancelOrderOnCloud(orderId, adminKey = '') {
+        try {
+            const key = adminKey || sessionStorage.getItem('lego_admin_key') || 'danhbanhoa2602secretkey';
+            const res = await fetch(CLOUD_CONFIG.ADMIN_CANCEL_ORDER_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Admin-Key': key
+                },
+                body: JSON.stringify({ orderId })
+            });
+            return res.ok;
+        } catch(e) {
+            console.warn("Lỗi hủy đơn trên Cloud:", e);
             return false;
         }
     }
@@ -260,7 +281,7 @@ class RealtimeStore {
         };
 
         this.salesHistory.unshift(orderRecord);
-        this.saveAndBroadcast(orderRecord);
+        this.saveAndBroadcast(true);
 
         return { success: true, order: orderRecord, remainingStock: updatedQty };
     }
@@ -286,12 +307,11 @@ class RealtimeStore {
         return true;
     }
 
-    saveAndBroadcast(newOrder = null) {
+    saveAndBroadcast(immediate = false) {
         localStorage.setItem(CLOUD_CONFIG.STORAGE_KEY, JSON.stringify(this.inventoryState));
         localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
         localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
         this.notify();
-        this.pushToCloudWorker(newOrder); // Đẩy ngay lên mây Cloud Worker kèm đơn mới (nếu có)
 
         if (window.BroadcastChannel) {
             const bc = new BroadcastChannel('lego_inventory_sync');
@@ -301,6 +321,17 @@ class RealtimeStore {
                 sales: this.salesHistory,
                 newProducts: this.newProducts
             });
+        }
+
+        // TỰ ĐỘNG ĐẨY LÊN CLOUD KHÔNG CẦN BẤM NÚT THỦ CÔNG
+        if (immediate) {
+            if (this._pushDebounceTimer) clearTimeout(this._pushDebounceTimer);
+            this.pushToCloudWorker();
+        } else {
+            if (this._pushDebounceTimer) clearTimeout(this._pushDebounceTimer);
+            this._pushDebounceTimer = setTimeout(() => {
+                this.pushToCloudWorker();
+            }, 600);
         }
     }
 
