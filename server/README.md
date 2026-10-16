@@ -1,27 +1,14 @@
-# HƯỚNG DẪN CẤU HÌNH SERVERLESS WORKER DUY NHẤT (SHOP-WORKER)
-Phiên bản: 2.0 (Toàn bộ logic nghiệp vụ, đối soát SePay và bảo mật nằm tại đây)
+# HƯỚNG DẪN DEPLOY TELEGRAM ORDER PROXY (CLOUDFLARE WORKER)
+Bảo mật tuyệt đối Token Bot Telegram và danh sách Chat ID khỏi code client public.
 
-## 1. Triển khai Worker lên Cloudflare
-1. Đăng nhập vào [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. Vào Worker `sepay-checker` của bạn -> Bấm **Edit code**.
-3. Copy toàn bộ mã trong file `server/shop-worker.js` dán đè vào `worker.js` trên Cloudflare -> Bấm **Save and deploy**.
+## 1. Yêu cầu chuẩn bị
+- 1 Tài khoản Cloudflare miễn phí (https://dash.cloudflare.com)
 
-## 2. Cấu hình biến môi trường và Secret
-Vào Worker `sepay-checker` -> Tab **Settings**:
-1. Mục **Bindings**:
-   - Gắn biến `STORE_KV` (hoặc `Store_kv`) trỏ vào KV Namespace `STORE_KV` của bạn.
-2. Mục **Variables and Secrets**:
-   - Thêm Secret: `TELEGRAM_BOT_TOKEN` = `8615110743:AAFWqNOTLgdFQMDelen2WbxPUW-Na5iwDRo`
-   - Thêm Secret: `TELEGRAM_CHAT_IDS` = `6401633197,8687700662`
-   - Thêm Secret: `SEPAY_WEBHOOK_KEY` = `danhbanhoa_sepay_secret_key_2026`
-   - Thêm Secret: `ADMIN_KEY` = `danhbanhoa2602secretkey`
-
-## 3. Cấu hình Webhook trên SePay
-1. Đăng nhập vào [SePay Dashboard](https://my.sepay.vn).
-2. Vào mục **Tích hợp WebHooks** -> Bấm **Tạo Webhook mới**:
-   - **URL Webhook:** `https://sepay-checker.daokiet-work.workers.dev/webhook/sepay`
-   - **Kiểu xác thực (Authentication):** API Key
-   - **API Key:** `danhbanhoa_sepay_secret_key_2026` (Khớp đúng với biến SEPAY_WEBHOOK_KEY)
-3. Bấm **Lưu Webhook**.
-
-Xong! Giờ đây khi có tiền chuyển vào MBBank, SePay sẽ tự động gọi webhook về Worker để duyệt đơn và nổ thông báo về Telegram!
+## 2. Các bước triển khai (2 phút)
+1. Đăng nhập vào Cloudflare Dashboard -> Vào mục **Workers & Pages** -> Bấm **Create Worker**.
+2. Đặt tên Worker: `danhbanhoa-order-proxy` -> Bấm **Deploy**.
+3. Bấm **Edit Code**, dán toàn bộ nội dung file `order-proxy.js` vào file `worker.js` trên Cloudflare -> Bấm **Save and deploy**.
+4. Vào tab **Settings** của Worker -> Chọn mục **Variables and Secrets**:
+   - Thêm Secret: `TELEGRAM_BOT_TOKEN` = `<Token Bot Telegram mới sau khi /revoke>`
+   - Thêm Secret: `TELEGRAM_CHAT_IDS` = `6401633197,8687700662` (cách nhau bằng dấu phẩy)
+5. Lấy đường dẫn Worker URL (VD: `https://danhbanhoa-order-proxy.tenban.workers.dev`) gán vào biến `ORDER_API_URL` trong file `index.html`.

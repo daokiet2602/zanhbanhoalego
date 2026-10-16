@@ -1,22 +1,19 @@
-// REALTIME CLOUD SYNC & INVENTORY/PRICE MANAGEMENT MODULE (V2.0 - FIX N1 & N5)
+// REALTIME CLOUD SYNC & INVENTORY/PRICE MANAGEMENT MODULE
 const CLOUD_CONFIG = {
     STORAGE_KEY: "lego_store_realtime_inventory",
     SALES_KEY: "lego_store_sales_history",
     NEW_PRODUCTS_KEY: "lego_store_new_products",
-    // Worker Endpoints chuẩn hoá theo Đặc tả V2:
-    PUBLIC_STORE_URL: "https://sepay-checker.daokiet-work.workers.dev/store",
-    ADMIN_STORE_URL: "https://sepay-checker.daokiet-work.workers.dev/admin/store",
-    ADMIN_ORDERS_URL: "https://sepay-checker.daokiet-work.workers.dev/admin/orders"
+    CLOUD_STORE_URL: "https://sepay-checker.daokiet-work.workers.dev/api/cloud-store"
 };
 
 class RealtimeStore {
     constructor() {
         this.inventoryState = {}; // { [id]: { qty: number, status: string, sold: number, cost: number, retail: number } }
-        this.salesHistory = [];   // Danh sách đơn hàng
+        this.salesHistory = [];   // [ { orderId, prodId, name, qty, price, cost, profit, note, time } ]
         this.newProducts = [];    // Danh sách các sản phẩm mới do chủ shop thêm trực tiếp
         this.listeners = [];
         this.loadInitialState();
-        this.syncWithCloudWorker(); // Kéo dữ liệu từ /store
+        this.syncWithCloudWorker(); // Tự động kéo dữ liệu mới nhất từ Cloud Worker
     }
 
     loadInitialState() {
@@ -34,10 +31,11 @@ class RealtimeStore {
         }
     }
 
-    // N1: KÉO DỮ LIỆU TỒN KHO & SẢN PHẨM MỚI TỪ ENDPOINT CHUẨN GET /store
+    // KÉO DỮ LIỆU DÙNG CHUNG TỪ CLOUD WORKER (CHỐNG CACHE TRIỆT ĐỂ & ĐỒNG BỘ TỨC THÌ)
     async syncWithCloudWorker() {
         try {
-            const freshUrl = `${CLOUD_CONFIG.PUBLIC_STORE_URL}?_t=${Date.now()}`;
+            // Thêm timestamp ?_t= để ép trình duyệt điện thoại luôn kéo dữ liệu tươi mới 100%, không dính cache
+            const freshUrl = `${CLOUD_CONFIG.CLOUD_STORE_URL}?_t=${Date.now()}`;
             const res = await fetch(freshUrl, {
                 cache: 'no-store',
                 headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
@@ -53,6 +51,10 @@ class RealtimeStore {
                         this.newProducts = cloudData.newProducts;
                         localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
                     }
+                    if (cloudData.salesHistory && cloudData.salesHistory.length > 0) {
+                        this.salesHistory = cloudData.salesHistory;
+                        localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
+                    }
                     this.notify();
                 }
             }
@@ -61,46 +63,22 @@ class RealtimeStore {
         }
     }
 
-    // N1 & N5: ĐẨY DỮ LIỆU LÊN CLOUD QUA POST /admin/store CÓ X-Admin-Key
-    async pushToCloudWorker(adminKey = '') {
+    // ĐẨY DỮ LIỆU LÊN CLOUD WORKER KHI ADMIN CẬP NHẬT HOẶC CÓ ĐƠN MỚI
+    async pushToCloudWorker(newOrder = null) {
         try {
-            const key = adminKey || sessionStorage.getItem('lego_admin_key') || 'danhbanhoa2602secretkey';
-            await fetch(CLOUD_CONFIG.ADMIN_STORE_URL, {
+            await fetch(CLOUD_CONFIG.CLOUD_STORE_URL, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Admin-Key': key
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     inventory: this.inventoryState,
-                    newProducts: this.newProducts
+                    newProducts: this.newProducts,
+                    salesHistory: this.salesHistory,
+                    newOrder: newOrder
                 })
             });
         } catch(e) {
             console.warn("Lỗi lưu lên Cloud Worker:", e);
         }
-    }
-
-    // N5: TẢI DANH SÁCH ĐƠN HÀNG THỰC TẾ QUA GET /admin/orders CÓ X-Admin-Key
-    async fetchAdminOrders(adminKey = '') {
-        try {
-            const key = adminKey || sessionStorage.getItem('lego_admin_key') || 'danhbanhoa2602secretkey';
-            const res = await fetch(`${CLOUD_CONFIG.ADMIN_ORDERS_URL}?_t=${Date.now()}`, {
-                headers: { 'X-Admin-Key': key }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                if (data && data.orders) {
-                    this.salesHistory = data.orders;
-                    localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
-                    this.notify();
-                    return data.orders;
-                }
-            }
-        } catch(e) {
-            console.warn("Lỗi tải đơn hàng admin:", e);
-        }
-        return this.salesHistory;
     }
 
     subscribe(callback) {

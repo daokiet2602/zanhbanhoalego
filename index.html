@@ -1950,6 +1950,8 @@
         function closeAlertModal() {
             document.getElementById('alert-modal').style.display = 'none';
         }
+
+        function showToastNotify(msg) {
             const t = document.getElementById('toast-notify');
             t.textContent = msg;
             t.style.display = 'block';
