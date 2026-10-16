@@ -46,6 +46,10 @@ class RealtimeStore {
                         this.newProducts = cloudData.newProducts;
                         localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
                     }
+                    if (cloudData.salesHistory && cloudData.salesHistory.length > 0) {
+                        this.salesHistory = cloudData.salesHistory;
+                        localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
+                    }
                     this.notify();
                 }
             }
@@ -54,15 +58,17 @@ class RealtimeStore {
         }
     }
 
-    // ĐẨY DỮ LIỆU LÊN CLOUD WORKER KHI ADMIN CẬP NHẬT
-    async pushToCloudWorker() {
+    // ĐẨY DỮ LIỆU LÊN CLOUD WORKER KHI ADMIN CẬP NHẬT HOẶC CÓ ĐƠN MỚI
+    async pushToCloudWorker(newOrder = null) {
         try {
             await fetch(CLOUD_CONFIG.CLOUD_STORE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     inventory: this.inventoryState,
-                    newProducts: this.newProducts
+                    newProducts: this.newProducts,
+                    salesHistory: this.salesHistory,
+                    newOrder: newOrder
                 })
             });
         } catch(e) {
@@ -226,7 +232,7 @@ class RealtimeStore {
         };
 
         this.salesHistory.unshift(orderRecord);
-        this.saveAndBroadcast();
+        this.saveAndBroadcast(orderRecord);
 
         return { success: true, order: orderRecord, remainingStock: updatedQty };
     }
@@ -252,12 +258,12 @@ class RealtimeStore {
         return true;
     }
 
-    saveAndBroadcast() {
+    saveAndBroadcast(newOrder = null) {
         localStorage.setItem(CLOUD_CONFIG.STORAGE_KEY, JSON.stringify(this.inventoryState));
         localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
         localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
         this.notify();
-        this.pushToCloudWorker(); // Đẩy ngay lên mây Cloud Worker
+        this.pushToCloudWorker(newOrder); // Đẩy ngay lên mây Cloud Worker kèm đơn mới (nếu có)
 
         if (window.BroadcastChannel) {
             const bc = new BroadcastChannel('lego_inventory_sync');

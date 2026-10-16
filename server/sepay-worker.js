@@ -1,11 +1,7 @@
 /**
- * CLOUDFLARE WORKER / SEPAY & INVENTORY REALTIME SYNC PROXY
- * 1. Chuyển tiếp SePay API bypass CORS
- * 2. Lưu trữ và đồng bộ kho hàng/sản phẩm mới giữa Admin và Khách dùng chung trên mây (Global State)
+ * CLOUDFLARE WORKER: SEPAY AUTO BANKING + GLOBAL CLOUDFLARE KV DATABASE
+ * Lưu trữ vĩnh viễn tồn kho, sản phẩm mới và lịch sử đơn hàng trên mạng lưới toàn cầu Cloudflare
  */
-
-// Bộ nhớ đệm Cloudflare Edge lưu trữ tồn kho & sản phẩm mới
-let CLOUD_INVENTORY_CACHE = null;
 
 export default {
   async fetch(request, env) {
@@ -22,36 +18,56 @@ export default {
 
     const url = new URL(request.url);
 
-    // 1. ENDPOINT ĐỒNG BỘ KHO HÀNG & SẢN PHẨM MỚI (Admin <-> Khách)
-    if (url.pathname.startsWith("/api/cloud-store")) {
-      // ĐỌC DỮ LIỆU TỒN KHO & SẢN PHẨM MỚI
+    // 1. ENDPOINT CLOUD DATABASE (TỒN KHO, SẢN PHẨM MỚI, LỊCH SỬ ĐƠN HÀNG)
+    if (url.pathname.includes("/api/cloud-store")) {
+      // ĐỌC DỮ LIỆU TỪ KV DATABASE
       if (request.method === "GET") {
-        return new Response(JSON.stringify(CLOUD_INVENTORY_CACHE || { inventory: {}, newProducts: [] }), {
-          status: 200,
-          headers: corsHeaders
-        });
+        try {
+          let storeData = null;
+          if (env.STORE_KV) {
+            const raw = await env.STORE_KV.get("lego_global_store");
+            if (raw) storeData = JSON.parse(raw);
+          }
+          if (!storeData) {
+            storeData = { inventory: {}, newProducts: [], salesHistory: [] };
+          }
+          return new Response(JSON.stringify(storeData), { status: 200, headers: corsHeaders });
+        } catch(e) {
+          return new Response(JSON.stringify({ inventory: {}, newProducts: [], salesHistory: [] }), { status: 200, headers: corsHeaders });
+        }
       }
 
-      // CẬP NHẬT KHO HÀNG / THÊM SẢN PHẨM MỚI TỪ ADMIN
+      // LƯU DỮ LIỆU VÀO KV DATABASE (VĨNH VIỄN)
       if (request.method === "POST") {
         try {
           const body = await request.json();
-          CLOUD_INVENTORY_CACHE = {
-            inventory: body.inventory || (CLOUD_INVENTORY_CACHE ? CLOUD_INVENTORY_CACHE.inventory : {}),
-            newProducts: body.newProducts || (CLOUD_INVENTORY_CACHE ? CLOUD_INVENTORY_CACHE.newProducts : []),
+          let currentStore = { inventory: {}, newProducts: [], salesHistory: [] };
+          
+          if (env.STORE_KV) {
+            const raw = await env.STORE_KV.get("lego_global_store");
+            if (raw) currentStore = JSON.parse(raw);
+          }
+
+          // Cập nhật và gộp dữ liệu
+          const updatedStore = {
+            inventory: { ...(currentStore.inventory || {}), ...(body.inventory || {}) },
+            newProducts: body.newProducts !== undefined ? body.newProducts : (currentStore.newProducts || []),
+            salesHistory: body.newOrder ? [body.newOrder, ...(currentStore.salesHistory || [])] : (body.salesHistory || currentStore.salesHistory || []),
             updatedAt: Date.now()
           };
-          return new Response(JSON.stringify({ ok: true, data: CLOUD_INVENTORY_CACHE }), {
-            status: 200,
-            headers: corsHeaders
-          });
+
+          if (env.STORE_KV) {
+            await env.STORE_KV.put("lego_global_store", JSON.stringify(updatedStore));
+          }
+
+          return new Response(JSON.stringify({ ok: true, data: updatedStore }), { status: 200, headers: corsHeaders });
         } catch(e) {
           return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 400, headers: corsHeaders });
         }
       }
     }
 
-    // 2. ENDPOINT CHUYỂN TIẾP SEPAY API (BYPASS CORS)
+    // 2. ENDPOINT CHUYỂN TIẾP SEPAY API
     const token = "2WBXRD7DRRJUJN2PH1OIMKA5JTVO3AEEYJDMLPCGHGOVF676PMS9L8KANFGUQQR1";
     try {
       const response = await fetch("https://my.sepay.vn/userapi/transactions/list", {
