@@ -736,25 +736,20 @@
             }
             showToast(`⏳ Đang xử lý hoàn tác đơn #${orderId}...`);
 
-            // Nếu là đơn bán tại quầy (bắt đầu bằng DH-...)
-            if (String(orderId).startsWith('DH-')) {
-                const res = window.realtimeStore.undoSale(orderId);
-                if (res) {
-                    showToast(`✅ Đã hoàn tác đơn #${orderId} và cộng lại kho thành công!`);
-                    populateSelectDropdown();
-                } else {
-                    showToast(`❌ Không tìm thấy đơn #${orderId} để hoàn tác!`);
-                }
-                return;
-            }
+            // 1. Thử hủy trực tiếp trên Cloudflare KV trước
+            const cloudOk = await window.realtimeStore.cancelOrderOnCloud(orderId);
+            
+            // 2. Đồng thời xóa trong salesHistory local nếu có
+            const localOk = window.realtimeStore.undoSale(orderId);
 
-            // Nếu là đơn hàng web Cloudflare KV (DH26...)
-            const ok = await window.realtimeStore.cancelOrderOnCloud(orderId);
-            if (ok) {
-                showToast(`✅ Đã hủy đơn #${orderId} và hoàn kho thành công trên đám mây!`);
+            if (cloudOk || localOk) {
+                showToast(`✅ Đã hủy đơn #${orderId} và hoàn kho thành công!`);
                 await window.realtimeStore.syncWithCloudWorker();
                 await window.realtimeStore.fetchAdminOrders();
                 populateSelectDropdown();
+                renderKPI();
+                renderStockTable();
+                renderOrdersTable();
             } else {
                 showToast(`❌ Không thể hủy đơn #${orderId}. Vui lòng thử lại!`);
             }

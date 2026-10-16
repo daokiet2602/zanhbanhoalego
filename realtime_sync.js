@@ -279,16 +279,39 @@ class RealtimeStore {
 
         const orderRecord = {
             orderId: 'DH-' + Date.now().toString().slice(-6),
+            status: 'COUNTER_SALE',
+            payMethod: 'direct',
+            shipMethod: 'direct',
+            shipName: 'Bán trực tiếp tại quầy',
+            shipFee: 0,
+            subtotal: price * qtyToSell,
+            total: price * qtyToSell,
+            totalRevenue: price * qtyToSell,
+            profit: profit,
+            cost: cost,
             prodId: product.id,
             prodCode: product.code,
             prodName: product.name,
             qty: qtyToSell,
             price: price,
-            cost: cost,
-            totalRevenue: price * qtyToSell,
-            profit: profit,
+            lines: [{
+                id: product.id,
+                code: product.code,
+                name: product.name,
+                qty: qtyToSell,
+                price: price,
+                lineTotal: price * qtyToSell
+            }],
+            customer: {
+                name: 'Bán tại quầy',
+                phone: '---',
+                address: 'Tại quầy',
+                note: note || 'Bán trực tiếp tại quầy'
+            },
             note: note || 'Bán trực tiếp',
             time: now.toLocaleString('vi-VN'),
+            timeStr: now.toLocaleString('vi-VN'),
+            createdAt: Date.now(),
             timestamp: Date.now(),
             monthKey: monthKey
         };
@@ -296,7 +319,27 @@ class RealtimeStore {
         this.salesHistory.unshift(orderRecord);
         this.saveAndBroadcast(true);
 
+        // Đồng bộ đơn bán quầy trực tiếp lên Cloudflare KV
+        this.recordCounterOrderOnCloud(orderRecord);
+
         return { success: true, order: orderRecord, remainingStock: updatedQty };
+    }
+
+    // ĐẨY ĐƠN HÀNG BÁN TẠI QUẦY LÊN CLOUD WORKER
+    async recordCounterOrderOnCloud(orderRecord, adminKey = '') {
+        try {
+            const key = adminKey || sessionStorage.getItem('lego_admin_key') || 'danhbanhoa2602secretkey';
+            await fetch('https://sepay-checker.daokiet-work.workers.dev/admin/orders/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Admin-Key': key
+                },
+                body: JSON.stringify(orderRecord)
+            });
+        } catch(e) {
+            console.warn("Lỗi lưu đơn quầy lên Cloud:", e);
+        }
     }
 
     // HOÀN TÁC ĐƠN BÁN

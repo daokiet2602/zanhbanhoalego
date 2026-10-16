@@ -372,6 +372,56 @@ async function handleAdminRoute(pathname, method, req, env) {
     return { ok: true, orders: ordersList };
   }
 
+  // TẠO ĐƠN HÀNG BÁN TẠI QUẦY (ĐỒNG BỘ TRỰC TIẾP LÊN CLOUD KV)
+  if (pathname === '/admin/orders/create' && method === 'POST') {
+    const body = await req.json();
+    const orderId = body.orderId || await generateUniqueOrderIdSafe(kv);
+    const now = new Date();
+
+    const order = {
+      orderId: orderId,
+      status: 'COUNTER_SALE',
+      payMethod: 'direct',
+      shipMethod: 'direct',
+      shipName: 'Bán trực tiếp tại quầy',
+      shipFee: 0,
+      subtotal: body.totalRevenue || 0,
+      total: body.totalRevenue || 0,
+      lines: body.lines || [{
+        id: body.prodId,
+        code: body.prodCode,
+        name: body.prodName,
+        qty: body.qty || 1,
+        price: body.price || 0,
+        lineTotal: (body.price || 0) * (body.qty || 1)
+      }],
+      customer: {
+        name: 'Bán tại quầy',
+        phone: '---',
+        address: 'Tại quầy',
+        note: body.note || 'Bán trực tiếp tại quầy'
+      },
+      createdAt: Date.now(),
+      timeStr: now.toLocaleString('vi-VN')
+    };
+
+    if (kv) {
+      await kv.put(`order:${orderId}`, JSON.stringify(order), { expirationTtl: 180 * 24 * 3600 });
+      // Trừ tồn kho và cộng dồn số đã bán trên mây
+      const store = await getGlobalStore(kv);
+      if (store.inventory && order.lines) {
+        order.lines.forEach(l => {
+          if (!store.inventory[l.id]) store.inventory[l.id] = { qty: 0, sold: 0 };
+          store.inventory[l.id].qty = Math.max(0, (store.inventory[l.id].qty || 0) - l.qty);
+          store.inventory[l.id].sold = (store.inventory[l.id].sold || 0) + l.qty;
+        });
+        await kv.put('lego_global_store', JSON.stringify(store));
+      }
+    }
+
+    return { ok: true, order: order };
+  }
+
   // HỦY ĐƠN HÀNG TRÊN CLOUDFLARE KV & HOÀN TỒN KHO LẬP TỨC
   if (pathname === '/admin/orders/cancel' && method === 'POST') {
     const body = await req.json();
