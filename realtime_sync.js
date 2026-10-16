@@ -44,15 +44,26 @@ class RealtimeStore {
             if (res.ok) {
                 const cloudData = await res.json();
                 if (cloudData) {
+                    let hasChanged = false;
                     if (cloudData.inventory && Object.keys(cloudData.inventory).length > 0) {
-                        this.inventoryState = { ...this.inventoryState, ...cloudData.inventory };
-                        localStorage.setItem(CLOUD_CONFIG.STORAGE_KEY, JSON.stringify(this.inventoryState));
+                        const newInv = { ...this.inventoryState, ...cloudData.inventory };
+                        if (JSON.stringify(newInv) !== JSON.stringify(this.inventoryState)) {
+                            this.inventoryState = newInv;
+                            localStorage.setItem(CLOUD_CONFIG.STORAGE_KEY, JSON.stringify(this.inventoryState));
+                            hasChanged = true;
+                        }
                     }
                     if (cloudData.newProducts && cloudData.newProducts.length > 0) {
-                        this.newProducts = cloudData.newProducts;
-                        localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
+                        if (JSON.stringify(cloudData.newProducts) !== JSON.stringify(this.newProducts)) {
+                            this.newProducts = cloudData.newProducts;
+                            localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
+                            hasChanged = true;
+                        }
                     }
-                    this.notify();
+                    // CHỈ RENDER LẠI NẾU THỰC SỰ CÓ THAY ĐỔI DỮ LIỆU (CHỐNG CHỚP MÀN HÌNH 100%)
+                    if (hasChanged) {
+                        this.notify();
+                    }
                 }
             }
         } catch(e) {
@@ -113,9 +124,11 @@ class RealtimeStore {
             if (res.ok) {
                 const data = await res.json();
                 if (data && data.orders) {
-                    this.salesHistory = data.orders;
-                    localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
-                    this.notify();
+                    if (JSON.stringify(data.orders) !== JSON.stringify(this.salesHistory)) {
+                        this.salesHistory = data.orders;
+                        localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
+                        this.notify();
+                    }
                     return data.orders;
                 }
             }

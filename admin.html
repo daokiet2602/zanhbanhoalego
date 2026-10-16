@@ -606,14 +606,14 @@
                 renderStockTable();
                 renderOrdersTable();
 
-                // Tự động làm mới dữ liệu đơn và kho từ Cloud mỗi 4 giây
+                // Tự động làm mới dữ liệu đơn và kho từ Cloud mỗi 10 giây (êm ái, chỉ cập nhật khi có thay đổi)
                 if (!window.ADMIN_POLL_INTERVAL) {
                     window.ADMIN_POLL_INTERVAL = setInterval(() => {
                         if (window.realtimeStore && !document.hidden) {
                             window.realtimeStore.syncWithCloudWorker();
                             window.realtimeStore.fetchAdminOrders();
                         }
-                    }, 4000);
+                    }, 10000);
                 }
             } catch (err) {
                 console.error("Lỗi nạp dữ liệu:", err);
