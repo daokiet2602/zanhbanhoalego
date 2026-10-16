@@ -36,10 +36,7 @@ class RealtimeStore {
         try {
             // Thêm timestamp ?_t= để ép trình duyệt điện thoại luôn kéo dữ liệu tươi mới 100%, không dính cache
             const freshUrl = `${CLOUD_CONFIG.CLOUD_STORE_URL}?_t=${Date.now()}`;
-            const res = await fetch(freshUrl, {
-                cache: 'no-store',
-                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-            });
+            const res = await fetch(freshUrl);
             if (res.ok) {
                 const cloudData = await res.json();
                 if (cloudData) {
