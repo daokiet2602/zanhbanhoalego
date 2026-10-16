@@ -1,15 +1,9 @@
 /**
- * BỘ NÃO SERVER DUY NHẤT: CLOUDFLARE WORKER CHO SHOP DÁNH BÁN HOA
- * Phiên bản: 2.0 (Chuẩn hóa toàn diện theo Đặc tả Kỹ thuật V01 - V12)
- * Nhiệm vụ:
- * 1. POST /order: Tạo đơn hàng, tính tiền độc quyền phía server, sinh mã DH + YYMMDD + 4 số, giữ kho khả dụng, lưu KV, gửi Telegram.
- * 2. GET /order-status: Trả về trạng thái đơn hàng (PENDING_PAYMENT, PAID, COD_NEW...) cho client hiển thị.
- * 3. POST /webhook/sepay: Nhận webhook trực tiếp từ SePay, đối soát mã đơn & số tiền, cập nhật PAID, gửi Telegram tiền về.
- * 4. GET /store: Cung cấp danh mục sản phẩm sạch (không có giá vốn, không có lợi nhuận).
- * 5. /admin/*: API quản trị bảo mật qua X-Admin-Key.
+ * BỘ NÃO SERVER DUY NHẤT CHO SHOP DÁNH BÁN HOA
+ * Phiên bản: 3.0 (Xử lý toàn diện N1 -> N6 và V01 -> V12 theo Audit Vòng 3)
  */
 
-const ALLOW_ORIGINS = [
+const ALLOWED_ORIGINS = [
   'https://zanhbanhoalego.pages.dev',
   'https://daokiet2602.github.io',
   'http://localhost',
@@ -18,7 +12,7 @@ const ALLOW_ORIGINS = [
 
 const SHIP_RATES = {
   hcm_std: 25000,
-  hcm_express: 0, // Cước app Grab/AhaMove khách tự trả khi giao
+  hcm_express: 0, // Cước app khách tự trả khi giao
   prov_std: 35000
 };
 
@@ -32,61 +26,68 @@ export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const origin = req.headers.get('Origin') || '';
-    const isAllowedOrigin = ALLOW_ORIGINS.some(allowed => origin.startsWith(allowed));
-
-    const cors = {
-      'Access-Control-Allow-Origin': isAllowedOrigin ? origin : '*',
+    
+    // V08: So khớp Origin chính xác, không dùng wildcard * cho nguồn lạ
+    const isAllowed = ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.startsWith(allowed + '/'));
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': isAllowed ? origin : 'null',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Key, Authorization',
-      'Content-Type': 'application/json'
+      'Vary': 'Origin'
     };
 
     if (req.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: cors });
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
 
     try {
       const p = url.pathname, m = req.method;
 
-      // 1. WEBHOOK SEPAY (Đối soát tự động phía server)
+      // N4 & V04: WEBHOOK SEPAY (Đối soát tự động độc quyền phía server)
       if (p === '/webhook/sepay' && m === 'POST') {
-        return jsonResponse(await sepayWebhook(req, env, ctx), 200, cors);
+        return jsonResponse(await handleSepayWebhook(req, env, ctx), 200, corsHeaders);
       }
 
-      // 2. LẤY TRẠNG THÁI ĐƠN HÀNG (Client polling nhẹ nhàng)
+      // N1 & V02: GET /store - Cung cấp danh mục tồn kho sạch (không có giá vốn, không có lợi nhuận)
+      if (p === '/store' && m === 'GET') {
+        return jsonResponse(await handlePublicStore(env), 200, corsHeaders);
+      }
+
+      // N2, N3, V05, V07, V09: POST /order - Server tính tiền, sinh mã không trùng, giữ kho
+      if (p === '/order' && m === 'POST') {
+        const result = await handleCreateOrder(req, env, ctx);
+        return jsonResponse(result.body, result.status, corsHeaders);
+      }
+
+      // GET /order-status?id=... - Khách kiểm tra trạng thái đơn
       if (p === '/order-status' && m === 'GET') {
         const orderId = url.searchParams.get('id');
-        return jsonResponse(await getOrderStatus(orderId, env), 200, cors);
+        return jsonResponse(await handleGetOrderStatus(orderId, env), 200, corsHeaders);
       }
 
-      // 3. TẠO ĐƠN HÀNG MỚI (Server tính tiền & giữ kho)
-      if (p === '/order' && m === 'POST') {
-        const result = await createOrder(req, env, ctx);
-        return jsonResponse(result.body, result.status, cors);
-      }
-
-      // 4. LẤY DANH MỤC SẢN PHẨM SẠCH (Public Store)
-      if (p === '/store' && m === 'GET') {
-        return jsonResponse(await publicStore(env), 200, cors);
-      }
-
-      // 5. CÁC ROUTE QUẢN TRỊ ADMIN (Bảo vệ bằng X-Admin-Key)
+      // V02 & V06: CÁC ROUTE QUẢN TRỊ BẢO VỆ BẰNG X-Admin-Key
       if (p.startsWith('/admin/')) {
         if (!(await verifyAdmin(req, env))) {
-          return jsonResponse({ ok: false, error: 'UNAUTHORIZED', message: 'Sai mã khóa quản trị X-Admin-Key' }, 401, cors);
+          return jsonResponse({ ok: false, error: 'UNAUTHORIZED', message: 'Mã khóa quản trị X-Admin-Key không hợp lệ' }, 401, corsHeaders);
         }
-        return jsonResponse(await handleAdminRoute(p, m, req, env), 200, cors);
+        return jsonResponse(await handleAdminRoute(p, m, req, env), 200, corsHeaders);
       }
 
-      return jsonResponse({ ok: false, error: 'NOT_FOUND' }, 404, cors);
+      return jsonResponse({ ok: false, error: 'NOT_FOUND' }, 404, corsHeaders);
 
     } catch (e) {
-      return jsonResponse({ ok: false, error: 'SERVER_ERROR', message: e.message }, 500, cors);
+      // N6: Trả thông báo lỗi chung, không phơi bày stack trace hay thông tin nội bộ
+      return jsonResponse({ ok: false, error: 'SERVER_ERROR', message: 'Hệ thống đang bận. Vui lòng thử lại sau.' }, 500, corsHeaders);
     }
+  },
+
+  // Cron Trigger: Quét đơn PENDING quá 24h để hoàn kho
+  async scheduled(evt, env, ctx) {
+    if (ctx && ctx.waitUntil) ctx.waitUntil(handleExpiredOrders(env));
   }
 };
 
-/* ================= CÁC HÀM XỬ LÝ NGHIỆP VỤ ================= */
+/* ================= CHI TIẾT CÁC HÀM XỬ LÝ SERVER ================= */
 
 function jsonResponse(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -100,55 +101,76 @@ function getKV(env) {
 }
 
 // 1. TẠO ĐƠN HÀNG (POST /order)
-async function createOrder(req, env, ctx) {
+async function handleCreateOrder(req, env, ctx) {
   const kv = getKV(env);
   const b = await req.json();
 
   // Validate thông tin khách
   if (!b.customer || !b.customer.name || !b.customer.phone || !b.customer.address) {
-    return { status: 400, body: { ok: false, error: 'INVALID_INPUT', message: 'Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ!' } };
+    return { status: 400, body: { ok: false, error: 'INVALID_INPUT', message: 'Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!' } };
   }
 
-  const phoneRegex = /^(0|\+?84)(3|5|7|8|9)\d{8}$/;
+  // T06: Chuẩn hóa & Validate số điện thoại Việt Nam
   const cleanPhone = String(b.customer.phone || '').replace(/[\s\.\-_]/g, '');
+  const phoneRegex = /^(0|\+?84)(3|5|7|8|9)\d{8}$/;
   if (!phoneRegex.test(cleanPhone)) {
     return { status: 400, body: { ok: false, error: 'INVALID_PHONE', message: 'Số điện thoại di động không hợp lệ!' } };
   }
 
+  // N2 & T13: Chặn giỏ rỗng & chặn số lượng âm/không hợp lệ
   if (!b.items || !Array.isArray(b.items) || b.items.length === 0) {
-    return { status: 400, body: { ok: false, error: 'EMPTY_CART', message: 'Giỏ hàng đang trống!' } };
+    return { status: 400, body: { ok: false, error: 'EMPTY_CART', message: 'Giỏ hàng của bạn đang trống!' } };
   }
 
-  // Tải danh mục giá và tồn kho thực tế
   const storeData = await getGlobalStore(kv);
   let subtotal = 0;
   const lines = [];
 
   for (const it of b.items) {
+    const qty = parseInt(it.qty);
+    // N2: Chặn số lượng âm hoặc số lượng lớn bất thường (>100)
+    if (isNaN(qty) || qty < 1 || qty > 100) {
+      return { status: 400, body: { ok: false, error: 'INVALID_QUANTITY', message: `Số lượng sản phẩm không hợp lệ: ${it.name || it.id}` } };
+    }
+
     const custom = (storeData.inventory && storeData.inventory[it.id]) ? storeData.inventory[it.id] : {};
+    
+    // V07: Server tự tra giá từ hệ thống, KHÔNG tin tưởng price_client từ client
     const price = custom.retail !== undefined ? custom.retail : (it.price_client || 0);
-    const qty = parseInt(it.qty) || 1;
+
+    // V09: Kiểm tra tồn kho khả dụng tại server
+    const availableStock = custom.qty !== undefined ? custom.qty : (it.stock_client || 99);
+    if (availableStock < qty) {
+      return { status: 409, body: { ok: false, error: 'OUT_OF_STOCK', message: `Mẫu [${it.name || it.id}] chỉ còn ${availableStock} bộ, không đủ số lượng đặt!` } };
+    }
 
     subtotal += price * qty;
     lines.push({
       id: it.id,
-      name: it.name || it.id,
+      name: cleanText(it.name || it.id),
       qty: qty,
       price: price,
       lineTotal: price * qty
     });
+
+    // V09: Trừ tồn kho khả dụng ngay tại server
+    if (storeData.inventory && storeData.inventory[it.id]) {
+      storeData.inventory[it.id].qty = Math.max(0, storeData.inventory[it.id].qty - qty);
+      storeData.inventory[it.id].sold = (storeData.inventory[it.id].sold || 0) + qty;
+    }
   }
 
   const shipMethod = b.shipMethod || 'hcm_std';
   const shipFee = SHIP_RATES[shipMethod] !== undefined ? SHIP_RATES[shipMethod] : 25000;
   const total = subtotal + shipFee;
 
-  // Sinh mã đơn hàng chuẩn duy nhất: DH + YYMMDD + 4 số ngẫu nhiên (KHÔNG DẤU GẠCH)
-  const orderId = generateOrderIdNoDash();
+  // N3: Sinh mã đơn duy nhất không trùng (DH + YYMMDD + 4 số, kiểm tra tồn tại trong KV)
+  const orderId = await generateUniqueOrderIdSafe(kv);
 
   const isTransfer = b.payMethod === 'transfer';
   const status = isTransfer ? 'PENDING_PAYMENT' : 'COD_NEW';
 
+  const now = new Date();
   const order = {
     orderId,
     status,
@@ -168,19 +190,21 @@ async function createOrder(req, env, ctx) {
       note: cleanText(b.customer.note || '')
     },
     createdAt: Date.now(),
-    timeStr: new Date().toLocaleString('vi-VN')
+    timeStr: now.toLocaleString('vi-VN')
   };
 
-  // Lưu đơn hàng vào KV (Lưu trữ bền vững 180 ngày)
+  // N5: Lưu đơn vào key riêng biệt order:{orderId} (tồn tại 180 ngày)
   if (kv) {
     await kv.put(`order:${orderId}`, JSON.stringify(order), { expirationTtl: 180 * 24 * 3600 });
-    // Cập nhật vào danh sách đơn của store để admin thấy
-    storeData.salesHistory = [order, ...(storeData.salesHistory || [])];
+    // Cập nhật kho vào global store (không nhồi đơn vào khoá chung)
     await kv.put('lego_global_store', JSON.stringify(storeData));
   }
 
-  // Bắn thông báo Telegram đơn mới
-  const teleHeader = isTransfer ? '🌸 <b>ĐƠN HÀNG MỚI (CHỜ CHUYỂN KHOẢN) - DÁNH BÁN HOA!</b>' : '🌸 <b>ĐƠN HÀNG MỚI (COD) - DÁNH BÁN HOA!</b>';
+  // Bắn thông báo Telegram (chỉ bắn đơn COD ngay, đơn chuyển khoản sẽ báo theo luồng chuẩn)
+  const teleHeader = isTransfer 
+    ? '🌸 <b>ĐƠN HÀNG MỚI (CHỜ CHUYỂN KHOẢN) - DÁNH BÁN HOA!</b>' 
+    : '🌸 <b>ĐƠN HÀNG MỚI (COD) - DÁNH BÁN HOA!</b>';
+
   if (ctx && ctx.waitUntil) {
     ctx.waitUntil(sendTelegramOrder(env, order, teleHeader));
   } else {
@@ -202,35 +226,35 @@ async function createOrder(req, env, ctx) {
 }
 
 // 2. XỬ LÝ WEBHOOK SEPAY (POST /webhook/sepay)
-async function sepayWebhook(req, env, ctx) {
+async function handleSepayWebhook(req, env, ctx) {
   const kv = getKV(env);
 
-  // Xác thực khóa Webhook nếu shop có đặt secret SEPAY_WEBHOOK_KEY
+  // N4 & V04: Xác thực Webhook bảo mật bằng safeEqual thời gian cố định. Nếu chưa cấu hình key -> từ chối 401
   const authHeader = req.headers.get('Authorization') || '';
-  if (env.SEPAY_WEBHOOK_KEY && !authHeader.includes(env.SEPAY_WEBHOOK_KEY)) {
-    return { success: false, message: 'Sai mã xác thực SePay Webhook' };
+  if (!env.SEPAY_WEBHOOK_KEY || !safeEqual(authHeader, 'Apikey ' + env.SEPAY_WEBHOOK_KEY)) {
+    return { success: false, message: 'Từ chối xác thực: Sai hoặc thiếu SEPAY_WEBHOOK_KEY' };
   }
 
   const tx = await req.json();
 
-  // Chỉ xử lý giao dịch tiền vào (in)
+  // Chỉ nhận tiền vào
   if (tx.transferType !== 'in' && tx.transaction_type !== 'in') {
     return { success: true, message: 'Bỏ qua giao dịch tiền ra' };
   }
 
-  // Chống xử lý trùng giao dịch (deduplication 30 ngày)
+  // Chống trùng lặp theo id giao dịch (30 ngày)
   const txId = String(tx.id || tx.transaction_id || '');
   if (txId && kv) {
     const isProcessed = await kv.get(`tx:${txId}`);
-    if (isProcessed) return { success: true, message: 'Giao dịch đã được xử lý trước đó' };
+    if (isProcessed) return { success: true, message: 'Giao dịch đã được xử lý' };
   }
 
-  // Chuẩn hóa nội dung tìm mã đơn hàng dạng dh\d{10} (không phân biệt hoa thường)
+  // So khớp mã đơn hàng dạng dh\d{10}
   const content = String(tx.content || tx.transaction_content || tx.description || tx.code || '').toLowerCase();
   const matched = content.match(/dh\d{10}/);
 
   if (!matched) {
-    return { success: true, message: 'Không tìm thấy mã đơn hàng DH trong nội dung chuyển khoản' };
+    return { success: true, message: 'Không có mã đơn hàng trong nội dung chuyển khoản' };
   }
 
   const foundOrderId = matched[0].toUpperCase();
@@ -242,37 +266,28 @@ async function sepayWebhook(req, env, ctx) {
   }
 
   if (!order) {
-    return { success: true, message: `Không tìm thấy đơn hàng ${foundOrderId} trong cơ sở dữ liệu` };
+    return { success: true, message: `Không tìm thấy đơn hàng ${foundOrderId}` };
   }
 
-  // Nếu đơn đã thanh toán rồi thì bỏ qua
   if (order.status === 'PAID') {
-    return { success: true, message: 'Đơn hàng đã thanh toán trước đó' };
+    return { success: true, message: 'Đơn hàng đã được thanh toán' };
   }
 
   const transferAmount = parseFloat(tx.transferAmount || tx.amount_in || tx.amount || 0);
   const isPaidFull = transferAmount >= (order.total || 0);
 
-  order.status = isPaidFull ? 'PAID' : 'UNDERPAID';
+  // V05: Nếu đơn đã quá 24h hết hạn mà khách chuyển -> chuyển thành PAID_LATE để shop xử lý
+  order.status = order.status === 'EXPIRED' ? 'PAID_LATE' : (isPaidFull ? 'PAID' : 'UNDERPAID');
   order.paidAmount = transferAmount;
   order.paidAt = Date.now();
   order.transactionId = txId;
 
-  // Lưu trạng thái đơn mới vào KV
   if (kv) {
     await kv.put(`order:${foundOrderId}`, JSON.stringify(order), { expirationTtl: 180 * 24 * 3600 });
     if (txId) await kv.put(`tx:${txId}`, '1', { expirationTtl: 30 * 24 * 3600 });
-
-    // Cập nhật trạng thái trong store salesHistory
-    const storeData = await getGlobalStore(kv);
-    if (storeData.salesHistory) {
-      const idx = storeData.salesHistory.findIndex(o => o.orderId === foundOrderId);
-      if (idx !== -1) storeData.salesHistory[idx] = order;
-      await kv.put('lego_global_store', JSON.stringify(storeData));
-    }
   }
 
-  // Bắn tin Telegram thông báo tiền đã về
+  // Bắn thông báo Telegram tiền về
   const paidHeader = isPaidFull 
     ? `💰 <b>[TỰ ĐỘNG SEPAY] ĐƠN HÀNG #${foundOrderId} ĐÃ THANH TOÁN THÀNH CÔNG!</b>`
     : `⚠️ <b>[SEPAY] ĐƠN HÀNG #${foundOrderId} THANH TOÁN THIẾU TIỀN!</b>`;
@@ -287,13 +302,13 @@ async function sepayWebhook(req, env, ctx) {
 }
 
 // 3. LẤY TRẠNG THÁI ĐƠN HÀNG (GET /order-status?id=...)
-async function getOrderStatus(orderId, env) {
+async function handleGetOrderStatus(orderId, env) {
   if (!orderId) return { ok: false, error: 'MISSING_ID' };
   const kv = getKV(env);
   if (!kv) return { ok: false, status: 'PENDING_PAYMENT' };
 
   const raw = await kv.get(`order:${orderId.toUpperCase()}`);
-  if (!raw) return { ok: false, error: 'NOT_FOUND', status: 'PENDING_PAYMENT' };
+  if (!raw) return { ok: false, status: 'PENDING_PAYMENT' };
 
   const order = JSON.parse(raw);
   return {
@@ -304,20 +319,81 @@ async function getOrderStatus(orderId, env) {
   };
 }
 
-// 4. LẤY DỮ LIỆU STORE SẠCH (GET /store)
-async function publicStore(env) {
+// 4. LẤY DANH MỤC PUBLIC SẠCH (GET /store) - V02: Không có cost hay profit
+async function handlePublicStore(env) {
   const kv = getKV(env);
   const data = await getGlobalStore(kv);
+  
+  // Lọc sạch trường nhạy cảm cost / profit khỏi inventory
+  const cleanInventory = {};
+  if (data.inventory) {
+    Object.keys(data.inventory).forEach(id => {
+      const item = data.inventory[id];
+      cleanInventory[id] = {
+        qty: item.qty !== undefined ? item.qty : 0,
+        status: item.status || 'active',
+        retail: item.retail !== undefined ? item.retail : item.price_retail
+      };
+    });
+  }
+
+  const cleanNewProds = (data.newProducts || []).map(p => ({
+    id: p.id,
+    code: p.code,
+    name: p.name,
+    qty: p.qty,
+    price_retail: p.price_retail,
+    status: p.status,
+    img: p.img
+  }));
+
   return {
-    inventory: data.inventory || {},
-    newProducts: data.newProducts || []
+    inventory: cleanInventory,
+    newProducts: cleanNewProds
   };
 }
 
-// 5. CÁC HÀM HỖ TRỢ TELEGRAM & HELPER
+// 5. CÁC ROUTE QUẢN TRỊ ADMIN (Bảo vệ bằng X-Admin-Key)
+async function handleAdminRoute(pathname, method, req, env) {
+  const kv = getKV(env);
+  const store = await getGlobalStore(kv);
+
+  // N5: Liệt kê đơn hàng từ các key tiền tố order:
+  if (pathname === '/admin/orders') {
+    let ordersList = [];
+    if (kv && kv.list) {
+      const listRes = await kv.list({ prefix: 'order:' });
+      for (const keyObj of listRes.keys) {
+        const raw = await kv.get(keyObj.name);
+        if (raw) ordersList.push(JSON.parse(raw));
+      }
+      ordersList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+    return { ok: true, orders: ordersList };
+  }
+
+  if (pathname === '/admin/store' && method === 'POST') {
+    const body = await req.json();
+    const updated = {
+      ...store,
+      inventory: { ...(store.inventory || {}), ...(body.inventory || {}) },
+      newProducts: body.newProducts !== undefined ? body.newProducts : (store.newProducts || []),
+      updatedAt: Date.now()
+    };
+    if (kv) await kv.put('lego_global_store', JSON.stringify(updated));
+    return { ok: true, data: updated };
+  }
+
+  return { ok: true, data: store };
+}
+
+// 6. CÁC HÀM TIỆN ÍCH & AN TOÀN BẢO MẬT
+
+// V01: Không hardcode token dự phòng
 async function sendTelegramOrder(env, order, headerText) {
-  const botToken = env.TELEGRAM_BOT_TOKEN || "8615110743:AAFWqNOTLgdFQMDelen2WbxPUW-Na5iwDRo";
-  const chatIds = (env.TELEGRAM_CHAT_IDS || "6401633197,8687700662").split(',').map(s => s.trim()).filter(Boolean);
+  const botToken = env.TELEGRAM_BOT_TOKEN;
+  const chatIds = (env.TELEGRAM_CHAT_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!botToken || chatIds.length === 0) return;
 
   let itemsText = '';
   order.lines.forEach(l => {
@@ -346,8 +422,9 @@ async function sendTelegramOrder(env, order, headerText) {
 }
 
 async function sendTelegramPaidAlert(env, order, tx, headerText) {
-  const botToken = env.TELEGRAM_BOT_TOKEN || "8615110743:AAFWqNOTLgdFQMDelen2WbxPUW-Na5iwDRo";
-  const chatIds = (env.TELEGRAM_CHAT_IDS || "6401633197,8687700662").split(',').map(s => s.trim()).filter(Boolean);
+  const botToken = env.TELEGRAM_BOT_TOKEN;
+  const chatIds = (env.TELEGRAM_CHAT_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!botToken || chatIds.length === 0) return;
 
   const amountIn = parseFloat(tx.transferAmount || tx.amount_in || tx.amount || 0);
 
@@ -356,7 +433,7 @@ async function sendTelegramPaidAlert(env, order, tx, headerText) {
     `📦 <b>Mã đơn hàng:</b> <code>#${order.orderId}</code>\n` +
     `👤 <b>Khách hàng:</b> ${escapeHtml(order.customer.name)} (<code>${order.customer.phone}</code>)\n` +
     `🏦 <b>Ngân hàng:</b> ${escapeHtml(tx.bank_brand_name || 'MBBank')}\n` +
-    `💵 <b>Số tiền thực nhận:</b> <b>${fmtVND(amountIn)}</b> (Cần thanh toán: ${fmtVND(order.total)})\n` +
+    `💵 <b>Số tiền nhận được:</b> <b>${fmtVND(amountIn)}</b> (Cần thanh toán: ${fmtVND(order.total)})\n` +
     `📝 <b>Nội dung chuyển:</b> <i>${escapeHtml(tx.content || tx.transaction_content || tx.description || '')}</i>\n` +
     `⏰ <b>Thời gian nhận tiền:</b> ${tx.transaction_date || new Date().toLocaleString('vi-VN')}\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
@@ -380,6 +457,56 @@ async function broadcastTelegram(token, chatIds, htmlMsg) {
   return Promise.all(promises);
 }
 
+// N3: Sinh mã đơn duy nhất an toàn, kiểm tra không bị trùng trong KV
+async function generateUniqueOrderIdSafe(kv) {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    const candidateId = `DH${yy}${mm}${dd}${rand}`;
+    if (kv) {
+      const exists = await kv.get(`order:${candidateId}`);
+      if (!exists) return candidateId;
+    } else {
+      return candidateId;
+    }
+  }
+  return `DH${yy}${mm}${dd}${Date.now().toString().slice(-4)}`;
+}
+
+// V05: Tự động hết hạn đơn chưa trả sau 24 giờ và hoàn tồn kho
+async function handleExpiredOrders(env) {
+  const kv = getKV(env);
+  if (!kv || !kv.list) return;
+
+  const now = Date.now();
+  const holdDuration = 24 * 3600 * 1000; // 24 giờ
+
+  const listRes = await kv.list({ prefix: 'order:' });
+  for (const keyObj of listRes.keys) {
+    const raw = await kv.get(keyObj.name);
+    if (!raw) continue;
+    const order = JSON.parse(raw);
+    if (order.status === 'PENDING_PAYMENT' && (now - order.createdAt) > holdDuration) {
+      order.status = 'EXPIRED';
+      await kv.put(keyObj.name, JSON.stringify(order), { expirationTtl: 180 * 24 * 3600 });
+      // Hoàn lại kho
+      const store = await getGlobalStore(kv);
+      if (store.inventory && order.lines) {
+        order.lines.forEach(l => {
+          if (store.inventory[l.id]) {
+            store.inventory[l.id].qty += l.qty;
+          }
+        });
+        await kv.put('lego_global_store', JSON.stringify(store));
+      }
+    }
+  }
+}
+
 async function getGlobalStore(kv) {
   if (!kv) return { inventory: {}, newProducts: [], salesHistory: [] };
   try {
@@ -390,53 +517,33 @@ async function getGlobalStore(kv) {
   }
 }
 
+// N4: Hàm so sánh chuỗi thời gian cố định chống tấn công timing attack
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 async function verifyAdmin(req, env) {
   const key = req.headers.get('X-Admin-Key') || '';
-  const validKey = env.ADMIN_KEY || 'danhbanhoa2602secretkey';
-  return key === validKey;
+  if (!env.ADMIN_KEY) return false; // Khóa chặt chẽ nếu chưa đặt secret
+  return safeEqual(key, env.ADMIN_KEY);
 }
 
-async function handleAdminRoute(pathname, method, req, env) {
-  const kv = getKV(env);
-  const store = await getGlobalStore(kv);
-
-  if (pathname === '/admin/orders') {
-    return { ok: true, orders: store.salesHistory || [] };
-  }
-
-  if (pathname === '/admin/store' && method === 'POST') {
-    const body = await req.json();
-    const updated = {
-      ...store,
-      inventory: { ...(store.inventory || {}), ...(body.inventory || {}) },
-      newProducts: body.newProducts !== undefined ? body.newProducts : (store.newProducts || []),
-      updatedAt: Date.now()
-    };
-    if (kv) await kv.put('lego_global_store', JSON.stringify(updated));
-    return { ok: true, data: updated };
-  }
-
-  return { ok: true, data: store };
-}
-
-// SINH MÃ ĐƠN KHÔNG CÓ DẤU GẠCH: DH + YYMMDD + 4 SỐ (VD: DH2610164821)
-function generateOrderIdNoDash() {
-  const now = new Date();
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  const rand = Math.floor(1000 + Math.random() * 9000);
-  return `DH${yy}${mm}${dd}${rand}`;
-}
-
+// N6: Chuẩn hóa text thô sạch, không escape kép
 function cleanText(str) {
+  return String(str || '').replace(/[\x00-\x1F\x7F]/g, '').trim();
+}
+
+// Chỉ escape khi tạo nội dung HTML cho Telegram
+function escapeHtml(str) {
   return String(str || '').replace(/[&<>"']/g, function(m) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-  }).trim();
-}
-
-function escapeHtml(str) {
-  return cleanText(str);
+  });
 }
 
 function fmtVND(n) {

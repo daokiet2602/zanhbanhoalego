@@ -616,6 +616,26 @@
             display: none; align-items: center; justify-content: center; padding: 20px;
             backdrop-filter: blur(8px);
         }
+        /* V10: MODAL THÔNG BÁO THAY THẾ TOÀN BỘ ALERT() */
+        #alert-modal {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 300;
+            display: none; align-items: center; justify-content: center; padding: 20px;
+            backdrop-filter: blur(6px);
+        }
+        .alert-card {
+            background: #fff; width: 100%; max-width: 400px; border-radius: 20px;
+            padding: 24px; text-align: center; border: 3px solid var(--dark);
+            box-shadow: 6px 6px 0 var(--dark); animation: popIn 0.25s ease;
+        }
+        .alert-icon { font-size: 2.5rem; margin-bottom: 8px; }
+        .alert-title { font-size: 1.15rem; font-weight: 900; margin-bottom: 8px; color: var(--dark); }
+        .alert-desc { font-size: 0.88rem; color: var(--text-sub); line-height: 1.5; margin-bottom: 18px; }
+        .alert-btn {
+            width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--dark);
+            background: var(--primary); color: #fff; font-size: 0.95rem; font-weight: 800;
+            cursor: pointer; box-shadow: 2px 2px 0 var(--dark);
+        }
+
         .payment-card {
             background: #fff; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto;
             border-radius: 24px; padding: 24px; text-align: center; border: 3px solid var(--dark);
@@ -1108,6 +1128,16 @@
         </div>
     </div>
 
+    <!-- V10: MODAL THÔNG BÁO GIAO DIỆN (THAY THẾ TOÀN BỘ ALERT()) -->
+    <div id="alert-modal">
+        <div class="alert-card">
+            <div class="alert-icon" id="alert-modal-icon">🌸</div>
+            <h3 class="alert-title" id="alert-modal-title">Thông Báo</h3>
+            <p class="alert-desc" id="alert-modal-desc">Nội dung</p>
+            <button type="button" class="alert-btn" id="alert-modal-btn" onclick="closeAlertModal()">Đã Hiểu</button>
+        </div>
+    </div>
+
     <!-- PAYMENT / VIETQR MODAL -->
     <div id="payment-modal">
         <div class="payment-card">
@@ -1572,7 +1602,7 @@
 
         function openCheckoutForm() {
             if (Object.keys(CART).length === 0) {
-                alert("Giỏ hàng đang trống! Vui lòng chọn sản phẩm trước.");
+                showAppModal("Giỏ Hàng Đang Trống", "Vui lòng chọn ít nhất 1 mẫu hoa vào giỏ trước khi tiến hành đặt hàng bạn nhé!", "🛒", "Xem Hoa Ngay", () => toggleCart(false));
                 return;
             }
             document.getElementById('cart-foot-summary').style.display = 'none';
@@ -1658,8 +1688,9 @@
 
         // TẠO ĐƠN HÀNG QUA BACKEND SERVER (SERVER TÍNH TIỀN & SINH MÃ ĐƠN KHÔNG CÓ DẤU GẠCH)
         async function submitOrderToTelegram() {
+            // T13: Chặn đặt hàng khi giỏ rỗng
             if (!CART || Object.keys(CART).length === 0) {
-                alert("Giỏ hàng của bạn đang trống! Vui lòng chọn sản phẩm trước khi đặt hàng.");
+                showAppModal("Giỏ Hàng Đang Trống", "Vui lòng chọn sản phẩm trước khi tiến hành đặt hàng!", "🛒", "Xem Sản Phẩm", () => toggleCart(false));
                 toggleCart(false);
                 return;
             }
@@ -1672,15 +1703,21 @@
             const wardSel = document.getElementById('cust-ward');
             const wardText = (wardSel && wardSel.value) ? wardSel.value : '';
 
-            if (!name) { alert("Vui lòng nhập họ và tên nhận hàng!"); return; }
+            if (!name) { 
+                showAppModal("Thiếu Thông Tin", "Vui lòng nhập họ và tên của người nhận hàng!", "👤", "Đã Hiểu", () => document.getElementById('cust-name').focus());
+                return; 
+            }
             
             const cleanPhone = phone.replace(/[\s\.\-_]/g, '');
             const phoneRegex = /^(0|\+?84)(3|5|7|8|9)\d{8}$/;
             if (!phoneRegex.test(cleanPhone)) {
-                alert("Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại di động 10 chữ số (VD: 0901234567, 0343076043).");
+                showAppModal("Số Điện Thoại Chưa Đúng", "Vui lòng nhập số điện thoại di động Việt Nam hợp lệ gồm 10 chữ số (VD: 0901234567, 0343076043).", "📞", "Sửa Lại", () => document.getElementById('cust-phone').focus());
                 return;
             }
-            if (!address) { alert("Vui lòng nhập địa chỉ giao hàng cụ thể!"); return; }
+            if (!address) { 
+                showAppModal("Thiếu Địa Chỉ", "Vui lòng nhập địa chỉ nhận hàng cụ thể (Số nhà, tên đường...)!", "📍", "Nhập Địa Chỉ", () => document.getElementById('cust-address').focus());
+                return; 
+            }
 
             saveCustomerInfo();
 
@@ -1727,7 +1764,7 @@
 
                 const data = await res.json();
                 if (!res.ok || !data.ok) {
-                    alert(data.message || "Không thể tạo đơn hàng. Vui lòng thử lại!");
+                    showAppModal("Lỗi Đặt Hàng", data.message || "Không thể tạo đơn hàng lúc này. Vui lòng thử lại!", "⚠️", "Thử Lại");
                     btn.disabled = false;
                     btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
                     return;
@@ -1776,11 +1813,11 @@
                 btn.disabled = false;
                 btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
 
-                alert(`🎉 Đặt hàng thành công!\n\nĐơn hàng #${orderId} đã được ghi nhận trên hệ thống shop DÁNH BÁN HOA.\n\n• Người nhận: ${name} (${cleanPhone})\n• Địa chỉ: ${address}, ${wardText ? wardText + ', ' : ''}${cityText}\n• Tổng thanh toán khi nhận hàng: ${fmtVND(totalAmount)}\n\nShop sẽ liên hệ để xác nhận và giao hàng sớm nhất cho bạn nhé!`);
+                showAppModal("🎉 Đặt Hàng Thành Công!", `Đơn hàng <b>#${orderId}</b> đã được ghi nhận trên hệ thống DÁNH BÁN HOA.<br><br>• Người nhận: <b>${name}</b> (${cleanPhone})<br>• Địa chỉ: ${address}, ${wardText ? wardText + ', ' : ''}${cityText}<br>• Tổng thanh toán khi nhận hàng: <b style="color:var(--primary); font-size:1.05rem;">${fmtVND(totalAmount)}</b><br><br>Shop sẽ liên hệ để xác nhận và giao hàng sớm nhất cho bạn nhé!`, "📦", "Tiếp Tục Xem Hoa");
 
             } catch (err) {
                 console.error("Lỗi đặt hàng:", err);
-                alert("Lỗi kết nối máy chủ! Vui lòng kiểm tra lại mạng hoặc liên hệ Hotline/Zalo shop 0343.076.043 để được hỗ trợ đặt hàng.");
+                showAppModal("Lỗi Kết Nối Máy Chủ", "Không thể kết nối đến máy chủ để gửi đơn. Vui lòng kiểm tra lại mạng hoặc liên hệ Hotline/Zalo shop <b>0343.076.043</b> để được hỗ trợ đặt hàng!", "⚠️", "Đã Hiểu");
                 btn.disabled = false;
                 btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
             }
@@ -1828,8 +1865,8 @@
 
             setTimeout(() => {
                 document.getElementById('payment-modal').style.display = 'none';
-                alert(`🎉 ĐÃ NHẬN ĐƯỢC TIỀN THANH TOÁN!\n\nĐơn hàng #${orderId} đã được hệ thống tự động xác nhận thanh toán thành công qua MBBank.\nShop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`);
-            }, 800);
+                showAppModal("🎉 ĐÃ NHẬN THANH TOÁN!", `Đơn hàng <b>#${orderId}</b> đã được hệ thống tự động xác nhận thanh toán thành công qua MBBank.<br><br>Shop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`, "💰", "Hoàn Tất");
+            }, 600);
         }
 
         async function finishPayment() {
@@ -1841,17 +1878,19 @@
             stopPaymentPolling();
             document.getElementById('payment-modal').style.display = 'none';
             PENDING_TRANSFER_ORDER = null;
-            alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được shop DÁNH BÁN HOA ghi nhận.\nShop sẽ kiểm tra thông báo chuyển khoản và liên hệ đóng gói gửi hàng sớm nhất cho bạn!`);
+            showAppModal("🎉 Đã Gửi Xác Nhận", `Cảm ơn bạn! Đơn hàng <b>#${orderId}</b> đã được gửi tới shop DÁNH BÁN HOA.<br><br>Shop sẽ kiểm tra tài khoản MBBank và đóng gói gửi hàng sớm nhất cho bạn!`, "🌸", "Tiếp Tục Xem Hoa");
         }
 
         const PENDING_HOLD_HOURS = 24;
         function closePaymentModal() {
+            const orderId = PENDING_TRANSFER_ORDER ? PENDING_TRANSFER_ORDER.orderId : '';
             stopPaymentPolling();
-            alert(`Đơn hàng #${PENDING_TRANSFER_ORDER ? PENDING_TRANSFER_ORDER.orderId : ''} của bạn đã được lưu tạm trên hệ thống trong ${PENDING_HOLD_HOURS} giờ.\nBạn có thể chuyển khoản sau qua số tài khoản MBBank 260220068. Shop sẽ liên hệ để xác nhận giữ hàng!`);
             PENDING_TRANSFER_ORDER = null;
             document.getElementById('payment-modal').style.display = 'none';
             const contactWidget = document.querySelector('.contact-widget-wrap');
             if (contactWidget) contactWidget.style.display = 'flex';
+            
+            showAppModal("Đơn Hàng Tạm Lưu", `Đơn hàng <b>#${orderId}</b> của bạn đã được ghi nhận trên hệ thống và tạm giữ trong <b>${PENDING_HOLD_HOURS} giờ</b>.<br><br>Bạn có thể chuyển khoản sau qua số tài khoản MBBank <b>260220068</b> (DAO GIA KIET). Shop sẽ liên hệ để xác nhận giữ hàng cho bạn!`, "⏰", "Đã Hiểu");
         }
 
         function handleQrSuccess() {
@@ -1894,7 +1933,23 @@
             copyRawString(txt);
         }
 
-        function showToastNotify(msg) {
+        // V10: HÀM HIỂN THỊ MODAL THÔNG BÁO THAY THẾ ALERT()
+        function showAppModal(title, desc, icon = "🌸", btnText = "Đã Hiểu", onConfirm = null) {
+            document.getElementById('alert-modal-title').textContent = title;
+            document.getElementById('alert-modal-desc').innerHTML = desc;
+            document.getElementById('alert-modal-icon').textContent = icon;
+            const btn = document.getElementById('alert-modal-btn');
+            btn.textContent = btnText;
+            btn.onclick = () => {
+                closeAlertModal();
+                if (onConfirm) onConfirm();
+            };
+            document.getElementById('alert-modal').style.display = 'flex';
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alert-modal').style.display = 'none';
+        }
             const t = document.getElementById('toast-notify');
             t.textContent = msg;
             t.style.display = 'block';
