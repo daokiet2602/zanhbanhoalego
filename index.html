@@ -1186,22 +1186,18 @@
 
         async function init() {
             try {
-                // 1. Nạp danh mục sản phẩm gốc
-                const res = await fetch('products_public.json');
-                DATA = await res.json();
+                // 1. TẢI SONG SONG SIÊU TỐC: Danh mục sản phẩm + Dữ liệu mây Cloud Worker + Danh mục hành chính
+                const [pRes, wRes] = await Promise.all([
+                    fetch('products_public.json?_t=' + Date.now(), { cache: 'no-store' }),
+                    fetch('vietnam_wards.json').catch(() => null),
+                    window.realtimeStore ? window.realtimeStore.syncWithCloudWorker() : Promise.resolve()
+                ]);
 
-                // 2. Kéo dữ liệu kho hàng & sản phẩm mới nhất từ mây Cloud Worker
-                if (window.realtimeStore) {
-                    await window.realtimeStore.syncWithCloudWorker();
-                }
+                DATA = await pRes.json();
 
-                // 3. Nạp danh mục đơn vị hành chính chuẩn từ file Excel
-                try {
-                    const wRes = await fetch('vietnam_wards.json');
+                if (wRes && wRes.ok) {
                     WARDS_DATA = await wRes.json();
                     populateProvinces();
-                } catch(e) {
-                    console.warn("Chưa nạp được vietnam_wards.json:", e);
                 }
                 
                 window.realtimeStore.subscribe(() => {
@@ -1212,6 +1208,14 @@
                 renderCatalog();
                 updateCartUI();
                 restoreSavedCustomerInfo();
+
+                // 2. TỰ ĐỘNG LÀM MỚI NGẦM MỖI 15 GIÂY (Auto-refresh realtime khi khách đang xem trang)
+                setInterval(() => {
+                    if (window.realtimeStore && !document.hidden) {
+                        window.realtimeStore.syncWithCloudWorker();
+                    }
+                }, 15000);
+
             } catch (err) {
                 console.error("Lỗi đọc dữ liệu:", err);
             }

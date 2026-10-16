@@ -31,10 +31,15 @@ class RealtimeStore {
         }
     }
 
-    // KÉO DỮ LIỆU DÙNG CHUNG TỪ CLOUD WORKER (GIÚP KHÁCH VÀ ADMIN ĐỒNG BỘ 100% TRÊN MỌI MÁY)
+    // KÉO DỮ LIỆU DÙNG CHUNG TỪ CLOUD WORKER (CHỐNG CACHE TRIỆT ĐỂ & ĐỒNG BỘ TỨC THÌ)
     async syncWithCloudWorker() {
         try {
-            const res = await fetch(CLOUD_CONFIG.CLOUD_STORE_URL);
+            // Thêm timestamp ?_t= để ép trình duyệt điện thoại luôn kéo dữ liệu tươi mới 100%, không dính cache
+            const freshUrl = `${CLOUD_CONFIG.CLOUD_STORE_URL}?_t=${Date.now()}`;
+            const res = await fetch(freshUrl, {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+            });
             if (res.ok) {
                 const cloudData = await res.json();
                 if (cloudData) {
