@@ -389,19 +389,27 @@
 
         <!-- TAB 2: LỊCH SỬ ĐƠN BÁN -->
         <div id="tab-content-orders" style="display: none;">
+            <div class="toolbar" style="margin-bottom: 14px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-weight: 800; font-size: 1.05rem;">
+                    📋 Danh Sách Tất Cả Đơn Hàng (Khách Đặt Web & Bán Tại Quầy)
+                </div>
+                <button class="btn-confirm-sale" style="background:var(--blue); color:#fff; padding:8px 16px;" onclick="loadData()">
+                    🔄 Làm Mới Đơn Hàng
+                </button>
+            </div>
             <div class="table-wrap">
                 <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Mã Đơn</th>
                             <th>Thời Gian</th>
-                            <th>Mã SP - Tên Mẫu</th>
-                            <th class="num-right">Số Lượng</th>
-                            <th class="num-right">Giá Bán</th>
-                            <th class="num-right">Tổng Tiền Thu</th>
-                            <th class="num-right">Tiền Lời</th>
+                            <th>Khách Hàng / SĐT</th>
+                            <th>Món Hàng (Chi Tiết)</th>
+                            <th class="num-right">Tổng Tiền</th>
+                            <th style="text-align: center;">Hình Thức</th>
+                            <th style="text-align: center;">Trạng Thái</th>
                             <th>Ghi Chú</th>
-                            <th style="text-align: right;">Hủy Đơn</th>
+                            <th style="text-align: right;">Thao Tác</th>
                         </tr>
                     </thead>
                     <tbody id="orders-tbody">
@@ -578,6 +586,7 @@
                 // Tự động đẩy đồng bộ dữ liệu đang có lên Cloud Worker nếu trên máy đã có chỉnh sửa
                 if (window.realtimeStore) {
                     window.realtimeStore.pushToCloudWorker();
+                    await window.realtimeStore.fetchAdminOrders();
                 }
 
                 populateSelectDropdown();
@@ -734,8 +743,22 @@
             let actualRevenue = 0;
             let actualProfit = 0;
             window.realtimeStore.salesHistory.forEach(o => {
-                actualRevenue += o.totalRevenue;
-                actualProfit += o.profit;
+                if (o.lines && Array.isArray(o.lines)) {
+                    // Đơn hàng từ Server / Khách đặt
+                    actualRevenue += (o.total || o.subtotal || 0);
+                    // Tính lợi nhuận ước tính (tổng tiền thu - tổng giá vốn các món)
+                    let orderCost = 0;
+                    o.lines.forEach(l => {
+                        const baseProd = allProds.find(p => p.id === l.id);
+                        const cost = baseProd ? (baseProd.price_cost || 0) : 0;
+                        orderCost += cost * (l.qty || 1);
+                    });
+                    actualProfit += Math.max(0, (o.subtotal || o.total || 0) - orderCost);
+                } else {
+                    // Đơn bán thủ công
+                    actualRevenue += (o.totalRevenue || 0);
+                    actualProfit += (o.profit || 0);
+                }
             });
 
             document.getElementById('kpi-total-prods').textContent = allProds.length;
@@ -811,28 +834,62 @@
 
         function renderOrdersTable() {
             const tbody = document.getElementById('orders-tbody');
-            const history = window.realtimeStore.salesHistory;
+            const history = window.realtimeStore.salesHistory || [];
 
             if (history.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-sub)">Chưa có đơn hàng nào được nhập bán. Nhập ở bảng trên để bắt đầu ghi nhận!</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-sub)">Chưa có đơn hàng nào được ghi nhận. Đơn khách đặt trên web hoặc nhập tại bảng trên sẽ hiển thị tại đây!</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = history.map(o => `
-                <tr>
-                    <td><b>${o.orderId}</b></td>
-                    <td><small>${o.time}</small></td>
-                    <td><b>${o.prodName}</b><br><small style="color:var(--text-sub)">${o.prodId} - ${o.prodCode}</small></td>
-                    <td class="num-right"><b>${o.qty} bộ</b></td>
-                    <td class="num-right">${fmtVND(o.price)}</td>
-                    <td class="num-right"><b style="color:var(--blue)">${fmtVND(o.totalRevenue)}</b></td>
-                    <td class="num-right"><b style="color:var(--green)">+${fmtVND(o.profit)}</b></td>
-                    <td>${o.note}</td>
-                    <td style="text-align:right;">
-                        <button class="btn-undo" onclick="handleUndoOrder('${o.orderId}')">Hoàn tác</button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = history.map(o => {
+                // Đơn hàng từ Server (Web đặt)
+                if (o.lines && Array.isArray(o.lines)) {
+                    const custName = o.customer ? escapeHtml(o.customer.name) : 'Khách vãng lai';
+                    const custPhone = o.customer ? escapeHtml(o.customer.phone) : '---';
+                    const custAddr = o.customer ? `${escapeHtml(o.customer.address || '')}${o.customer.ward ? ', ' + escapeHtml(o.customer.ward) : ''}${o.customer.province ? ', ' + escapeHtml(o.customer.province) : ''}` : '';
+                    
+                    const itemsDesc = o.lines.map(l => `• <b>${l.qty}x</b> ${escapeHtml(l.name || l.id)} (${fmtVND(l.price || l.lineTotal)})`).join('<br>');
+                    const isPaid = o.status === 'PAID';
+                    const isCod = o.status === 'COD_NEW' || o.payMethod === 'cod';
+                    
+                    let statusBadge = '<span class="stock-badge badge-out" style="background:#FEF3C7; color:#B45309">Chờ Chuyển Khoản</span>';
+                    if (isPaid) statusBadge = '<span class="stock-badge badge-active">Đã Thanh Toán ✓</span>';
+                    else if (isCod) statusBadge = '<span class="stock-badge" style="background:#E0E7FF; color:#3730A3">COD Mới</span>';
+
+                    return `
+                        <tr>
+                            <td><b style="font-size:0.95rem; color:var(--dark)">#${o.orderId}</b></td>
+                            <td><small>${o.timeStr || (o.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN') : '---')}</small></td>
+                            <td><b>${custName}</b><br><small style="color:var(--text-sub)">📞 ${custPhone}</small><br><small style="color:var(--text-sub); font-size:0.75rem;">📍 ${custAddr}</small></td>
+                            <td>${itemsDesc}</td>
+                            <td class="num-right"><b style="color:var(--blue); font-size:1rem;">${fmtVND(o.total || o.subtotal)}</b></td>
+                            <td style="text-align:center;"><small><b>${o.payMethod === 'transfer' ? 'Chuyển Khoản' : 'COD'}</b></small></td>
+                            <td style="text-align:center;">${statusBadge}</td>
+                            <td><small>${escapeHtml((o.customer && o.customer.note) || o.note || '---')}</small></td>
+                            <td style="text-align:right;">
+                                <button class="btn-undo" style="background:#FEE2E2; color:#B91C1C; border-color:#FCA5A5;" onclick="handleUndoOrder('${o.orderId}')">Hủy</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                // Đơn hàng bán nhanh thủ công tại quầy
+                return `
+                    <tr>
+                        <td><b>#${o.orderId}</b></td>
+                        <td><small>${o.time}</small></td>
+                        <td><b>Bán tại quầy</b></td>
+                        <td><b>${escapeHtml(o.prodName)}</b><br><small style="color:var(--text-sub)">${escapeHtml(o.prodId)} - ${escapeHtml(o.prodCode)}</small> (x${o.qty})</td>
+                        <td class="num-right"><b style="color:var(--blue)">${fmtVND(o.totalRevenue || (o.price * o.qty))}</b></td>
+                        <td style="text-align:center;"><small>Trực tiếp</small></td>
+                        <td style="text-align:center;"><span class="stock-badge badge-active">Hoàn Tất</span></td>
+                        <td><small>${escapeHtml(o.note || 'Bán trực tiếp')}</small></td>
+                        <td style="text-align:right;">
+                            <button class="btn-undo" onclick="handleUndoOrder('${o.orderId}')">Hoàn tác</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function switchAdminTab(tab) {
@@ -848,13 +905,17 @@
 
         // BÁO CÁO DOANH THU THEO THÁNG
         function getMonthlyAnalytics() {
-            const history = window.realtimeStore.salesHistory;
+            const history = window.realtimeStore.salesHistory || [];
+            const allProds = DATA ? (DATA.products || []) : [];
             const months = {}; // { '2026-10': { month: '10/2026', orders: 0, items: 0, revenue: 0, cost: 0, profit: 0 } }
 
             history.forEach(o => {
                 let mKey = o.monthKey;
+                if (!mKey && o.createdAt) {
+                    const d = new Date(o.createdAt);
+                    mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                }
                 if (!mKey && o.time) {
-                    // Cố gắng parse từ chuỗi thời gian nếu đơn cũ chưa có monthKey
                     const parts = o.time.split(' ')[1] ? o.time.split(' ')[1].split('/') : o.time.split('/');
                     if (parts.length >= 3) {
                         mKey = `${parts[2]}-${parts[1].padStart(2, '0')}`;
@@ -879,10 +940,28 @@
                 }
 
                 months[mKey].ordersCount += 1;
-                months[mKey].itemsSold += o.qty;
-                months[mKey].totalRevenue += o.totalRevenue;
-                months[mKey].totalCost += (o.cost || 0) * o.qty;
-                months[mKey].totalProfit += o.profit;
+
+                if (o.lines && Array.isArray(o.lines)) {
+                    let itemsCount = 0;
+                    let orderCost = 0;
+                    o.lines.forEach(l => {
+                        const q = l.qty || 1;
+                        itemsCount += q;
+                        const baseProd = allProds.find(p => p.id === l.id);
+                        const c = baseProd ? (baseProd.price_cost || 0) : 0;
+                        orderCost += c * q;
+                    });
+                    const rev = o.total || o.subtotal || 0;
+                    months[mKey].itemsSold += itemsCount;
+                    months[mKey].totalRevenue += rev;
+                    months[mKey].totalCost += orderCost;
+                    months[mKey].totalProfit += Math.max(0, rev - orderCost);
+                } else {
+                    months[mKey].itemsSold += (o.qty || 1);
+                    months[mKey].totalRevenue += (o.totalRevenue || 0);
+                    months[mKey].totalCost += (o.cost || 0) * (o.qty || 1);
+                    months[mKey].totalProfit += (o.profit || 0);
+                }
             });
 
             // Sắp xếp các tháng mới nhất lên đầu

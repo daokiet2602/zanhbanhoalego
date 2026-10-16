@@ -1184,15 +1184,15 @@
             </div>
 
             <!-- TRẠNG THÁI TỰ ĐỘNG ĐỐI SOÁT SEPAY -->
-            <div id="sepay-waiting-box" style="margin-bottom:14px; background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:12px; padding:10px 14px; display:flex; align-items:center; justify-content:center; gap:8px;">
-                <span class="sync-dot" style="width:10px; height:10px; background:#22C55E; border-radius:50%; animation:pulse 1.2s infinite;"></span>
-                <span style="font-size:0.82rem; color:#15803D; font-weight:800;" id="sepay-status-text">Đang tự động kiểm tra biến động tài khoản MBBank...</span>
+            <div id="sepay-waiting-box" style="margin-bottom:14px; background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:12px; padding:12px 14px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <span class="sync-dot" id="sepay-sync-dot" style="width:10px; height:10px; background:#22C55E; border-radius:50%; animation:pulse 1.2s infinite;"></span>
+                <span style="font-size:0.85rem; color:#15803D; font-weight:800;" id="sepay-status-text">Đang tự động kiểm tra biến động tài khoản MBBank...</span>
             </div>
 
-            <button class="btn-paid-done" onclick="finishPayment()">
-                ✅ Tôi Đã Chuyển Khoản Thành Công
+            <button class="btn-paid-done" id="btn-back-home" style="display:none;" onclick="location.href='index.html'">
+                🏠 Quay Lại Trang Chủ
             </button>
-            <button class="btn-cancel-pay" onclick="closePaymentModal()">
+            <button class="btn-cancel-pay" id="btn-cancel-pay" onclick="closePaymentModal()">
                 ✕ Đóng / Thanh toán sau
             </button>
         </div>
@@ -1860,13 +1860,21 @@
             if (statusBox) {
                 statusBox.style.background = "#DCFCE7";
                 statusBox.style.borderColor = "#22C55E";
+                const dot = document.getElementById('sepay-sync-dot');
+                if (dot) dot.style.display = 'none';
                 document.getElementById('sepay-status-text').innerHTML = "🎉 <b>ĐÃ NHẬN THANH TOÁN THÀNH CÔNG!</b>";
             }
 
-            setTimeout(() => {
-                document.getElementById('payment-modal').style.display = 'none';
-                showAppModal("🎉 ĐÃ NHẬN THANH TOÁN!", `Đơn hàng <b>#${orderId}</b> đã được hệ thống tự động xác nhận thanh toán thành công qua MBBank.<br><br>Shop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`, "💰", "Hoàn Tất");
-            }, 600);
+            const btnBackHome = document.getElementById('btn-back-home');
+            if (btnBackHome) btnBackHome.style.display = 'block';
+
+            const btnCancelPay = document.getElementById('btn-cancel-pay');
+            if (btnCancelPay) btnCancelPay.style.display = 'none';
+
+            // Hiện popup chúc mừng kèm nút quay lại trang chủ
+            showAppModal("🎉 ĐÃ NHẬN THANH TOÁN!", `Đơn hàng <b>#${orderId}</b> đã được hệ thống tự động xác nhận thanh toán thành công qua MBBank.<br><br>Shop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`, "💰", "Quay Lại Trang Chủ", () => {
+                location.href = 'index.html';
+            });
         }
 
         async function finishPayment() {
