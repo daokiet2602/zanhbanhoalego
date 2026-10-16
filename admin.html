@@ -513,6 +513,12 @@
         let DATA = null;
         const fmtVND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+
         function verifyPin() {
             const pin = document.getElementById('pin-input').value;
             if (pin === '2602' || pin === '1234') {
