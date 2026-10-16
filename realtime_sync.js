@@ -38,10 +38,7 @@ class RealtimeStore {
     async syncWithCloudWorker() {
         try {
             const freshUrl = `${CLOUD_CONFIG.PUBLIC_STORE_URL}?_t=${Date.now()}`;
-            const res = await fetch(freshUrl, {
-                cache: 'no-store',
-                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-            });
+            const res = await fetch(freshUrl);
             if (res.ok) {
                 const cloudData = await res.json();
                 if (cloudData) {
@@ -62,10 +59,12 @@ class RealtimeStore {
     }
 
     // N1 & N5: ĐẨY DỮ LIỆU LÊN CLOUD QUA POST /admin/store CÓ X-Admin-Key
-    async pushToCloudWorker(adminKey = '') {
+    async pushToCloudWorker(adminKeyOrOrder = '') {
         try {
-            const key = adminKey || sessionStorage.getItem('lego_admin_key') || 'danhbanhoa2602secretkey';
-            await fetch(CLOUD_CONFIG.ADMIN_STORE_URL, {
+            const key = (typeof adminKeyOrOrder === 'string' && adminKeyOrOrder) 
+                ? adminKeyOrOrder 
+                : (sessionStorage.getItem('lego_admin_key') || 'danhbanhoa2602secretkey');
+            const res = await fetch(CLOUD_CONFIG.ADMIN_STORE_URL, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -76,8 +75,10 @@ class RealtimeStore {
                     newProducts: this.newProducts
                 })
             });
+            return res.ok;
         } catch(e) {
             console.warn("Lỗi lưu lên Cloud Worker:", e);
+            return false;
         }
     }
 

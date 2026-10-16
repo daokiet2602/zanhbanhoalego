@@ -32,7 +32,7 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': isAllowed ? origin : 'null',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Key, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Key, Authorization, Cache-Control, Pragma',
       'Vary': 'Origin'
     };
 

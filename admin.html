@@ -598,8 +598,12 @@
         async function syncNowToCloud() {
             if (window.realtimeStore) {
                 showToast("⏳ Đang đồng bộ toàn bộ kho hàng lên Cloudflare...");
-                await window.realtimeStore.pushToCloudWorker();
-                showToast("✅ ĐÃ ĐỒNG BỘ THÀNH CÔNG! Mọi máy và khách hàng đều đã thấy kho mới.");
+                const ok = await window.realtimeStore.pushToCloudWorker();
+                if (ok) {
+                    showToast("✅ ĐÃ ĐỒNG BỘ THÀNH CÔNG! Mọi máy và khách hàng đều đã thấy kho mới.");
+                } else {
+                    showToast("❌ Lỗi đồng bộ lên Cloudflare! Vui lòng thử lại.");
+                }
             }
         }
 
