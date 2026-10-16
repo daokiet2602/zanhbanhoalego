@@ -772,10 +772,13 @@
                 if (stockInfo.status === 'active' && q > 0) activeCount++;
             });
 
-            // Tính doanh thu & lợi nhuận thực tế từ sales history
+            // Tính doanh thu & lợi nhuận thực tế từ sales history (bỏ qua các đơn CANCELLED)
             let actualRevenue = 0;
             let actualProfit = 0;
+            let validOrdersCount = 0;
             window.realtimeStore.salesHistory.forEach(o => {
+                if (o.status === 'CANCELLED') return;
+                validOrdersCount++;
                 if (o.lines && Array.isArray(o.lines)) {
                     // Đơn hàng từ Server / Khách đặt
                     actualRevenue += (o.total || o.subtotal || 0);
@@ -799,7 +802,7 @@
             document.getElementById('kpi-total-stock').textContent = `${currentStock} bộ`;
             document.getElementById('kpi-sold-count').textContent = `Đã bán thực tế: ${totalSold} bộ`;
             document.getElementById('kpi-actual-revenue').textContent = fmtVND(actualRevenue);
-            document.getElementById('kpi-orders-count').textContent = `${window.realtimeStore.salesHistory.length} đơn hàng đã xuất`;
+            document.getElementById('kpi-orders-count').textContent = `${validOrdersCount} đơn hàng thành công`;
             document.getElementById('kpi-actual-profit').textContent = `+${fmtVND(actualProfit)}`;
             document.getElementById('kpi-stock-val').textContent = `Giá trị vốn còn: ${fmtVND(currentCost)}`;
             document.getElementById('orders-badge').textContent = window.realtimeStore.salesHistory.length;
@@ -884,13 +887,15 @@
                     const itemsDesc = o.lines.map(l => `• <b>${l.qty}x</b> ${escapeHtml(l.name || l.id)} (${fmtVND(l.price || l.lineTotal)})`).join('<br>');
                     const isPaid = o.status === 'PAID';
                     const isCod = o.status === 'COD_NEW' || o.payMethod === 'cod';
+                    const isCancelled = o.status === 'CANCELLED';
                     
                     let statusBadge = '<span class="stock-badge badge-out" style="background:#FEF3C7; color:#B45309">Chờ Chuyển Khoản</span>';
-                    if (isPaid) statusBadge = '<span class="stock-badge badge-active">Đã Thanh Toán ✓</span>';
+                    if (isCancelled) statusBadge = '<span class="stock-badge badge-out" style="background:#F1F5F9; color:#64748B; text-decoration:line-through;">Đã Hủy</span>';
+                    else if (isPaid) statusBadge = '<span class="stock-badge badge-active">Đã Thanh Toán ✓</span>';
                     else if (isCod) statusBadge = '<span class="stock-badge" style="background:#E0E7FF; color:#3730A3">COD Mới</span>';
 
                     return `
-                        <tr>
+                        <tr style="${isCancelled ? 'opacity:0.6; background:#F8FAFC;' : ''}">
                             <td><b style="font-size:0.95rem; color:var(--dark)">#${o.orderId}</b></td>
                             <td><small>${o.timeStr || (o.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN') : '---')}</small></td>
                             <td><b>${custName}</b><br><small style="color:var(--text-sub)">📞 ${custPhone}</small><br><small style="color:var(--text-sub); font-size:0.75rem;">📍 ${custAddr}</small></td>
@@ -900,7 +905,10 @@
                             <td style="text-align:center;">${statusBadge}</td>
                             <td><small>${escapeHtml((o.customer && o.customer.note) || o.note || '---')}</small></td>
                             <td style="text-align:right;">
-                                <button class="btn-undo" style="background:#FEE2E2; color:#B91C1C; border-color:#FCA5A5;" onclick="handleUndoOrder('${o.orderId}')">Hủy</button>
+                                ${isCancelled 
+                                    ? '<span style="font-size:0.75rem; color:#94A3B8; font-weight:700;">Đã hoàn kho</span>'
+                                    : `<button class="btn-undo" style="background:#FEE2E2; color:#B91C1C; border-color:#FCA5A5;" onclick="handleUndoOrder('${o.orderId}')">Hủy</button>`
+                                }
                             </td>
                         </tr>
                     `;
@@ -943,6 +951,7 @@
             const months = {}; // { '2026-10': { month: '10/2026', orders: 0, items: 0, revenue: 0, cost: 0, profit: 0 } }
 
             history.forEach(o => {
+                if (o.status === 'CANCELLED') return;
                 let mKey = o.monthKey;
                 if (!mKey && o.createdAt) {
                     const d = new Date(o.createdAt);
