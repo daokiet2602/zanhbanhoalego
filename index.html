@@ -1643,29 +1643,12 @@
             BANK_DISPLAY: "MBBank (Ngân Hàng Quân Đội)"
         };
 
-        // HỢP ĐỒNG API GỬI ĐƠN HÀNG (T01: Hỗ trợ cả Server Proxy Worker lẫn Direct Fallback an toàn)
-        const ORDER_API_URL = ""; // Điền URL Cloudflare Worker sau khi deploy theo server/README.md
-
-        // CẤU HÌNH ĐỐI SOÁT SEPAY AUTO BANKING
-        const SEPAY_CONFIG = {
-            API_TOKEN: "2WBXRD7DRRJUJN2PH1OIMKA5JTVO3AEEYJDMLPCGHGOVF676PMS9L8KANFGUQQR1",
-            ACCOUNT_NUMBER: "260220068",
-            PROXY_URL: "https://sepay-checker.daokiet-work.workers.dev",
-            POLL_INTERVAL_MS: 2000 // Kiểm tra mỗi 2 giây
-        };
-        let SEPAY_POLL_TIMER = null;
-        let IS_SEPAY_SUCCESS_HANDLED = false; // CỜ KHÓA CHỐNG SPAM TELEGRAM & CHỐNG LẶP POPUP THÀNH CÔNG
-
-        const TELEGRAM_CONFIG = {
-            BOT_TOKEN: "8615110743:AAFWqNOTLgdFQMDelen2WbxPUW-Na5iwDRo",
-            RECIPIENTS: [
-                "6401633197", // Anh Kiệt
-                "8687700662"  // Bạn Lee
-            ]
-        };
+                // BỘ NÃO SERVER BACKEND DUY NHẤT (CLOUDFLARE WORKER)
+        const BACKEND_API_URL = "https://sepay-checker.daokiet-work.workers.dev";
 
         let SELECTED_PAY_METHOD = 'transfer';
         let PENDING_TRANSFER_ORDER = null;
+        let ORDER_STATUS_POLL_TIMER = null;
 
         function selectPayMethod(method) {
             SELECTED_PAY_METHOD = method;
@@ -1673,18 +1656,8 @@
             document.getElementById('pay-opt-cod').classList.toggle('active', method === 'cod');
         }
 
-        // SINH MÃ ĐƠN DUY NHẤT CHUẨN: DH + YYMMDD + 4 SỐ NGẪU NHIÊN
-        function generateUniqueOrderId() {
-            const now = new Date();
-            const yy = String(now.getFullYear()).slice(-2);
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            const rand = Math.floor(1000 + Math.random() * 9000);
-            return `DH${yy}${mm}${dd}-${rand}`;
-        }
-
+        // TẠO ĐƠN HÀNG QUA BACKEND SERVER (SERVER TÍNH TIỀN & SINH MÃ ĐƠN KHÔNG CÓ DẤU GẠCH)
         async function submitOrderToTelegram() {
-            // T13: Chặn đặt hàng khi giỏ rỗng
             if (!CART || Object.keys(CART).length === 0) {
                 alert("Giỏ hàng của bạn đang trống! Vui lòng chọn sản phẩm trước khi đặt hàng.");
                 toggleCart(false);
@@ -1696,10 +1669,11 @@
             const address = document.getElementById('cust-address').value.trim();
             const note = document.getElementById('cust-note').value.trim();
             const cityText = document.getElementById('cust-city').options[document.getElementById('cust-city').selectedIndex].text;
+            const wardSel = document.getElementById('cust-ward');
+            const wardText = (wardSel && wardSel.value) ? wardSel.value : '';
 
             if (!name) { alert("Vui lòng nhập họ và tên nhận hàng!"); return; }
             
-            // T06: Chuẩn hóa và siết chặt kiểm tra SĐT Việt Nam: /^(0|\+?84)(3|5|7|8|9)\d{8}$/
             const cleanPhone = phone.replace(/[\s\.\-_]/g, '');
             const phoneRegex = /^(0|\+?84)(3|5|7|8|9)\d{8}$/;
             if (!phoneRegex.test(cleanPhone)) {
@@ -1712,302 +1686,167 @@
 
             const btn = document.getElementById('btn-submit-order');
             btn.disabled = true;
-            btn.textContent = "⏳ Đang xử lý đơn hàng...";
+            btn.textContent = "⏳ Đang kết nối máy chủ tạo đơn...";
 
-            const orderId = generateUniqueOrderId();
-            const bill = updateBillSummary();
-            const totalAmount = bill.total;
-            const ship = bill.ship;
-
-            let itemsSummaryHtml = '';
-            let orderedItems = [];
-
-            // T13 & T04: Kiểm tra lại tồn kho và lấy giá bán thực tế đang áp dụng
+            // Chuẩn bị danh sách sản phẩm gửi lên server tính tiền
+            const items = [];
             for (const [id, qty] of Object.entries(CART)) {
                 const p = findProductAnywhere(id);
-                if (!p) {
-                    alert(`Sản phẩm [${id}] không còn tồn tại trong hệ thống. Vui lòng kiểm tra lại giỏ hàng!`);
-                    btn.disabled = false;
-                    btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
-                    return;
+                if (p) {
+                    const stockInfo = window.realtimeStore.getProductData(p);
+                    items.push({
+                        id: p.id,
+                        name: p.name,
+                        qty: qty,
+                        price_client: stockInfo.price_retail
+                    });
                 }
-                const stockInfo = window.realtimeStore.getProductData(p);
-                if (stockInfo.qty <= 0) {
-                    alert(`Rất tiếc! Mẫu [${p.name}] vừa tạm hết hàng. Vui lòng chọn mẫu khác!`);
-                    delete CART[id];
-                    saveCart();
-                    updateCartUI();
-                    btn.disabled = false;
-                    btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
-                    return;
-                }
-                const lineMoney = stockInfo.price_retail * qty;
-                itemsSummaryHtml += `• <b>${qty}x</b> [${p.id}] ${escapeHtml(p.name)}: <code>${fmtVND(lineMoney)}</code>\n`;
-                orderedItems.push({ product: p, qty: qty, price_applied: stockInfo.price_retail });
             }
 
-            const wardSel = document.getElementById('cust-ward');
-            const wardText = (wardSel && wardSel.value) ? wardSel.value : '';
-            const fullAddress = `${escapeHtml(address)}, ${wardText ? escapeHtml(wardText) + ', ' : ''}${cityText}`;
-
-            const orderPayload = {
-                orderId,
-                name: escapeHtml(name),
-                phone: escapeHtml(phone),
-                address: fullAddress,
-                note: escapeHtml(note),
-                subtotal: bill.subtotal,
-                shipName: ship.name,
-                shipFeeDisplay: ship.feeDisplay,
-                totalAmount: totalAmount,
-                itemsSummaryHtml,
-                orderedItems,
-                timeStr: new Date().toLocaleString('vi-VN')
+            const payload = {
+                payMethod: SELECTED_PAY_METHOD,
+                shipMethod: SELECTED_SHIP_METHOD,
+                customer: {
+                    name: name,
+                    phone: cleanPhone,
+                    address: address,
+                    ward: wardText,
+                    province: cityText,
+                    note: note
+                },
+                items: items
             };
 
-            const isTransfer = SELECTED_PAY_METHOD === 'transfer';
+            try {
+                // GỌI POST /order LÊN CLOUDFLARE WORKER DUY NHẤT
+                const res = await fetch(`${BACKEND_API_URL}/order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-            // ĐỐI VỚI ĐƠN CHUYỂN KHOẢN: CHƯA GHI NHẬN ĐƠN, CHƯA TRỪ KHO, CHƯA BẮN TELEGRAM!
-            // CHỈ MỞ MÃ VIETQR ĐỂ KHÁCH CHUYỂN KHOẢN
-            if (isTransfer) {
-                PENDING_TRANSFER_ORDER = orderPayload;
+                const data = await res.json();
+                if (!res.ok || !data.ok) {
+                    alert(data.message || "Không thể tạo đơn hàng. Vui lòng thử lại!");
+                    btn.disabled = false;
+                    btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
+                    return;
+                }
 
-                const memo = `${orderId} ${phone}`;
-                const qrUrl = `https://img.vietqr.io/image/${BANK_CONFIG.BANK_ID}-${BANK_CONFIG.ACCOUNT_NO}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(BANK_CONFIG.ACCOUNT_NAME)}`;
+                const orderId = data.orderId;
+                const totalAmount = data.total;
 
-                document.getElementById('pay-qr-img').src = qrUrl;
-                document.getElementById('pay-bank-name').textContent = BANK_CONFIG.BANK_DISPLAY;
-                document.getElementById('pay-acc-num').textContent = BANK_CONFIG.ACCOUNT_NO;
-                document.getElementById('pay-acc-name').textContent = BANK_CONFIG.ACCOUNT_NAME;
-                document.getElementById('pay-amount').textContent = fmtVND(totalAmount);
-                document.getElementById('pay-memo').textContent = memo;
+                // NẾU LÀ CHUYỂN KHOẢN: HIỆN MÃ QR VIETQR MBBANK VÀ LẮNG NGHE STATUS
+                if (SELECTED_PAY_METHOD === 'transfer') {
+                    PENDING_TRANSFER_ORDER = { orderId, totalAmount, name, phone: cleanPhone };
 
+                    // Mã QR chuyển khoản theo cú pháp chuẩn của server (mã đơn không dấu gạch)
+                    const memo = `${orderId} ${cleanPhone}`;
+                    const qrUrl = `https://img.vietqr.io/image/${BANK_CONFIG.BANK_ID}-${BANK_CONFIG.ACCOUNT_NO}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(BANK_CONFIG.ACCOUNT_NAME)}`;
+
+                    document.getElementById('pay-qr-img').src = qrUrl;
+                    document.getElementById('pay-bank-name').textContent = BANK_CONFIG.BANK_DISPLAY;
+                    document.getElementById('pay-acc-num').textContent = BANK_CONFIG.ACCOUNT_NO;
+                    document.getElementById('pay-acc-name').textContent = BANK_CONFIG.ACCOUNT_NAME;
+                    document.getElementById('pay-amount').textContent = fmtVND(totalAmount);
+                    document.getElementById('pay-memo').textContent = memo;
+
+                    CART = {};
+                    saveCart();
+                    updateCartUI();
+
+                    toggleCart(false);
+                    hideCheckoutForm();
+                    btn.disabled = false;
+                    btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
+                    document.getElementById('qr-fallback-msg').style.display = 'none';
+                    document.getElementById('payment-modal').style.display = 'flex';
+
+                    // LẮNG NGHE TRẠNG THÁI ĐƠN HÀNG TỪ SERVER (POLLING AN TOÀN /order-status)
+                    waitForPaymentAuto(orderId);
+                    return;
+                }
+
+                // NẾU LÀ COD (NHẬN HÀNG TRẢ TIỀN)
+                CART = {};
+                saveCart();
+                updateCartUI();
                 toggleCart(false);
                 hideCheckoutForm();
                 btn.disabled = false;
                 btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
-                document.getElementById('qr-fallback-msg').style.display = 'none';
-                document.getElementById('payment-modal').style.display = 'flex';
 
-                // KÍCH HOẠT TỰ ĐỘNG ĐỐI SOÁT SEPAY REALTIME (AUTO BANKING)
-                startSepayAutoCheck(orderId, totalAmount);
-                return;
-            }
+                alert(`🎉 Đặt hàng thành công!\n\nĐơn hàng #${orderId} đã được ghi nhận trên hệ thống shop DÁNH BÁN HOA.\n\n• Người nhận: ${name} (${cleanPhone})\n• Địa chỉ: ${address}, ${wardText ? wardText + ', ' : ''}${cityText}\n• Tổng thanh toán khi nhận hàng: ${fmtVND(totalAmount)}\n\nShop sẽ liên hệ để xác nhận và giao hàng sớm nhất cho bạn nhé!`);
 
-            // XỬ LÝ THANH TOÁN KHI NHẬN HÀNG (COD)
-            await executeOrderConfirmation(orderPayload, '🚚 Thanh toán khi nhận hàng (COD)');
-
-            CART = {};
-            saveCart();
-            updateCartUI();
-            toggleCart(false);
-            hideCheckoutForm();
-            btn.disabled = false;
-            btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
-
-            alert(`🎉 Đặt hàng thành công!\n\nĐơn hàng #${orderId} đã được chuyển tới DÁNH BÁN HOA.\n\n• Địa chỉ: ${fullAddress}\n• Hình thức ship: ${ship.name}\n• Tổng tiền: ${fmtVND(totalAmount)}\n\nShop sẽ liên hệ SĐT ${phone} để xác nhận và gửi hàng nhanh nhất cho bạn!`);
-        }
-
-        async function executeOrderConfirmation(payload, payMethodText) {
-            if (window.realtimeStore && payload.orderedItems) {
-                payload.orderedItems.forEach(item => {
-                    window.realtimeStore.recordSale(item.product, item.qty, item.product.price_retail, `${payMethodText}: ${payload.name} (${payload.phone}) - ${payload.address}`);
-                });
-            }
-
-            const teleMsg = `🌸 <b>ĐƠN HÀNG MỚI - DÁNH BÁN HOA!</b>\n` +
-                `━━━━━━━━━━━━━━━━━━\n` +
-                `📦 <b>Mã đơn:</b> <code>#${payload.orderId}</code>\n` +
-                `👤 <b>Khách hàng:</b> ${payload.name}\n` +
-                `📞 <b>Điện thoại:</b> <code>${payload.phone}</code>\n` +
-                `📍 <b>Địa chỉ:</b> ${payload.address}\n` +
-                `🚚 <b>Vận chuyển:</b> ${payload.shipName} (${payload.shipFeeDisplay})\n` +
-                `${payload.note ? `📝 <b>Ghi chú:</b> <i>${payload.note}</i>\n` : ''}` +
-                `💵 <b>Hình thức:</b> <b>${payMethodText}</b>\n` +
-                `━━━━━━━━━━━━━━━━━━\n` +
-                `🛍️ <b>CHI TIẾT SẢN PHẨM:</b>\n${payload.itemsSummaryHtml}` +
-                `━━━━━━━━━━━━━━━━━━\n` +
-                `💵 <b>Tiền hàng:</b> ${fmtVND(payload.subtotal)}\n` +
-                `🚚 <b>Phí ship:</b> ${payload.shipFeeDisplay}\n` +
-                `💰 <b>TỔNG THANH TOÁN:</b> <b>${fmtVND(payload.totalAmount)}</b>\n` +
-                `⏰ <b>Thời gian:</b> ${payload.timeStr}`;
-
-            try {
-                if (ORDER_API_URL) {
-                    // T01: Gửi qua Server Proxy an toàn
-                    await fetch(`${ORDER_API_URL}/order`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            orderId: payload.orderId,
-                            status: 'PENDING_PAYMENT',
-                            payMethodText: payMethodText,
-                            name: payload.name,
-                            phone: payload.phone,
-                            address: payload.address,
-                            note: payload.note,
-                            subtotal: payload.subtotal,
-                            shipName: payload.shipName,
-                            shipFeeDisplay: payload.shipFeeDisplay,
-                            totalAmount: payload.totalAmount,
-                            itemsSummaryHtml: payload.itemsSummaryHtml,
-                            timeStr: payload.timeStr
-                        })
-                    });
-                } else {
-                    // Fallback gửi trực tiếp nếu chưa cấu hình Worker
-                    const sendPromises = TELEGRAM_CONFIG.RECIPIENTS.map(targetChatId => {
-                        return fetch(`https://api.telegram.org/bot${TELEGRAM_CONFIG.BOT_TOKEN}/sendMessage`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                chat_id: targetChatId,
-                                text: teleMsg,
-                                parse_mode: 'HTML'
-                            })
-                        });
-                    });
-                    await Promise.all(sendPromises);
-                }
             } catch (err) {
-                console.warn("Lỗi gửi thông báo đơn hàng:", err);
+                console.error("Lỗi đặt hàng:", err);
+                alert("Lỗi kết nối máy chủ! Vui lòng kiểm tra lại mạng hoặc liên hệ Hotline/Zalo shop 0343.076.043 để được hỗ trợ đặt hàng.");
+                btn.disabled = false;
+                btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
             }
         }
 
-        // KHI KHÁCH BẤM "TÔI ĐÃ CHUYỂN KHOẢN THÀNH CÔNG" -> CHÍNH THỨC GHI NHẬN ĐƠN, TRỪ KHO & BẮN TELEGRAM (CHỈ 1 TIN DUY NHẤT)
+        // LẮNG NGHE TỰ ĐỘNG KHI CÓ TIỀN VỀ (CLIENT CHỈ HỎI SERVER STATUS, KHÔNG LỘ TOKEN SEPAY)
+        function waitForPaymentAuto(orderId) {
+            stopPaymentPolling();
+            const statusEl = document.getElementById('sepay-status-text');
+            if (statusEl) statusEl.textContent = "Đang tự động kiểm tra biến động tài khoản MBBank...";
+
+            let pollCount = 0;
+            ORDER_STATUS_POLL_TIMER = setInterval(async () => {
+                pollCount++;
+                try {
+                    const res = await fetch(`${BACKEND_API_URL}/order-status?id=${orderId}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.status === 'PAID') {
+                            stopPaymentPolling();
+                            handlePaymentSuccessUI(orderId);
+                        }
+                    }
+                } catch(e) {}
+
+                // Dừng sau 12 phút
+                if (pollCount > 240) stopPaymentPolling();
+            }, 3000);
+        }
+
+        function stopPaymentPolling() {
+            if (ORDER_STATUS_POLL_TIMER) {
+                clearInterval(ORDER_STATUS_POLL_TIMER);
+                ORDER_STATUS_POLL_TIMER = null;
+            }
+        }
+
+        function handlePaymentSuccessUI(orderId) {
+            const statusBox = document.getElementById('sepay-waiting-box');
+            if (statusBox) {
+                statusBox.style.background = "#DCFCE7";
+                statusBox.style.borderColor = "#22C55E";
+                document.getElementById('sepay-status-text').innerHTML = "🎉 <b>ĐÃ NHẬN THANH TOÁN THÀNH CÔNG!</b>";
+            }
+
+            setTimeout(() => {
+                document.getElementById('payment-modal').style.display = 'none';
+                alert(`🎉 ĐÃ NHẬN ĐƯỢC TIỀN THANH TOÁN!\n\nĐơn hàng #${orderId} đã được hệ thống tự động xác nhận thanh toán thành công qua MBBank.\nShop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`);
+            }, 800);
+        }
+
         async function finishPayment() {
             if (!PENDING_TRANSFER_ORDER) {
                 document.getElementById('payment-modal').style.display = 'none';
                 return;
             }
-
-            const doneBtn = document.querySelector('.btn-paid-done');
-            if (doneBtn) { doneBtn.disabled = true; doneBtn.textContent = "⏳ Đang gửi đơn tới shop..."; }
-
-            // LÚC NÀY MỚI CHÍNH THỨC GHI NHẬN ĐƠN, TRỪ KHO & BẮN TELEGRAM
-            await executeOrderConfirmation(PENDING_TRANSFER_ORDER, '💳 Chuyển khoản VietQR (Khách báo ĐÃ CHUYỂN)');
-
             const orderId = PENDING_TRANSFER_ORDER.orderId;
-            PENDING_TRANSFER_ORDER = null;
-            CART = {};
-            saveCart();
-            updateCartUI();
-
-            if (doneBtn) { doneBtn.disabled = false; doneBtn.textContent = "✅ Tôi Đã Chuyển Khoản Thành Công"; }
+            stopPaymentPolling();
             document.getElementById('payment-modal').style.display = 'none';
-
-            alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được shop DÁNH BÁN HOA ghi nhận thành công.\nShop sẽ kiểm tra app ngân hàng và đóng gói gửi hàng sớm nhất cho bạn!`);
+            PENDING_TRANSFER_ORDER = null;
+            alert(`🎉 Cảm ơn bạn! Đơn hàng #${orderId} đã được shop DÁNH BÁN HOA ghi nhận.\nShop sẽ kiểm tra thông báo chuyển khoản và liên hệ đóng gói gửi hàng sớm nhất cho bạn!`);
         }
 
-        async function checkSepayTransactions() {
-            // Danh sách các endpoint đối soát tự động
-            const endpoints = [
-                SEPAY_CONFIG.PROXY_URL,
-                'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://my.sepay.vn/userapi/transactions/list')
-            ];
-
-            for (const ep of endpoints) {
-                if (!ep) continue;
-                try {
-                    const res = await fetch(ep, {
-                        headers: {
-                            'Authorization': `Bearer ${SEPAY_CONFIG.API_TOKEN}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    if (res.ok) {
-                        const json = await res.json();
-                        if (json && json.transactions) return json.transactions;
-                    }
-                } catch(e) {}
-            }
-            return null;
-        }
-
-        // TỰ ĐỘNG ĐỐI SOÁT SEPAY REALTIME (AUTO BANKING)
-        function startSepayAutoCheck(targetOrderId, expectedAmount) {
-            stopSepayAutoCheck();
-            IS_SEPAY_SUCCESS_HANDLED = false; // Reset cờ khóa đơn mới
-            const statusEl = document.getElementById('sepay-status-text');
-            if (statusEl) statusEl.textContent = "Đang tự động kiểm tra biến động tài khoản MBBank...";
-
-            // Chuẩn hóa mã đơn hàng để đối soát (ví dụ: DH261015-8963 -> dh2610158963)
-            const cleanOrderId = targetOrderId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-
-            // Kiểm tra mỗi 2 giây một lần qua Cloudflare Worker
-            SEPAY_POLL_TIMER = setInterval(async () => {
-                if (IS_SEPAY_SUCCESS_HANDLED) {
-                    stopSepayAutoCheck();
-                    return;
-                }
-
-                try {
-                    const transactions = await checkSepayTransactions();
-                    if (!transactions || !transactions.length || IS_SEPAY_SUCCESS_HANDLED) return;
-
-                    // Tìm giao dịch chuyển tiền vào tài khoản MBBank khớp mã đơn hàng hoặc số tiền
-                    const matchedTx = transactions.find(tx => {
-                        const inAmount = parseFloat(tx.amount_in || tx.amount || 0);
-                        const desc = (tx.transaction_content || tx.description || '').toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-                        const txCode = (tx.code || '').toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-                        
-                        // Kiểm tra: tiền vào khớp số tiền và nội dung/code chứa mã đơn hàng
-                        const isAmountMatch = Math.abs(inAmount - expectedAmount) < 1000 || inAmount >= expectedAmount;
-                        const isContentMatch = desc.includes(cleanOrderId) || txCode.includes(cleanOrderId) || cleanOrderId.includes(txCode);
-                        return isAmountMatch && isContentMatch;
-                    });
-
-                    if (matchedTx && !IS_SEPAY_SUCCESS_HANDLED) {
-                        IS_SEPAY_SUCCESS_HANDLED = true; // KHÓA CỜ NGAY TỨC THÌ ĐỂ CHỐNG SPAM
-                        stopSepayAutoCheck();
-                        handleSepaySuccessAuto(targetOrderId, matchedTx);
-                    }
-                } catch (e) {
-                    console.warn("Lỗi kiểm tra SePay:", e);
-                }
-            }, SEPAY_CONFIG.POLL_INTERVAL_MS);
-
-            // Tự động dừng sau 10 phút để tránh lãng phí request
-            setTimeout(() => { stopSepayAutoCheck(); }, 10 * 60 * 1000);
-        }
-
-        function stopSepayAutoCheck() {
-            if (SEPAY_POLL_TIMER) {
-                clearInterval(SEPAY_POLL_TIMER);
-                SEPAY_POLL_TIMER = null;
-            }
-        }
-
-        async function handleSepaySuccessAuto(orderId, tx) {
-            stopSepayAutoCheck();
-            const statusBox = document.getElementById('sepay-waiting-box');
-            if (statusBox) {
-                statusBox.style.background = "#DCFCE7";
-                statusBox.style.borderColor = "#22C55E";
-                document.getElementById('sepay-status-text').innerHTML = "🎉 <b>ĐÃ NHẬN THANH TOÁN THÀNH CÔNG TỪ SEPAY!</b>";
-            }
-
-            // CHÍNH THỨC GHI NHẬN ĐƠN, TRỪ KHO & LƯU VÀO HỆ THỐNG - ĐÚNG 1 LẦN DUY NHẤT
-            if (PENDING_TRANSFER_ORDER) {
-                const orderSnapshot = { ...PENDING_TRANSFER_ORDER };
-                PENDING_TRANSFER_ORDER = null; // Xóa ngay để không bị re-trigger
-                
-                await executeOrderConfirmation(orderSnapshot, `💳 Chuyển khoản VietQR (SePay tự động khớp: ${fmtVND(tx.amount_in || tx.amount)})`);
-                
-                CART = {};
-                saveCart();
-                updateCartUI();
-            }
-
-            setTimeout(() => {
-                document.getElementById('payment-modal').style.display = 'none';
-                alert(`🎉 ĐÃ NHẬN ĐƯỢC TIỀN THANH TOÁN!\n\nĐơn hàng #${orderId} đã được hệ thống SePay tự động xác nhận thành công.\nShop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`);
-            }, 800);
-        }
-
-        const PENDING_HOLD_HOURS = 24; // Giữ đơn chuyển khoản trong 24 giờ
+        const PENDING_HOLD_HOURS = 24;
         function closePaymentModal() {
-            stopSepayAutoCheck();
+            stopPaymentPolling();
             alert(`Đơn hàng #${PENDING_TRANSFER_ORDER ? PENDING_TRANSFER_ORDER.orderId : ''} của bạn đã được lưu tạm trên hệ thống trong ${PENDING_HOLD_HOURS} giờ.\nBạn có thể chuyển khoản sau qua số tài khoản MBBank 260220068. Shop sẽ liên hệ để xác nhận giữ hàng!`);
             PENDING_TRANSFER_ORDER = null;
             document.getElementById('payment-modal').style.display = 'none';
@@ -2022,7 +1861,6 @@
 
         function handleQrError() {
             const img = document.getElementById('pay-qr-img');
-            // Chỉ hiển thị cảnh báo nếu img.src có giá trị thật sự mà bị lỗi mạng
             if (img && img.src && img.src.length > 20 && !img.src.endsWith('/')) {
                 const fallback = document.getElementById('qr-fallback-msg');
                 if (fallback) fallback.style.display = 'block';

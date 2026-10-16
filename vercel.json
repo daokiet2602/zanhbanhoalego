@@ -1,9 +1,0 @@
-{
-  "version": 2,
-  "routes": [
-    {
-      "src": "/api/transactions",
-      "dest": "/api/transactions.js"
-    }
-  ]
-}
