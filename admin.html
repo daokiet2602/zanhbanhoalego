@@ -729,12 +729,26 @@
             populateSelectDropdown();
         }
 
-        // HỦY ĐƠN HÀNG TRỰC TIẾP LÊN MÂY CLOUDFLARE
+        // HỦY ĐƠN HÀNG TRỰC TIẾP LÊN MÂY CLOUDFLARE HOẶC TẠI QUẦY
         async function handleUndoOrder(orderId) {
-            if (!confirm(`Bạn có chắc muốn hủy đơn hàng #${orderId}? Tồn kho của các món trong đơn sẽ được tự động cộng trả lại trên Cloudflare.`)) {
+            if (!confirm(`Bạn có chắc muốn hủy/hoàn tác đơn hàng #${orderId}? Tồn kho sẽ được cộng trả lại ngay lập tức.`)) {
                 return;
             }
-            showToast(`⏳ Đang xử lý hủy đơn #${orderId}...`);
+            showToast(`⏳ Đang xử lý hoàn tác đơn #${orderId}...`);
+
+            // Nếu là đơn bán tại quầy (bắt đầu bằng DH-...)
+            if (String(orderId).startsWith('DH-')) {
+                const res = window.realtimeStore.undoSale(orderId);
+                if (res) {
+                    showToast(`✅ Đã hoàn tác đơn #${orderId} và cộng lại kho thành công!`);
+                    populateSelectDropdown();
+                } else {
+                    showToast(`❌ Không tìm thấy đơn #${orderId} để hoàn tác!`);
+                }
+                return;
+            }
+
+            // Nếu là đơn hàng web Cloudflare KV (DH26...)
             const ok = await window.realtimeStore.cancelOrderOnCloud(orderId);
             if (ok) {
                 showToast(`✅ Đã hủy đơn #${orderId} và hoàn kho thành công trên đám mây!`);
