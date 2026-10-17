@@ -548,10 +548,14 @@
             err.style.display = 'block';
         });
 
-        if (window.realtimeStore.adminKey) {
-            document.getElementById('auth-overlay').style.display = 'none';
-            loadData();
-        }
+        // Tự vào lại khi tải lại trang (còn khóa trong phiên). Phải chạy SAU khi toàn bộ script nạp xong
+        // (setTimeout 0), nếu không các biến khai báo phía dưới (const DATA_VIEW...) chưa tồn tại => lỗi, bảng trống.
+        setTimeout(() => {
+            if (window.realtimeStore.adminKey) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                loadData();
+            }
+        }, 0);
 
         function openNewProductModal() {
             document.getElementById('new-prod-modal').style.display = 'flex';
