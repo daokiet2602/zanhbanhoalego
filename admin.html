@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>window.LEGO_ADMIN_PAGE = true;</script>
     <script src="realtime_sync.js"></script>
     <style>
         :root {
@@ -251,11 +252,11 @@
         <div class="auth-card">
             <div style="font-size: 2.5rem; margin-bottom: 12px;">🔒</div>
             <h2>Xác Thực Chủ Shop</h2>
-            <p>Nhập mã PIN để truy cập bảng quản trị & xuất bán hàng</p>
-            <input type="password" id="pin-input" class="auth-input" placeholder="••••" maxlength="6" autofocus onkeydown="if(event.key==='Enter') verifyPin()">
-            <button class="auth-btn" onclick="verifyPin()">Mở Khóa Quản Trị</button>
+            <p>Nhập mã quản trị để truy cập bảng quản trị & xuất bán hàng</p>
+            <input type="password" id="pin-input" class="auth-input" placeholder="Mã quản trị" autocomplete="current-password" autofocus onkeydown="if(event.key==='Enter') verifyPin()">
+            <button class="auth-btn" id="auth-btn" onclick="verifyPin()">Mở Khóa Quản Trị</button>
             <div id="auth-err" style="color:var(--primary); font-size:0.8rem; font-weight:700; margin-top:10px; display:none;">
-                Mã PIN không đúng, vui lòng thử lại!
+                Mã quản trị không đúng, vui lòng thử lại!
             </div>
         </div>
     </div>
@@ -353,7 +354,7 @@
                 <input type="text" class="form-control" style="max-width:320px;" id="admin-search" placeholder="🔍 Tìm theo mã hoặc tên mẫu..." oninput="renderStockTable()">
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="btn-confirm-sale" style="background:#22C55E; color:#fff; padding:10px 18px;" onclick="syncNowToCloud()">
-                        ☁️ Đồng Bộ Kho Lên Mây Ngay
+                        🔄 Tải Lại Dữ Liệu Từ Máy Chủ
                     </button>
                     <button class="btn-confirm-sale" style="background:var(--blue); color:#fff; padding:10px 18px;" onclick="openNewProductModal()">
                         ➕ Thêm Mặt Hàng Mới
@@ -519,20 +520,35 @@
             });
         }
 
-        function verifyPin() {
-            const pin = document.getElementById('pin-input').value;
-            if (pin === '2602' || pin === '1234') {
+        async function verifyPin() {
+            const input = document.getElementById('pin-input');
+            const btn = document.getElementById('auth-btn');
+            const err = document.getElementById('auth-err');
+            btn.disabled = true; btn.textContent = 'Đang kiểm tra...';
+            const r = await window.realtimeStore.login(input.value);
+            btn.disabled = false; btn.textContent = 'Mở Khóa Quản Trị';
+            if (r.ok) {
+                err.style.display = 'none';
                 document.getElementById('auth-overlay').style.display = 'none';
-                sessionStorage.setItem('lego_admin_auth', 'true');
+                input.value = '';
                 loadData();
             } else {
-                document.getElementById('auth-err').style.display = 'block';
-                document.getElementById('pin-input').value = '';
-                document.getElementById('pin-input').focus();
+                err.textContent = r.status === 0 ? 'Không kết nối được máy chủ, vui lòng thử lại.' : (r.message || 'Mã quản trị không đúng, vui lòng thử lại!');
+                err.style.display = 'block';
+                input.value = '';
+                input.focus();
             }
         }
 
-        if (sessionStorage.getItem('lego_admin_auth') === 'true') {
+        // Hết phiên / bị server từ chối => quay lại màn hình nhập mã
+        window.addEventListener('lego-admin-unauthorized', () => {
+            document.getElementById('auth-overlay').style.display = 'flex';
+            const err = document.getElementById('auth-err');
+            err.textContent = 'Phiên đăng nhập đã hết hạn hoặc mã không đúng. Vui lòng nhập lại.';
+            err.style.display = 'block';
+        });
+
+        if (window.realtimeStore.adminKey) {
             document.getElementById('auth-overlay').style.display = 'none';
             loadData();
         }
@@ -554,7 +570,7 @@
             document.getElementById('new-p-profit-preview').textContent = `${profit >= 0 ? '+' : ''}${fmtVND(profit)} (${margin}%)`;
         }
 
-        function submitNewProduct() {
+        async function submitNewProduct() {
             const name = document.getElementById('new-p-name').value.trim();
             const cost = parseFloat(document.getElementById('new-p-cost').value) || 0;
             const retail = parseFloat(document.getElementById('new-p-retail').value) || 0;
@@ -565,54 +581,45 @@
             if (!name) { alert("Vui lòng nhập tên sản phẩm / mẫu hoa mới!"); return; }
             if (retail <= 0) { alert("Vui lòng nhập giá bán lẻ hợp lệ!"); return; }
 
-            const newProd = window.realtimeStore.addNewProduct({
-                id: id,
-                name: name,
-                qty: qty,
-                price_cost: cost,
-                price_retail: retail,
-                img: img
-            });
+            const res = await window.realtimeStore.addNewProduct({ id, name, qty, price_cost: cost, price_retail: retail, img });
+            if (!res.success) { alert(res.msg); return; }
 
             closeNewProductModal();
-            showToast(`✅ Đã thêm thành công mẫu mới [${newProd.name}] vào kho hàng!`);
-            document.getElementById('new-p-name').value = '';
-            document.getElementById('new-p-cost').value = '';
-            document.getElementById('new-p-retail').value = '';
-            document.getElementById('new-p-id').value = '';
-            document.getElementById('new-p-img').value = '';
+            showToast(`✅ Đã thêm thành công mẫu mới [${res.product.name}] — khách thấy ngay!`);
+            ['new-p-name','new-p-cost','new-p-retail','new-p-id','new-p-img'].forEach(i => document.getElementById(i).value = '');
             document.getElementById('new-p-profit-preview').textContent = '+0đ (0%)';
+            populateSelectDropdown(); renderKPI(); renderStockTable();
         }
+
+        // Dữ liệu sản phẩm lấy trực tiếp từ server (không còn đọc data.json)
+        const DATA_VIEW = { get products() { return window.realtimeStore.products; } };
 
         async function loadData() {
             try {
-                const res = await fetch('data.json');
-                DATA = await res.json();
-                
-                // Tự động đẩy đồng bộ dữ liệu đang có lên Cloud Worker nếu trên máy đã có chỉnh sửa
-                if (window.realtimeStore) {
-                    window.realtimeStore.pushToCloudWorker();
-                    await window.realtimeStore.fetchAdminOrders();
-                }
+                DATA = DATA_VIEW;
+                const store = window.realtimeStore;
+                await store.syncWithCloudWorker(true);
+                await store.fetchAdminOrders(true);
 
                 populateSelectDropdown();
-                window.realtimeStore.subscribe(() => {
-                    renderKPI();
-                    renderStockTable();
-                    renderOrdersTable();
-                });
-
+                if (!window.ADMIN_SUBSCRIBED) {
+                    window.ADMIN_SUBSCRIBED = true;
+                    store.subscribe(() => {
+                        renderKPI();
+                        // Đang gõ/bấm trong bảng kho thì không vẽ lại bảng (tránh mất ô đang nhập)
+                        const a = document.activeElement;
+                        if (!(a && a.closest && a.closest('#stock-tbody'))) renderStockTable();
+                        renderOrdersTable();
+                    });
+                }
                 renderKPI();
                 renderStockTable();
                 renderOrdersTable();
 
-                // Tự động làm mới dữ liệu đơn và kho từ Cloud mỗi 10 giây (êm ái, chỉ cập nhật khi có thay đổi)
+                // Hỏi server mỗi 10 giây: chỉ 1 dòng dữ liệu "version", đổi mới tải lại
                 if (!window.ADMIN_POLL_INTERVAL) {
                     window.ADMIN_POLL_INTERVAL = setInterval(() => {
-                        if (window.realtimeStore && !document.hidden) {
-                            window.realtimeStore.syncWithCloudWorker();
-                            window.realtimeStore.fetchAdminOrders();
-                        }
+                        if (!document.hidden) window.realtimeStore.refreshAll();
                     }, 10000);
                 }
             } catch (err) {
@@ -621,15 +628,10 @@
         }
 
         async function syncNowToCloud() {
-            if (window.realtimeStore) {
-                showToast("⏳ Đang đồng bộ toàn bộ kho hàng lên Cloudflare...");
-                const ok = await window.realtimeStore.pushToCloudWorker();
-                if (ok) {
-                    showToast("✅ ĐÃ ĐỒNG BỘ THÀNH CÔNG! Mọi máy và khách hàng đều đã thấy kho mới.");
-                } else {
-                    showToast("❌ Lỗi đồng bộ lên Cloudflare! Vui lòng thử lại.");
-                }
-            }
+            showToast("⏳ Đang tải lại dữ liệu mới nhất từ máy chủ...");
+            const ok = await window.realtimeStore.pushToCloudWorker();
+            showToast(ok ? "✅ Đã tải lại — kho & đơn hàng khớp 100% với máy chủ." : "❌ Không kết nối được máy chủ, vui lòng thử lại.");
+            populateSelectDropdown(); renderKPI(); renderStockTable(); renderOrdersTable();
         }
 
         function populateSelectDropdown() {
@@ -653,7 +655,7 @@
         }
 
         // XỬ LÝ NHẬP BÁN HÀNG
-        function submitSaleEntry() {
+        async function submitSaleEntry() {
             const id = document.getElementById('entry-prod-select').value;
             if (!id) { alert("Vui lòng chọn sản phẩm đã bán!"); return; }
 
@@ -663,7 +665,8 @@
             const price = parseFloat(document.getElementById('entry-price').value) || p.price_retail;
             const note = document.getElementById('entry-note').value;
 
-            const res = window.realtimeStore.recordSale(p, qty, price, note);
+            if (window._saleBusy) return; window._saleBusy = true;
+            let res; try { res = await window.realtimeStore.recordSale(p, qty, price, note); } finally { window._saleBusy = false; }
             if (!res.success) {
                 alert(res.msg);
                 return;
@@ -713,12 +716,13 @@
         }
 
         // BÁN NHANH TRỰC TIẾP TRÊN DÒNG SẢN PHẨM
-        function handleRowSell(id) {
+        async function handleRowSell(id) {
             const p = DATA.products.find(item => item.id === id);
             const input = document.getElementById(`row-sell-${id}`);
             const qty = parseInt(input.value) || 1;
 
-            const res = window.realtimeStore.recordSale(p, qty, p.price_retail, 'Bán nhanh tại bảng');
+            if (window._saleBusy) return; window._saleBusy = true;
+            let res; try { res = await window.realtimeStore.recordSale(p, qty, p.price_retail, 'Bán nhanh tại bảng'); } finally { window._saleBusy = false; }
             if (!res.success) {
                 alert(res.msg);
                 return;
@@ -777,7 +781,7 @@
             let actualProfit = 0;
             let validOrdersCount = 0;
             window.realtimeStore.salesHistory.forEach(o => {
-                if (o.status === 'CANCELLED') return;
+                if (!isRevenueOrder(o)) return;
                 validOrdersCount++;
                 if (o.lines && Array.isArray(o.lines)) {
                     // Đơn hàng từ Server / Khách đặt
@@ -786,7 +790,7 @@
                     let orderCost = 0;
                     o.lines.forEach(l => {
                         const baseProd = allProds.find(p => p.id === l.id);
-                        const cost = baseProd ? (baseProd.price_cost || 0) : 0;
+                        const cost = (l.cost !== undefined && l.cost !== null) ? l.cost : (baseProd ? (baseProd.price_cost || 0) : 0);
                         orderCost += cost * (l.qty || 1);
                     });
                     actualProfit += Math.max(0, (o.subtotal || o.total || 0) - orderCost);
@@ -868,6 +872,54 @@
             }).join('');
         }
 
+
+        // ===== Trạng thái & thao tác đơn hàng =====
+        function isRevenueOrder(o) {
+            // Chỉ đơn đã thu tiền / bán quầy / COD đang xử lý mới tính doanh thu
+            return !['CANCELLED', 'EXPIRED', 'PENDING_PAYMENT', 'UNDERPAID', 'PAID_LATE'].includes(o.status);
+        }
+
+        function orderStatusBadge(o) {
+            const mk = (bg, color, text, extra = '') => `<span class="stock-badge" style="background:${bg}; color:${color}; ${extra}">${text}</span>`;
+            switch (o.status) {
+                case 'CANCELLED': return mk('#F1F5F9', '#64748B', 'Đã Hủy', 'text-decoration:line-through;');
+                case 'EXPIRED': return mk('#F1F5F9', '#64748B', 'Hết Hạn (đã hoàn kho)');
+                case 'PAID': return '<span class="stock-badge badge-active">Đã Thanh Toán ✓</span>';
+                case 'UNDERPAID': return mk('#FEE2E2', '#B91C1C', `⚠ Thiếu Tiền (${fmtVND(o.paidAmount)}/${fmtVND(o.total)})`);
+                case 'PAID_LATE': return mk('#FEE2E2', '#B91C1C', '🚨 CK Muộn - Cần Xử Lý');
+                case 'COD_NEW': return mk('#E0E7FF', '#3730A3', 'COD Mới');
+                case 'CONFIRMED': return mk('#DBEAFE', '#1D4ED8', 'Đã Xác Nhận');
+                case 'SHIPPED': return mk('#CFFAFE', '#0E7490', 'Đang Giao 🚚');
+                case 'DELIVERED': return mk('#DCFCE7', '#15803D', 'Đã Giao ✓');
+                case 'COUNTER_SALE': return '<span class="stock-badge badge-active">Hoàn Tất</span>';
+                default: return mk('#FEF3C7', '#B45309', 'Chờ Chuyển Khoản');
+            }
+        }
+
+        function orderActions(o) {
+            const s = o.status, id = o.orderId;
+            if (s === 'COUNTER_SALE') {
+                return `<button class="btn-undo" onclick="handleUndoOrder('${id}')">Hoàn tác</button>`;
+            }
+            let opts = '';
+            const add = (v, label) => { opts += `<option value="${v}">${label}</option>`; };
+            if (['PENDING_PAYMENT', 'UNDERPAID', 'PAID_LATE'].includes(s)) add('PAID', '✔ Đã nhận tiền (thủ công)');
+            if (['COD_NEW', 'PAID'].includes(s)) add('CONFIRMED', 'Xác nhận đơn');
+            if (['COD_NEW', 'PAID', 'CONFIRMED'].includes(s)) add('SHIPPED', 'Đã gửi hàng');
+            if (['COD_NEW', 'PAID', 'CONFIRMED', 'SHIPPED'].includes(s)) add('DELIVERED', 'Đã giao thành công');
+            const sel = opts ? `<select onchange="handleSetOrderStatus('${id}', this)" style="padding:6px; border-radius:8px; border:1px solid #CBD5E1; font-size:0.78rem; margin-right:6px;"><option value="">Cập nhật…</option>${opts}</select>` : '';
+            return `${sel}<button class="btn-undo" style="background:#FEE2E2; color:#B91C1C; border-color:#FCA5A5;" onclick="handleUndoOrder('${id}')">Hủy</button>`;
+        }
+
+        async function handleSetOrderStatus(id, sel) {
+            const v = sel.value;
+            if (!v) return;
+            if (v === 'PAID' && !confirm(`Xác nhận đã nhận đủ tiền cho đơn #${id}?`)) { sel.value = ''; return; }
+            const r = await window.realtimeStore.setOrderStatus(id, v);
+            showToast(r.success ? `✅ Đã cập nhật đơn #${id}` : `❌ ${r.msg}`);
+            if (!r.success) sel.value = '';
+        }
+
         function renderOrdersTable() {
             const tbody = document.getElementById('orders-tbody');
             const history = window.realtimeStore.salesHistory || [];
@@ -885,14 +937,8 @@
                     const custAddr = o.customer ? `${escapeHtml(o.customer.address || '')}${o.customer.ward ? ', ' + escapeHtml(o.customer.ward) : ''}${o.customer.province ? ', ' + escapeHtml(o.customer.province) : ''}` : '';
                     
                     const itemsDesc = o.lines.map(l => `• <b>${l.qty}x</b> ${escapeHtml(l.name || l.id)} (${fmtVND(l.price || l.lineTotal)})`).join('<br>');
-                    const isPaid = o.status === 'PAID';
-                    const isCod = o.status === 'COD_NEW' || o.payMethod === 'cod';
-                    const isCancelled = o.status === 'CANCELLED';
-                    
-                    let statusBadge = '<span class="stock-badge badge-out" style="background:#FEF3C7; color:#B45309">Chờ Chuyển Khoản</span>';
-                    if (isCancelled) statusBadge = '<span class="stock-badge badge-out" style="background:#F1F5F9; color:#64748B; text-decoration:line-through;">Đã Hủy</span>';
-                    else if (isPaid) statusBadge = '<span class="stock-badge badge-active">Đã Thanh Toán ✓</span>';
-                    else if (isCod) statusBadge = '<span class="stock-badge" style="background:#E0E7FF; color:#3730A3">COD Mới</span>';
+                    const isCancelled = o.status === 'CANCELLED' || o.status === 'EXPIRED';
+                    const statusBadge = orderStatusBadge(o);
 
                     return `
                         <tr style="${isCancelled ? 'opacity:0.6; background:#F8FAFC;' : ''}">
@@ -901,14 +947,11 @@
                             <td><b>${custName}</b><br><small style="color:var(--text-sub)">📞 ${custPhone}</small><br><small style="color:var(--text-sub); font-size:0.75rem;">📍 ${custAddr}</small></td>
                             <td>${itemsDesc}</td>
                             <td class="num-right"><b style="color:var(--blue); font-size:1rem;">${fmtVND(o.total || o.subtotal)}</b></td>
-                            <td style="text-align:center;"><small><b>${o.payMethod === 'transfer' ? 'Chuyển Khoản' : 'COD'}</b></small></td>
+                            <td style="text-align:center;"><small><b>${o.payMethod === 'transfer' ? 'Chuyển Khoản' : (o.payMethod === 'direct' ? 'Trực tiếp' : 'COD')}</b></small></td>
                             <td style="text-align:center;">${statusBadge}</td>
                             <td><small>${escapeHtml((o.customer && o.customer.note) || o.note || '---')}</small></td>
                             <td style="text-align:right;">
-                                ${isCancelled 
-                                    ? '<span style="font-size:0.75rem; color:#94A3B8; font-weight:700;">Đã hoàn kho</span>'
-                                    : `<button class="btn-undo" style="background:#FEE2E2; color:#B91C1C; border-color:#FCA5A5;" onclick="handleUndoOrder('${o.orderId}')">Hủy</button>`
-                                }
+                                ${isCancelled ? '<span style="font-size:0.75rem; color:#94A3B8; font-weight:700;">Đã hoàn kho</span>' : orderActions(o)}
                             </td>
                         </tr>
                     `;
@@ -951,7 +994,7 @@
             const months = {}; // { '2026-10': { month: '10/2026', orders: 0, items: 0, revenue: 0, cost: 0, profit: 0 } }
 
             history.forEach(o => {
-                if (o.status === 'CANCELLED') return;
+                if (!isRevenueOrder(o)) return;
                 let mKey = o.monthKey;
                 if (!mKey && o.createdAt) {
                     const d = new Date(o.createdAt);
@@ -990,7 +1033,7 @@
                         const q = l.qty || 1;
                         itemsCount += q;
                         const baseProd = allProds.find(p => p.id === l.id);
-                        const c = baseProd ? (baseProd.price_cost || 0) : 0;
+                        const c = (l.cost !== undefined && l.cost !== null) ? l.cost : (baseProd ? (baseProd.price_cost || 0) : 0);
                         orderCost += c * q;
                     });
                     const rev = o.total || o.subtotal || 0;

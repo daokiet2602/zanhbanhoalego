@@ -1,421 +1,339 @@
-// REALTIME CLOUD SYNC & INVENTORY/PRICE MANAGEMENT MODULE (V2.0 - FIX N1 & N5)
-const CLOUD_CONFIG = {
-    STORAGE_KEY: "lego_store_realtime_inventory",
-    SALES_KEY: "lego_store_sales_history",
-    NEW_PRODUCTS_KEY: "lego_store_new_products",
-    // Worker Endpoints chuẩn hoá theo Đặc tả V2:
-    PUBLIC_STORE_URL: "https://sepay-checker.daokiet-work.workers.dev/store",
-    ADMIN_STORE_URL: "https://sepay-checker.daokiet-work.workers.dev/admin/store",
-    ADMIN_ORDERS_URL: "https://sepay-checker.daokiet-work.workers.dev/admin/orders",
-    ADMIN_CANCEL_ORDER_URL: "https://sepay-checker.daokiet-work.workers.dev/admin/orders/cancel"
-};
+/**
+ * REALTIME STORE  —  v4.0 (khớp với shop-worker.js dùng D1)
+ *
+ * Quy tắc để KHÔNG BAO GIỜ lệch dữ liệu:
+ *  - Server (D1) là nguồn sự thật. Trình duyệt chỉ HIỂN THỊ, không giữ "kho riêng" trong localStorage.
+ *  - Admin KHÔNG đẩy cả kho lên. Mỗi thao tác = 1 yêu cầu nhỏ ("cộng 5 bộ", "đổi giá"...).
+ *  - Poll chỉ hỏi "version" (1 dòng dữ liệu). Version đổi mới tải lại danh sách.
+ *  - Mất mạng thì báo rõ trên màn hình, không im lặng.
+ */
+const API_BASE = (window.LEGO_API_BASE || 'https://sepay-checker.daokiet-work.workers.dev').replace(/\/$/, '');
+const ADMIN_KEY_STORAGE = 'lego_admin_key';
 
 class RealtimeStore {
     constructor() {
-        this.inventoryState = {}; // { [id]: { qty: number, status: string, sold: number, cost: number, retail: number } }
-        this.salesHistory = [];   // Danh sách đơn hàng
-        this.newProducts = [];    // Danh sách các sản phẩm mới do chủ shop thêm trực tiếp
+        this.products = [];          // danh sách sản phẩm từ server (admin: có giá vốn; khách: bản "sạch")
+        this.byId = new Map();
+        this.loaded = false;         // đã nhận dữ liệu từ server ít nhất 1 lần
+        this.salesHistory = [];      // đơn hàng (chỉ admin)
+        this.version = 0;            // version sản phẩm đã tải
+        this.ordersVersion = 0;      // version đơn hàng đã tải
         this.listeners = [];
-        this._pushDebounceTimer = null;
-        this.loadInitialState();
-        this.syncWithCloudWorker(); // Kéo dữ liệu từ /store
+        this.adminMode = !!window.LEGO_ADMIN_PAGE;   // admin.html đặt cờ này trước khi nạp file
+        this._queues = {};           // hàng đợi tuần tự theo từng sản phẩm
+        this._pending = 0;           // số thao tác admin đang chờ server
+        this._fails = 0;
+        this._syncing = null;
+        this._ordersSyncing = null;
+        this._bc = null;
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) this.refreshAll();
+        });
+        window.addEventListener('online', () => this.refreshAll());
+        try {
+            if (window.BroadcastChannel) {
+                this._bc = new BroadcastChannel('lego_sync_v4');
+                this._bc.onmessage = (ev) => { if (ev.data === 'changed') this.refreshAll(); };
+            }
+        } catch (e) {}
+
+        this.syncWithCloudWorker(true);
     }
 
-    loadInitialState() {
+    /* ---------------------------------- HẠ TẦNG ---------------------------------- */
+
+    get adminKey() {
+        try { return sessionStorage.getItem(ADMIN_KEY_STORAGE) || ''; } catch (e) { return ''; }
+    }
+
+    async _api(path, { method = 'GET', body, admin = false } = {}) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 15000);
         try {
-            const localInv = localStorage.getItem(CLOUD_CONFIG.STORAGE_KEY);
-            if (localInv) this.inventoryState = JSON.parse(localInv);
-
-            const localSales = localStorage.getItem(CLOUD_CONFIG.SALES_KEY);
-            if (localSales) this.salesHistory = JSON.parse(localSales);
-
-            const localNewProds = localStorage.getItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY);
-            if (localNewProds) this.newProducts = JSON.parse(localNewProds);
+            const headers = {};
+            if (body !== undefined) headers['Content-Type'] = 'application/json';
+            if (admin) headers['X-Admin-Key'] = this.adminKey;
+            const res = await fetch(API_BASE + path, {
+                method, headers, cache: 'no-store', signal: ctrl.signal,
+                body: body !== undefined ? JSON.stringify(body) : undefined
+            });
+            let data = null;
+            try { data = await res.json(); } catch (e) {}
+            data = data || {};
+            if (admin && res.status === 401) {
+                try { sessionStorage.removeItem(ADMIN_KEY_STORAGE); } catch (e) {}
+                window.dispatchEvent(new Event('lego-admin-unauthorized'));
+            }
+            this._netOk(res.status < 500);
+            return { status: res.status, ok: res.ok && data.ok !== false, data };
         } catch (e) {
-            console.warn("Chưa có cache:", e);
+            this._netOk(false);
+            return { status: 0, ok: false, data: { message: 'Không kết nối được máy chủ.' } };
+        } finally {
+            clearTimeout(timer);
         }
     }
 
-    // N1: KÉO DỮ LIỆU TỒN KHO & SẢN PHẨM MỚI TỪ ENDPOINT CHUẨN GET /store
-    async syncWithCloudWorker() {
-        try {
-            const freshUrl = `${CLOUD_CONFIG.PUBLIC_STORE_URL}?_t=${Date.now()}`;
-            const res = await fetch(freshUrl);
-            if (res.ok) {
-                const cloudData = await res.json();
-                if (cloudData) {
-                    let hasChanged = false;
-                    if (cloudData.inventory && Object.keys(cloudData.inventory).length > 0) {
-                        const newInv = { ...this.inventoryState, ...cloudData.inventory };
-                        if (JSON.stringify(newInv) !== JSON.stringify(this.inventoryState)) {
-                            this.inventoryState = newInv;
-                            localStorage.setItem(CLOUD_CONFIG.STORAGE_KEY, JSON.stringify(this.inventoryState));
-                            hasChanged = true;
-                        }
-                    }
-                    if (cloudData.newProducts && cloudData.newProducts.length > 0) {
-                        if (JSON.stringify(cloudData.newProducts) !== JSON.stringify(this.newProducts)) {
-                            this.newProducts = cloudData.newProducts;
-                            localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
-                            hasChanged = true;
-                        }
-                    }
-                    // CHỈ RENDER LẠI NẾU THỰC SỰ CÓ THAY ĐỔI DỮ LIỆU (CHỐNG CHỚP MÀN HÌNH 100%)
-                    if (hasChanged) {
-                        this.notify();
-                    }
-                }
-            }
-        } catch(e) {
-            console.warn("Không kết nối được Cloud Worker:", e);
-        }
+    _netOk(good) {
+        if (good) { this._fails = 0; this._banner(false); return; }
+        this._fails++;
+        if (this._fails >= 3) this._banner(true);
     }
 
-    // N1 & N5: ĐẨY DỮ LIỆU LÊN CLOUD QUA POST /admin/store CÓ X-Admin-Key
-    async pushToCloudWorker(adminKeyOrOrder = '') {
-        try {
-            const key = (typeof adminKeyOrOrder === 'string' && adminKeyOrOrder) 
-                ? adminKeyOrOrder 
-                : (sessionStorage.getItem('lego_admin_key') || 'danhbanhoa2602secretkey');
-            const res = await fetch(CLOUD_CONFIG.ADMIN_STORE_URL, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Admin-Key': key
-                },
-                body: JSON.stringify({
-                    inventory: this.inventoryState,
-                    newProducts: this.newProducts
-                })
-            });
-            return res.ok;
-        } catch(e) {
-            console.warn("Lỗi lưu lên Cloud Worker:", e);
-            return false;
+    _banner(show) {
+        let el = document.getElementById('lego-sync-banner');
+        if (!show) { if (el) el.style.display = 'none'; return; }
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'lego-sync-banner';
+            el.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;background:#B91C1C;color:#fff;padding:10px 16px;border-radius:999px;font:600 13px system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw;text-align:center';
+            el.textContent = '⚠️ Mất kết nối máy chủ — đang hiển thị dữ liệu lần cuối. Đang tự thử lại...';
+            document.body.appendChild(el);
         }
+        el.style.display = 'block';
     }
 
-    // HỦY ĐƠN HÀNG TRÊN CLOUDFLARE KV
-    async cancelOrderOnCloud(orderId, adminKey = '') {
-        try {
-            const key = adminKey || sessionStorage.getItem('lego_admin_key') || 'danhbanhoa2602secretkey';
-            const res = await fetch(CLOUD_CONFIG.ADMIN_CANCEL_ORDER_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Admin-Key': key
-                },
-                body: JSON.stringify({ orderId })
-            });
-            return res.ok;
-        } catch(e) {
-            console.warn("Lỗi hủy đơn trên Cloud:", e);
-            return false;
-        }
-    }
-
-    // N5: TẢI DANH SÁCH ĐƠN HÀNG THỰC TẾ QUA GET /admin/orders CÓ X-Admin-Key
-    async fetchAdminOrders(adminKey = '') {
-        try {
-            const key = adminKey || sessionStorage.getItem('lego_admin_key') || 'danhbanhoa2602secretkey';
-            const res = await fetch(`${CLOUD_CONFIG.ADMIN_ORDERS_URL}?_t=${Date.now()}`, {
-                headers: { 'X-Admin-Key': key }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                if (data && data.orders) {
-                    if (JSON.stringify(data.orders) !== JSON.stringify(this.salesHistory)) {
-                        this.salesHistory = data.orders;
-                        localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
-                        this.notify();
-                    }
-                    return data.orders;
-                }
-            }
-        } catch(e) {
-            console.warn("Lỗi tải đơn hàng admin:", e);
-        }
-        return this.salesHistory;
+    _toast(msg) {
+        if (typeof window.showToast === 'function') window.showToast(msg);
+        else console.warn(msg);
     }
 
     subscribe(callback) {
         this.listeners.push(callback);
+        return () => { this.listeners = this.listeners.filter(cb => cb !== callback); };
     }
 
     notify() {
-        this.listeners.forEach(cb => cb({ 
-            inventory: this.inventoryState, 
-            sales: this.salesHistory,
-            newProducts: this.newProducts 
-        }));
+        const snap = { products: this.products, sales: this.salesHistory };
+        this.listeners.forEach(cb => { try { cb(snap); } catch (e) { console.error(e); } });
     }
 
-    // THÊM SẢN PHẨM MỚI VÀO HỆ THỐNG
-    addNewProduct(productData) {
-        const id = productData.id || ('LG-' + (92 + this.newProducts.length));
-        const newProd = {
-            id: id,
-            code: productData.code || ('Mẫu #' + id.replace('LG-', '')),
-            name: productData.name || 'Mẫu Hoa Lego Mới',
-            qty: Math.max(0, parseInt(productData.qty) || 0),
-            sold_qty: 0,
-            price_retail: parseFloat(productData.price_retail) || 0,
-            price_market: parseFloat(productData.price_market) || (parseFloat(productData.price_retail) * 1.3),
-            price_cost: parseFloat(productData.price_cost) || 0,
-            status: (parseInt(productData.qty) || 0) > 0 ? 'active' : 'out_of_stock',
-            img: productData.img || 'images/prod_row_2.jpeg',
-            createdAt: Date.now()
-        };
-
-        this.newProducts.unshift(newProd);
-
-        // Lưu thông số vào inventoryState
-        this.inventoryState[id] = {
-            qty: newProd.qty,
-            cost: newProd.price_cost,
-            retail: newProd.price_retail,
-            status: newProd.status,
-            sold: 0,
-            updatedAt: Date.now()
-        };
-
-        this.saveAndBroadcast();
-        return newProd;
+    _tellOtherTabs() {
+        try { if (this._bc) this._bc.postMessage('changed'); } catch (e) {}
     }
 
-    // Lấy toàn bộ sản phẩm (Gồm sản phẩm gốc trong JSON + Sản phẩm mới thêm)
-    getAllMergedProducts(baseProducts = []) {
-        // Tránh trùng ID
-        const existingIds = new Set(this.newProducts.map(p => p.id));
-        const filteredBase = (baseProducts || []).filter(p => !existingIds.has(p.id));
-        return [...this.newProducts, ...filteredBase];
+    refreshAll() {
+        this.syncWithCloudWorker();
+        if (this.adminMode && this.adminKey) this.fetchAdminOrders();
     }
 
-    // Lấy thông tin sản phẩm (Ưu tiên thông tin tùy chỉnh mới nhất)
-    getProductData(p) {
-        const custom = this.inventoryState[p.id] || {};
-        const qty = custom.qty !== undefined ? custom.qty : p.qty;
-        const status = custom.status || p.status;
-        const sold = custom.sold !== undefined ? custom.sold : (p.sold_qty || 0);
-        const cost = custom.cost !== undefined ? custom.cost : p.price_cost;
-        const retail = custom.retail !== undefined ? custom.retail : p.price_retail;
-
-        const profitUnit = retail - cost;
-        const marginPct = retail > 0 ? Math.round((profitUnit / retail) * 1000) / 10 : 0;
-
-        return {
-            ...p,
-            qty: qty,
-            status: qty <= 0 ? 'out_of_stock' : status,
-            sold: sold,
-            price_cost: cost,
-            price_retail: retail,
-            profit_unit: profitUnit,
-            margin_pct: marginPct
-        };
+    _setProducts(list) {
+        this.products = list;
+        this.byId = new Map(list.map(p => [p.id, p]));
+        this.loaded = true;
     }
 
-    getProductStock(p) {
-        return this.getProductData(p);
+    _applyProduct(p) {
+        if (!p || !p.id) return;
+        const idx = this.products.findIndex(x => x.id === p.id);
+        if (idx >= 0) this.products[idx] = p; else this.products.unshift(p);
+        this.byId.set(p.id, p);
     }
 
-    // ĐIỀU CHỈNH TOÀN DIỆN: TỒN KHO, GIÁ VỐN, GIÁ BÁN
-    updateProductConfig(id, newQty, newCost, newRetail) {
-        const cur = this.inventoryState[id] || {};
-        const q = Math.max(0, parseInt(newQty) || 0);
-        const c = parseFloat(newCost) || 0;
-        const r = parseFloat(newRetail) || 0;
+    /* ---------------------------------- ĐỒNG BỘ ---------------------------------- */
 
-        this.inventoryState[id] = {
-            ...cur,
-            qty: q,
-            cost: c,
-            retail: r,
-            status: q === 0 ? 'out_of_stock' : 'active',
-            updatedAt: Date.now()
-        };
-
-        this.saveAndBroadcast();
+    // Khách: GET /store   |   Admin: GET /admin/products   (kèm ?v=version => server trả "unchanged" nếu chưa đổi)
+    syncWithCloudWorker(force = false) {
+        // Nếu đang có 1 lượt đồng bộ chạy dở mà mình cần bản MỚI NHẤT (force) thì chờ xong rồi chạy lại
+        if (this._syncing) return force ? this._syncing.then(() => this.syncWithCloudWorker(true)) : this._syncing;
+        this._syncing = this._doSync(force).finally(() => { this._syncing = null; });
+        return this._syncing;
     }
 
-    // TĂNG / GIẢM TỒN KHO NHANH (+1, -1 hoặc +/- delta)
-    adjustStockDelta(id, defaultProduct, delta) {
-        const currentData = this.getProductData(defaultProduct);
-        const newQty = Math.max(0, currentData.qty + delta);
-        this.updateProductConfig(id, newQty, currentData.price_cost, currentData.price_retail);
-    }
-
-    // NHẬP ĐƠN BÁN HÀNG CHỦ ĐỘNG
-    recordSale(product, sellQty, actualPrice = null, note = '') {
-        const qtyToSell = parseInt(sellQty) || 0;
-        if (qtyToSell <= 0) return { success: false, msg: 'Số lượng bán phải lớn hơn 0' };
-
-        const currentData = this.getProductData(product);
-        if (qtyToSell > currentData.qty) {
-            return { success: false, msg: `Tồn kho chỉ còn ${currentData.qty} bộ, không đủ xuất bán ${qtyToSell} bộ!` };
-        }
-
-        const price = actualPrice !== null ? parseFloat(actualPrice) : currentData.price_retail;
-        const cost = currentData.price_cost || 0;
-        const profit = (price - cost) * qtyToSell;
-
-        // 1. Trừ tồn kho & cộng số lượng đã bán
-        const updatedQty = Math.max(0, currentData.qty - qtyToSell);
-        const curInfo = this.inventoryState[product.id] || {};
-
-        this.inventoryState[product.id] = {
-            ...curInfo,
-            qty: updatedQty,
-            cost: cost,
-            retail: price,
-            status: updatedQty === 0 ? 'out_of_stock' : 'active',
-            sold: (curInfo.sold || currentData.sold || 0) + qtyToSell,
-            updatedAt: Date.now()
-        };
-
-        // 2. Ghi nhật ký đơn bán hàng kèm timestamp chuẩn
-        const now = new Date();
-        const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
-
-        const orderRecord = {
-            orderId: 'DH-' + Date.now().toString().slice(-6),
-            status: 'COUNTER_SALE',
-            payMethod: 'direct',
-            shipMethod: 'direct',
-            shipName: 'Bán trực tiếp tại quầy',
-            shipFee: 0,
-            subtotal: price * qtyToSell,
-            total: price * qtyToSell,
-            totalRevenue: price * qtyToSell,
-            profit: profit,
-            cost: cost,
-            prodId: product.id,
-            prodCode: product.code,
-            prodName: product.name,
-            qty: qtyToSell,
-            price: price,
-            lines: [{
-                id: product.id,
-                code: product.code,
-                name: product.name,
-                qty: qtyToSell,
-                price: price,
-                lineTotal: price * qtyToSell
-            }],
-            customer: {
-                name: 'Bán tại quầy',
-                phone: '---',
-                address: 'Tại quầy',
-                note: note || 'Bán trực tiếp tại quầy'
-            },
-            note: note || 'Bán trực tiếp',
-            time: now.toLocaleString('vi-VN'),
-            timeStr: now.toLocaleString('vi-VN'),
-            createdAt: Date.now(),
-            timestamp: Date.now(),
-            monthKey: monthKey
-        };
-
-        this.salesHistory.unshift(orderRecord);
-        this.saveAndBroadcast(true);
-
-        // Đồng bộ đơn bán quầy trực tiếp lên Cloudflare KV
-        this.recordCounterOrderOnCloud(orderRecord);
-
-        return { success: true, order: orderRecord, remainingStock: updatedQty };
-    }
-
-    // ĐẨY ĐƠN HÀNG BÁN TẠI QUẦY LÊN CLOUD WORKER
-    async recordCounterOrderOnCloud(orderRecord, adminKey = '') {
-        try {
-            const key = adminKey || sessionStorage.getItem('lego_admin_key') || 'danhbanhoa2602secretkey';
-            await fetch('https://sepay-checker.daokiet-work.workers.dev/admin/orders/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Admin-Key': key
-                },
-                body: JSON.stringify(orderRecord)
-            });
-        } catch(e) {
-            console.warn("Lỗi lưu đơn quầy lên Cloud:", e);
-        }
-    }
-
-    // HOÀN TÁC ĐƠN BÁN
-    undoSale(orderId) {
-        const idx = this.salesHistory.findIndex(o => o.orderId === orderId);
-        if (idx === -1) return false;
-
-        const order = this.salesHistory[idx];
-        const curInfo = this.inventoryState[order.prodId] || { qty: 0, status: 'active', sold: 0 };
-
-        this.inventoryState[order.prodId] = {
-            ...curInfo,
-            qty: curInfo.qty + order.qty,
-            status: 'active',
-            sold: Math.max(0, (curInfo.sold || 0) - order.qty),
-            updatedAt: Date.now()
-        };
-
-        this.salesHistory.splice(idx, 1);
-        this.saveAndBroadcast();
+    async _doSync(force) {
+        if (this.adminMode && !this.adminKey) return false;
+        if (this._pending > 0) return false;   // đang có thao tác admin chưa xong: để xong rồi tự đồng bộ lại
+        const base = this.adminMode ? '/admin/products' : '/store';
+        const q = (!force && this.loaded && this.version) ? `?v=${this.version}` : '';
+        const r = await this._api(base + q, { admin: this.adminMode });
+        if (!r.ok) return false;
+        const d = r.data;
+        if (d.unchanged) return false;
+        if (!Array.isArray(d.products)) return false;
+        if (this._pending > 0) return false;   // có thao tác mới phát sinh trong lúc chờ: bỏ bản cũ này
+        this.version = d.version || 0;
+        this._setProducts(d.products);
+        this.notify();
         return true;
     }
 
-    saveAndBroadcast(immediate = false) {
-        localStorage.setItem(CLOUD_CONFIG.STORAGE_KEY, JSON.stringify(this.inventoryState));
-        localStorage.setItem(CLOUD_CONFIG.SALES_KEY, JSON.stringify(this.salesHistory));
-        localStorage.setItem(CLOUD_CONFIG.NEW_PRODUCTS_KEY, JSON.stringify(this.newProducts));
-        this.notify();
-
-        if (window.BroadcastChannel) {
-            const bc = new BroadcastChannel('lego_inventory_sync');
-            bc.postMessage({
-                type: 'SYNC_UPDATE',
-                inventory: this.inventoryState,
-                sales: this.salesHistory,
-                newProducts: this.newProducts
-            });
-        }
-
-        // TỰ ĐỘNG ĐẨY LÊN CLOUD KHÔNG CẦN BẤM NÚT THỦ CÔNG
-        if (immediate) {
-            if (this._pushDebounceTimer) clearTimeout(this._pushDebounceTimer);
-            this.pushToCloudWorker();
-        } else {
-            if (this._pushDebounceTimer) clearTimeout(this._pushDebounceTimer);
-            this._pushDebounceTimer = setTimeout(() => {
-                this.pushToCloudWorker();
-            }, 600);
-        }
+    // Admin: tải danh sách đơn (chỉ tải lại khi version đổi)
+    fetchAdminOrders(force = false) {
+        if (this._ordersSyncing) return force ? this._ordersSyncing.then(() => this.fetchAdminOrders(true)) : this._ordersSyncing;
+        this._ordersSyncing = this._doFetchOrders(force).finally(() => { this._ordersSyncing = null; });
+        return this._ordersSyncing;
     }
 
-    initListener() {
-        if (window.BroadcastChannel) {
-            const bc = new BroadcastChannel('lego_inventory_sync');
-            bc.onmessage = (ev) => {
-                if (ev.data && ev.data.type === 'SYNC_UPDATE') {
-                    if (ev.data.inventory) this.inventoryState = ev.data.inventory;
-                    if (ev.data.sales) this.salesHistory = ev.data.sales;
-                    if (ev.data.newProducts) this.newProducts = ev.data.newProducts;
-                    this.notify();
-                }
-            };
+    async _doFetchOrders(force) {
+        if (!this.adminKey) return this.salesHistory;
+        const q = (!force && this.ordersVersion) ? `&v=${this.ordersVersion}` : '';
+        const r = await this._api(`/admin/orders?limit=500${q}`, { admin: true });
+        if (r.ok && Array.isArray(r.data.orders)) {
+            this.ordersVersion = r.data.version || 0;
+            this.salesHistory = r.data.orders;
+            this.notify();
         }
-        window.addEventListener('storage', (e) => {
-            if (e.key === CLOUD_CONFIG.STORAGE_KEY && e.newValue) {
-                try { this.inventoryState = JSON.parse(e.newValue); this.notify(); } catch(err){}
+        return this.salesHistory;
+    }
+
+    // Tương thích code cũ: nút "Đồng bộ" giờ chỉ là "tải lại từ server" (không còn đẩy dữ liệu cũ lên nữa)
+    async pushToCloudWorker() {
+        await this.syncWithCloudWorker(true);
+        if (this.adminMode) await this.fetchAdminOrders(true);
+        return this.loaded;
+    }
+
+    /* ---------------------------------- ĐỌC DỮ LIỆU ---------------------------------- */
+
+    // Chưa tải xong từ server thì dùng danh mục dự phòng (products_public.json) để trang không trống
+    getAllMergedProducts(baseProducts = []) {
+        return this.loaded ? this.products : (baseProducts || []);
+    }
+
+    getProductData(p) {
+        const s = (p && this.byId.get(p.id)) || p || {};
+        const qty = Math.max(0, parseInt(s.qty) || 0);
+        const retail = Number(s.price_retail) || 0;
+        const cost = Number(s.price_cost) || 0;
+        const profitUnit = retail - cost;
+        return {
+            ...s,
+            qty,
+            status: qty <= 0 ? 'out_of_stock' : (s.status || 'active'),
+            sold: Number(s.sold) || 0,
+            price_cost: cost,
+            price_retail: retail,
+            profit_unit: profitUnit,
+            margin_pct: retail > 0 ? Math.round((profitUnit / retail) * 1000) / 10 : 0
+        };
+    }
+
+    getProductStock(p) { return this.getProductData(p); }
+
+    /* ---------------------------------- ADMIN: GHI DỮ LIỆU ---------------------------------- */
+
+    async login(key) {
+        try { sessionStorage.setItem(ADMIN_KEY_STORAGE, String(key || '')); } catch (e) {}
+        const r = await this._api('/admin/ping', { admin: true });
+        if (!r.ok) {
+            try { sessionStorage.removeItem(ADMIN_KEY_STORAGE); } catch (e) {}
+            return { ok: false, status: r.status, message: r.data.message || 'Không đăng nhập được.' };
+        }
+        return { ok: true };
+    }
+
+    logout() {
+        try { sessionStorage.removeItem(ADMIN_KEY_STORAGE); } catch (e) {}
+    }
+
+    // Serialize các thao tác trên cùng 1 sản phẩm; khi hết hàng đợi thì đồng bộ lại 1 lần cho chắc
+    _enqueue(id, fn) {
+        this._pending++;
+        const prev = this._queues[id] || Promise.resolve();
+        const next = prev.catch(() => {}).then(fn).finally(() => {
+            this._pending--;
+            if (this._queues[id] === next) delete this._queues[id];
+            if (this._pending === 0) this.syncWithCloudWorker(true);
+        });
+        this._queues[id] = next;
+        return next;
+    }
+
+    // Sửa kho / giá vốn / giá bán của 1 sản phẩm.
+    // Kho được gửi dạng CHÊNH LỆCH (+5, -1...) nên không bao giờ ghi đè đơn khách vừa đặt.
+    updateProductConfig(id, newQty, newCost, newRetail) {
+        const cur = this.byId.get(id);
+        if (!cur) return Promise.resolve(false);
+        const q = Math.max(0, parseInt(newQty) || 0);
+        const c = Math.max(0, parseFloat(newCost) || 0);
+        const r = parseFloat(newRetail) || 0;
+        const delta = q - (parseInt(cur.qty) || 0);
+
+        // Cập nhật tạm trên màn hình cho mượt; kết quả thật do server trả về
+        cur.qty = q; cur.price_cost = c; if (r > 0) cur.price_retail = r;
+
+        const body = { id, cost: c };
+        if (r > 0) body.retail = r;
+        if (delta !== 0) body.qtyDelta = delta;
+
+        return this._enqueue(id, async () => {
+            const res = await this._api('/admin/products/update', { method: 'POST', admin: true, body });
+            if (res.data && res.data.product) this._applyProduct(res.data.product);
+            if (!res.ok) {
+                this._toast('❌ ' + (res.data.message || 'Không lưu được thay đổi, đã tải lại dữ liệu từ máy chủ.'));
+                this.notify();
+                return false;
             }
-            if (e.key === CLOUD_CONFIG.SALES_KEY && e.newValue) {
-                try { this.salesHistory = JSON.parse(e.newValue); this.notify(); } catch(err){}
-            }
-            if (e.key === CLOUD_CONFIG.NEW_PRODUCTS_KEY && e.newValue) {
-                try { this.newProducts = JSON.parse(e.newValue); this.notify(); } catch(err){}
-            }
+            this._tellOtherTabs();
+            this.notify();
+            return true;
         });
     }
+
+    adjustStockDelta(id, defaultProduct, delta) {
+        const cur = this.getProductData(defaultProduct || { id });
+        return this.updateProductConfig(id, Math.max(0, cur.qty + delta), cur.price_cost, cur.price_retail);
+    }
+
+    async addNewProduct(productData) {
+        const r = await this._api('/admin/products/create', {
+            method: 'POST', admin: true,
+            body: {
+                id: productData.id, code: productData.code, name: productData.name,
+                qty: productData.qty, price_cost: productData.price_cost, price_retail: productData.price_retail,
+                price_market: productData.price_market, img: productData.img
+            }
+        });
+        if (!r.ok) return { success: false, msg: r.data.message || 'Không thêm được sản phẩm.' };
+        this._applyProduct(r.data.product);
+        this.notify();
+        this._tellOtherTabs();
+        return { success: true, product: r.data.product };
+    }
+
+    // Bán tại quầy: server là nơi DUY NHẤT trừ kho (trước đây client trừ 1 lần + server trừ thêm 1 lần)
+    async recordSale(product, sellQty, actualPrice = null, note = '') {
+        const qty = parseInt(sellQty) || 0;
+        if (qty <= 0) return { success: false, msg: 'Số lượng bán phải lớn hơn 0' };
+        const r = await this._api('/admin/orders/create', {
+            method: 'POST', admin: true,
+            body: { prodId: product.id, qty, price: actualPrice, note }
+        });
+        if (!r.ok) {
+            this.syncWithCloudWorker(true);
+            return { success: false, msg: r.data.message || 'Không ghi nhận được đơn bán.' };
+        }
+        (r.data.products || []).forEach(p => this._applyProduct(p));
+        this.salesHistory.unshift(r.data.order);
+        this.notify();
+        this._tellOtherTabs();
+        const p = this.byId.get(product.id);
+        return { success: true, order: r.data.order, remainingStock: p ? p.qty : 0 };
+    }
+
+    async cancelOrderOnCloud(orderId) {
+        const r = await this._api('/admin/orders/cancel', { method: 'POST', admin: true, body: { orderId } });
+        if (r.ok) {
+            await Promise.all([this.syncWithCloudWorker(true), this.fetchAdminOrders(true)]);
+            this._tellOtherTabs();
+        }
+        return r.ok;
+    }
+
+    // Đổi trạng thái xử lý đơn: CONFIRMED | SHIPPED | DELIVERED | PAID (xác nhận đã nhận tiền thủ công)
+    async setOrderStatus(orderId, status) {
+        const r = await this._api('/admin/orders/status', { method: 'POST', admin: true, body: { orderId, status } });
+        if (r.ok) {
+            await this.fetchAdminOrders(true);
+            this._tellOtherTabs();
+            return { success: true };
+        }
+        return { success: false, msg: r.data.message || 'Không đổi được trạng thái.' };
+    }
+
+    // Đơn bán quầy đã nằm trên server, "hoàn tác" = hủy đơn. Giữ hàm này để code cũ không lỗi.
+    undoSale() { return false; }
 }
 
 window.realtimeStore = new RealtimeStore();
-window.realtimeStore.initListener();

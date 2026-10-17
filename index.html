@@ -1218,12 +1218,14 @@
             try {
                 // 1. TẢI SONG SONG SIÊU TỐC: Danh mục sản phẩm + Dữ liệu mây Cloud Worker + Danh mục hành chính
                 const [pRes, wRes] = await Promise.all([
-                    fetch('products_public.json?_t=' + Date.now(), { cache: 'no-store' }),
+                    fetch('products_public.json?_t=' + Date.now(), { cache: 'no-store' }).catch(() => null),
                     fetch('vietnam_wards.json').catch(() => null),
                     window.realtimeStore ? window.realtimeStore.syncWithCloudWorker() : Promise.resolve()
                 ]);
 
-                DATA = await pRes.json();
+                // products_public.json chỉ còn là danh mục DỰ PHÒNG (khi máy chủ chưa trả lời); dữ liệu thật lấy từ máy chủ
+                try { DATA = (pRes && pRes.ok) ? await pRes.json() : { products: [] }; } catch (e) { DATA = { products: [] }; }
+                if (!DATA.products) DATA.products = [];
 
                 if (wRes && wRes.ok) {
                     WARDS_DATA = await wRes.json();
@@ -1734,8 +1736,7 @@
                     items.push({
                         id: p.id,
                         name: p.name,
-                        qty: qty,
-                        price_client: stockInfo.price_retail
+                        qty: qty
                     });
                 }
             }
@@ -1764,6 +1765,7 @@
 
                 const data = await res.json();
                 if (!res.ok || !data.ok) {
+                    window.realtimeStore.syncWithCloudWorker(true); // tải lại kho mới nhất để khách thấy số còn lại
                     showAppModal("Lỗi Đặt Hàng", data.message || "Không thể tạo đơn hàng lúc này. Vui lòng thử lại!", "⚠️", "Thử Lại");
                     btn.disabled = false;
                     btn.textContent = "🚀 Xác Nhận Đặt Hàng Ngay";
@@ -1836,7 +1838,7 @@
                     const res = await fetch(`${BACKEND_API_URL}/order-status?id=${orderId}`);
                     if (res.ok) {
                         const data = await res.json();
-                        if (data && data.status === 'PAID') {
+                        if (data && (data.status === 'PAID' || data.paid === true)) {
                             stopPaymentPolling();
                             handlePaymentSuccessUI(orderId);
                         }

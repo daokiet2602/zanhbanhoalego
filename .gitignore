@@ -1,8 +1,9 @@
-# .gitignore
-.DS_Store
-node_modules/
-.env
-.dev.vars
-.wrangler/
+# Dữ liệu nhạy cảm / bí mật: KHÔNG đưa lên git
 data.json
-admin.html
+kv_store.json
+orders.json
+server/seed.sql
+.dev.vars
+server/.dev.vars
+node_modules/
+.wrangler/

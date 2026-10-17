@@ -1,12 +1,26 @@
-name = "sepay-checker"
+# Worker duy nhất của shop. Deploy từ thư mục server/:  npx wrangler deploy
+name = "sepay-checker"            # giữ nguyên tên để URL *.workers.dev không đổi
 main = "shop-worker.js"
-compatibility_date = "2026-10-16"
+compatibility_date = "2026-10-01"
 
-# Khai báo KV Database Namespace (Không chứa bí mật hay secret)
-[[kv_namespaces]]
-binding = "STORE_KV"
-id = "STORE_KV_ID" # Điền ID KV Namespace của bạn trên Cloudflare
+# D1 = database chính (sản phẩm, kho, đơn hàng). Tạo bằng: npx wrangler d1 create lego-store
+# rồi dán database_id nhận được vào đây.
+[[d1_databases]]
+binding = "DB"
+database_name = "lego-store"
+database_id = "DAN_DATABASE_ID_VAO_DAY"
 
-# Cron Triggers: Tự động dọn đơn hết hạn sau 24 giờ (mỗi 30 phút quét 1 lần)
+[vars]
+# Các domain được phép gọi API (cách nhau bằng dấu phẩy). SỬA cho đúng domain web thật của anh.
+ALLOWED_ORIGINS = "https://zanhbanhoalego.pages.dev,https://daokiet2602.github.io"
+
+# Cron: mỗi 30 phút hết hạn đơn chuyển khoản chưa trả sau 24h và hoàn kho
 [triggers]
 crons = ["*/30 * * * *"]
+
+# CÁC BÍ MẬT KHÔNG ĐƯỢC GHI Ở ĐÂY. Đặt bằng lệnh (xem README.md):
+#   npx wrangler secret put ADMIN_KEY
+#   npx wrangler secret put SEPAY_WEBHOOK_KEY
+#   npx wrangler secret put TELEGRAM_BOT_TOKEN
+#   npx wrangler secret put TELEGRAM_CHAT_IDS
+#   (tuỳ chọn) npx wrangler secret put TURNSTILE_SECRET

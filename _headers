@@ -1,0 +1,16 @@
+# Cloudflare Pages: file này tự có hiệu lực (GitHub Pages thì bỏ qua).
+# Mục đích: sau mỗi lần deploy, trình duyệt khách LUÔN nhận bản JS/HTML mới (hết lỗi "máy khách chạy code cũ").
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+/index.html
+  Cache-Control: no-cache
+/admin.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+/realtime_sync.js
+  Cache-Control: no-cache
+/products_public.json
+  Cache-Control: no-cache
+/images/*
+  Cache-Control: public, max-age=2592000
