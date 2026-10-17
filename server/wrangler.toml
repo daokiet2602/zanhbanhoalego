@@ -8,7 +8,7 @@ compatibility_date = "2026-10-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "lego-store"
-database_id = "DAN_DATABASE_ID_VAO_DAY"
+database_id = "000af1d3-1373-4383-a196-d125e60b5ac3"
 
 [vars]
 # Các domain được phép gọi API (cách nhau bằng dấu phẩy). SỬA cho đúng domain web thật của anh.
