@@ -1087,7 +1087,7 @@
                             <div class="pay-method-card active" id="pay-opt-transfer" onclick="selectPayMethod('transfer')">
                                 <span class="icon">💳</span>
                                 <span class="t">Chuyển Khoản Ngay</span>
-                                <span class="d">Quét mã VietQR (MBBank)</span>
+                                <span class="d">Quét mã VietQR (ACB)</span>
                             </div>
                             <div class="pay-method-card" id="pay-opt-cod" onclick="selectPayMethod('cod')">
                                 <span class="icon">🚚</span>
@@ -1154,18 +1154,18 @@
             <div class="bank-info-box">
                 <div class="info-line">
                     <span class="lbl">Ngân hàng:</span>
-                    <b class="val" id="pay-bank-name">MBBank (Ngân Hàng Quân Đội)</b>
+                    <b class="val" id="pay-bank-name">ACB (Ngân hàng Á Châu)</b>
                 </div>
                 <div class="info-line">
                     <span class="lbl">Số tài khoản:</span>
                     <span style="display:flex; align-items:center;">
-                        <b class="val" id="pay-acc-num">260220068</b>
+                        <b class="val" id="pay-acc-num">10703257</b>
                         <button class="btn-copy" onclick="copyText('pay-acc-num')">Copy</button>
                     </span>
                 </div>
                 <div class="info-line">
                     <span class="lbl">Chủ tài khoản:</span>
-                    <b class="val" id="pay-acc-name">DAO GIA KIET</b>
+                    <b class="val" id="pay-acc-name">LE THI SAO</b>
                 </div>
                 <div class="info-line">
                     <span class="lbl">Số tiền cần chuyển:</span>
@@ -1186,7 +1186,7 @@
             <!-- TRẠNG THÁI TỰ ĐỘNG ĐỐI SOÁT SEPAY -->
             <div id="sepay-waiting-box" style="margin-bottom:14px; background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:12px; padding:12px 14px; display:flex; align-items:center; justify-content:center; gap:8px;">
                 <span class="sync-dot" id="sepay-sync-dot" style="width:10px; height:10px; background:#22C55E; border-radius:50%; animation:pulse 1.2s infinite;"></span>
-                <span style="font-size:0.85rem; color:#15803D; font-weight:800;" id="sepay-status-text">Đang tự động kiểm tra biến động tài khoản MBBank...</span>
+                <span style="font-size:0.85rem; color:#15803D; font-weight:800;" id="sepay-status-text">Đang tự động kiểm tra biến động tài khoản ACB...</span>
             </div>
 
             <button class="btn-paid-done" id="btn-back-home" style="display:none;" onclick="location.href='index.html'">
@@ -1313,7 +1313,7 @@
                             <div>
                                 <div class="price-row">
                                     <span class="price-retail">${fmtVND(stockInfo.price_retail)}</span>
-                                    <span class="price-market">${fmtVND(Math.round(stockInfo.price_retail / 0.9 / 1000) * 1000)}</span>
+                                    ${p.price_market ? `<span class="price-market">${fmtVND(p.price_market)}</span>` : ''}
                                 </div>
                                 <div class="stock-info">
                                     📦 Tình trạng: <b>${isOut ? 'Tạm hết hàng' : isDisc ? 'Ngưng bán' : stockInfo.qty <= 5 ? `<span style="color:var(--primary)">Chỉ còn ${stockInfo.qty} bộ!</span>` : 'Còn hàng'}</b>
@@ -1667,12 +1667,12 @@
             });
         }
 
-        // CẤU HÌNH NGÂN HÀNG MBBANK (SEPAY AUTO BANKING)
+        // CẤU HÌNH NGÂN HÀNG ACB (SEPAY AUTO BANKING)
         const BANK_CONFIG = {
-            BANK_ID: "MB", // Ngân hàng Quân Đội MB
-            ACCOUNT_NO: "260220068",
-            ACCOUNT_NAME: "DAO GIA KIET",
-            BANK_DISPLAY: "MBBank (Ngân Hàng Quân Đội)"
+            BANK_ID: "ACB", // Ngân hàng Á Châu ACB
+            ACCOUNT_NO: "10703257",
+            ACCOUNT_NAME: "LE THI SAO",
+            BANK_DISPLAY: "ACB (Ngân hàng Á Châu)"
         };
 
                 // BỘ NÃO SERVER BACKEND DUY NHẤT (CLOUDFLARE WORKER)
@@ -1775,7 +1775,7 @@
                 const orderId = data.orderId;
                 const totalAmount = data.total;
 
-                // NẾU LÀ CHUYỂN KHOẢN: HIỆN MÃ QR VIETQR MBBANK VÀ LẮNG NGHE STATUS
+                // NẾU LÀ CHUYỂN KHOẢN: HIỆN MÃ QR VIETQR ACB VÀ LẮNG NGHE STATUS
                 if (SELECTED_PAY_METHOD === 'transfer') {
                     PENDING_TRANSFER_ORDER = { orderId, totalAmount, name, phone: cleanPhone };
 
@@ -1829,7 +1829,7 @@
         function waitForPaymentAuto(orderId) {
             stopPaymentPolling();
             const statusEl = document.getElementById('sepay-status-text');
-            if (statusEl) statusEl.textContent = "Đang tự động kiểm tra biến động tài khoản MBBank...";
+            if (statusEl) statusEl.textContent = "Đang tự động kiểm tra biến động tài khoản ACB...";
 
             let pollCount = 0;
             ORDER_STATUS_POLL_TIMER = setInterval(async () => {
@@ -1874,7 +1874,7 @@
             if (btnCancelPay) btnCancelPay.style.display = 'none';
 
             // Hiện popup chúc mừng kèm nút quay lại trang chủ
-            showAppModal("🎉 ĐÃ NHẬN THANH TOÁN!", `Đơn hàng <b>#${orderId}</b> đã được hệ thống tự động xác nhận thanh toán thành công qua MBBank.<br><br>Shop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`, "💰", "Quay Lại Trang Chủ", () => {
+            showAppModal("🎉 ĐÃ NHẬN THANH TOÁN!", `Đơn hàng <b>#${orderId}</b> đã được hệ thống tự động xác nhận thanh toán thành công qua ACB.<br><br>Shop DÁNH BÁN HOA đang chuẩn bị đóng gói hoa và sẽ giao sớm nhất cho bạn nhé!`, "💰", "Quay Lại Trang Chủ", () => {
                 location.href = 'index.html';
             });
         }
@@ -1888,7 +1888,7 @@
             stopPaymentPolling();
             document.getElementById('payment-modal').style.display = 'none';
             PENDING_TRANSFER_ORDER = null;
-            showAppModal("🎉 Đã Gửi Xác Nhận", `Cảm ơn bạn! Đơn hàng <b>#${orderId}</b> đã được gửi tới shop DÁNH BÁN HOA.<br><br>Shop sẽ kiểm tra tài khoản MBBank và đóng gói gửi hàng sớm nhất cho bạn!`, "🌸", "Tiếp Tục Xem Hoa");
+            showAppModal("🎉 Đã Gửi Xác Nhận", `Cảm ơn bạn! Đơn hàng <b>#${orderId}</b> đã được gửi tới shop DÁNH BÁN HOA.<br><br>Shop sẽ kiểm tra tài khoản ACB và đóng gói gửi hàng sớm nhất cho bạn!`, "🌸", "Tiếp Tục Xem Hoa");
         }
 
         const PENDING_HOLD_HOURS = 24;
@@ -1900,7 +1900,7 @@
             const contactWidget = document.querySelector('.contact-widget-wrap');
             if (contactWidget) contactWidget.style.display = 'flex';
             
-            showAppModal("Đơn Hàng Tạm Lưu", `Đơn hàng <b>#${orderId}</b> của bạn đã được ghi nhận trên hệ thống và tạm giữ trong <b>${PENDING_HOLD_HOURS} giờ</b>.<br><br>Bạn có thể chuyển khoản sau qua số tài khoản MBBank <b>260220068</b> (DAO GIA KIET). Shop sẽ liên hệ để xác nhận giữ hàng cho bạn!`, "⏰", "Đã Hiểu");
+            showAppModal("Đơn Hàng Tạm Lưu", `Đơn hàng <b>#${orderId}</b> của bạn đã được ghi nhận trên hệ thống và tạm giữ trong <b>${PENDING_HOLD_HOURS} giờ</b>.<br><br>Bạn có thể chuyển khoản sau qua số tài khoản ACB <b>10703257</b> (LE THI SAO). Shop sẽ liên hệ để xác nhận giữ hàng cho bạn!`, "⏰", "Đã Hiểu");
         }
 
         function handleQrSuccess() {
