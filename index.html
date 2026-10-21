@@ -1313,7 +1313,7 @@
                             <div>
                                 <div class="price-row">
                                     <span class="price-retail">${fmtVND(stockInfo.price_retail)}</span>
-                                    ${p.price_market ? `<span class="price-market">${fmtVND(p.price_market)}</span>` : ''}
+                                    <span class="price-market">${fmtVND(Math.round(stockInfo.price_retail / 0.9 / 1000) * 1000)}</span>
                                 </div>
                                 <div class="stock-info">
                                     📦 Tình trạng: <b>${isOut ? 'Tạm hết hàng' : isDisc ? 'Ngưng bán' : stockInfo.qty <= 5 ? `<span style="color:var(--primary)">Chỉ còn ${stockInfo.qty} bộ!</span>` : 'Còn hàng'}</b>
