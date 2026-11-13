@@ -335,11 +335,20 @@ async function handleCreateOrder(req, env, ctx) {
   const now = Date.now();
   const status = payMethod === 'transfer' ? 'PENDING_PAYMENT' : 'COD_NEW';
 
+  // Nhận diện UTM / CTV từ client
+  const utmObj = (b.utm && typeof b.utm === 'object') ? b.utm : null;
+  let orderSource = 'web';
+  if (utmObj && utmObj.source) {
+    const cleanSrc = cleanText(utmObj.source, 50).toLowerCase();
+    const cleanCamp = cleanText(utmObj.campaign || '', 50).toLowerCase();
+    orderSource = cleanCamp ? `ctv:${cleanCamp}` : `ctv:${cleanSrc}`;
+  }
+
   let order = null;
   for (let attempt = 0; attempt < 6 && !order; attempt++) {
     const candidate = {
       orderId: genOrderId(), status, payMethod, shipMethod, shipName: SHIP_NAMES[shipMethod],
-      shipFee, subtotal, total, lines, source: 'web',
+      shipFee, subtotal, total, lines, source: orderSource,
       customer: {
         name, phone, address,
         ward: cleanText(c.ward, 100), province: cleanText(c.province, 100), note: cleanText(c.note, 500)
@@ -755,8 +764,9 @@ async function sendTelegramOrder(env, order, headerText) {
     `• <b>${l.qty}x</b> [${escapeHtml(l.id)}] ${escapeHtml(l.name)}: <code>${fmtVND(l.lineTotal)}</code>\n`).join('');
   const c = order.customer;
   const fullAddr = `${c.address}${c.ward ? ', ' + c.ward : ''}${c.province ? ', ' + c.province : ''}`;
+  const ctvTag = (order.source && order.source.startsWith('ctv:')) ? `\n🏷️ <b>Nguồn CTV:</b> <code>${escapeHtml(order.source.replace('ctv:', '').toUpperCase())}</code>` : '';
   const msg = `${headerText}\n━━━━━━━━━━━━━━━━━━\n` +
-    `📦 <b>Mã đơn:</b> <code>#${order.orderId}</code>\n` +
+    `📦 <b>Mã đơn:</b> <code>#${order.orderId}</code>` + ctvTag + `\n` +
     `👤 <b>Khách hàng:</b> ${escapeHtml(c.name)}\n` +
     `📞 <b>Điện thoại:</b> <code>${escapeHtml(c.phone)}</code>\n` +
     `📍 <b>Địa chỉ:</b> ${escapeHtml(fullAddr)}\n` +

@@ -345,6 +345,7 @@
         <div class="admin-tabs">
             <button class="tab-btn active" id="tab-btn-stock" onclick="switchAdminTab('stock')">📦 Danh Sách Kho & Bán Nhanh</button>
             <button class="tab-btn" id="tab-btn-orders" onclick="switchAdminTab('orders')">📋 Lịch Sử Đơn Bán Hàng (<span id="orders-badge">0</span>)</button>
+            <button class="tab-btn" id="tab-btn-ctv" onclick="switchAdminTab('ctv')">🤝 Tiếp Thị & CTV</button>
             <button class="tab-btn" id="tab-btn-monthly" onclick="switchAdminTab('monthly')">📈 Báo Cáo Doanh Thu Tháng</button>
         </div>
 
@@ -390,19 +391,37 @@
 
         <!-- TAB 2: LỊCH SỬ ĐƠN BÁN -->
         <div id="tab-content-orders" style="display: none;">
-            <div class="toolbar" style="margin-bottom: 14px; display:flex; justify-content:space-between; align-items:center;">
-                <div style="font-weight: 800; font-size: 1.05rem;">
-                    📋 Danh Sách Tất Cả Đơn Hàng (Khách Đặt Web & Bán Tại Quầy)
+            <!-- TOOLBAR TẠO LINK CTV NHANH & BỘ LỌC ĐƠN -->
+            <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <div style="font-weight:800; font-size:1.05rem; color:var(--dark);">
+                            📋 Danh Sách Tất Cả Đơn Hàng (Khách Đặt Web & Bán Tại Quầy)
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--text-sub); margin-top:2px;">
+                            Hệ thống tự động nhận diện và gán doanh thu cho Cộng Tác Viên qua chuẩn UTM
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <select id="filter-order-source" class="form-control" style="font-size:0.85rem; padding:8px 12px; max-width:200px;" onchange="renderOrdersTable()">
+                            <option value="ALL">🔍 Tất cả nguồn đơn</option>
+                            <option value="CTV">🤝 Đơn từ CTV</option>
+                            <option value="WEB">🌐 Đơn Web tự nhiên</option>
+                            <option value="COUNTER">🏬 Bán tại quầy</option>
+                        </select>
+                        <button class="btn-confirm-sale" style="background:var(--blue); color:#fff; padding:8px 16px;" onclick="loadData()">
+                            🔄 Làm Mới Đơn Hàng
+                        </button>
+                    </div>
                 </div>
-                <button class="btn-confirm-sale" style="background:var(--blue); color:#fff; padding:8px 16px;" onclick="loadData()">
-                    🔄 Làm Mới Đơn Hàng
-                </button>
             </div>
+
             <div class="table-wrap">
                 <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Mã Đơn</th>
+                            <th>Nguồn / CTV</th>
                             <th>Thời Gian</th>
                             <th>Khách Hàng / SĐT</th>
                             <th>Món Hàng (Chi Tiết)</th>
@@ -415,6 +434,68 @@
                     </thead>
                     <tbody id="orders-tbody">
                         <!-- Order rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB CTV: BỘ TẠO LINK TIẾP THỊ & BÁO CÁO DOANH THU CTV -->
+        <div id="tab-content-ctv" style="display: none;">
+            <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:22px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,0.03);">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                    <span style="font-size:1.5rem;">🔗</span>
+                    <div>
+                        <b style="font-size:1.15rem; color:var(--dark);">Bộ Tạo Link UTM Tiếp Thị Cho Cộng Tác Viên</b>
+                        <div style="font-size:0.82rem; color:var(--text-sub);">Nhập tên CTV để tự động sinh link tiếp thị chuẩn. Khi khách click vào link, hệ thống sẽ lưu vết 30 ngày và ghi nhận đơn hàng cho CTV.</div>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-top:16px;">
+                    <div>
+                        <label style="font-size:0.82rem; font-weight:700; color:var(--dark);">Tên hoặc Mã CTV (viết liền không dấu):</label>
+                        <input type="text" id="ctv-name-input" class="form-control" style="margin-top:6px;" placeholder="Ví dụ: lan, minh_anh, hoang_lego" oninput="generateCTVLink()">
+                    </div>
+                    <div>
+                        <label style="font-size:0.82rem; font-weight:700; color:var(--dark);">Kênh tiếp thị (Tùy chọn):</label>
+                        <select id="ctv-platform-select" class="form-control" style="margin-top:6px;" onchange="generateCTVLink()">
+                            <option value="ctv">Cộng tác viên (Mặc định)</option>
+                            <option value="facebook">Facebook / Group</option>
+                            <option value="tiktok">TikTok Bio</option>
+                            <option value="zalo">Zalo cá nhân</option>
+                            <option value="instagram">Instagram</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-top:16px; background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:8px; padding:12px 16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <span style="font-size:0.82rem; font-weight:700; color:#475569;">Link UTM hoàn chỉnh phát cho CTV:</span>
+                        <button type="button" class="btn-confirm-sale" style="background:#22C55E; color:#fff; padding:6px 14px; font-size:0.85rem;" onclick="copyCTVLink()">
+                            📋 Copy Link Gửi CTV
+                        </button>
+                    </div>
+                    <input type="text" id="ctv-output-url" readonly class="form-control" style="margin-top:8px; background:#fff; font-family:monospace; font-weight:700; color:var(--blue);" value="">
+                </div>
+            </div>
+
+            <!-- BẢNG BÁO CÁO DOANH THU THEO TỪNG CTV -->
+            <div style="font-weight:800; font-size:1.05rem; margin-bottom:12px; color:var(--dark);">
+                📊 Tổng Hợp Doanh Thu Theo Từng Cộng Tác Viên
+            </div>
+            <div class="table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Mã / Tên CTV</th>
+                            <th style="text-align:center;">Tổng Đơn Hàng</th>
+                            <th style="text-align:center;">Đơn Đã Chốt/Thành Công</th>
+                            <th class="num-right">Tổng Doanh Thu</th>
+                            <th class="num-right">Hoa Hồng Ước Tính (10%)</th>
+                            <th style="text-align:center;">Tỷ Lệ Chốt</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ctv-summary-tbody">
+                        <!-- CTV stats rows -->
                     </tbody>
                 </table>
             </div>
@@ -927,13 +1008,31 @@
         function renderOrdersTable() {
             const tbody = document.getElementById('orders-tbody');
             const history = window.realtimeStore.salesHistory || [];
+            const filterSource = (document.getElementById('filter-order-source') || {}).value || 'ALL';
 
-            if (history.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-sub)">Chưa có đơn hàng nào được ghi nhận. Đơn khách đặt trên web hoặc nhập tại bảng trên sẽ hiển thị tại đây!</td></tr>`;
+            const filteredHistory = history.filter(o => {
+                if (filterSource === 'ALL') return true;
+                const isCTV = o.source && o.source.startsWith('ctv:');
+                if (filterSource === 'CTV') return isCTV;
+                if (filterSource === 'WEB') return !isCTV && o.source !== 'counter';
+                if (filterSource === 'COUNTER') return o.source === 'counter' || !o.lines;
+                return true;
+            });
+
+            if (filteredHistory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:30px; color:var(--text-sub)">Không tìm thấy đơn hàng nào phù hợp với bộ lọc.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = history.map(o => {
+            tbody.innerHTML = filteredHistory.map(o => {
+                const isCTV = o.source && o.source.startsWith('ctv:');
+                const ctvCode = isCTV ? o.source.replace('ctv:', '').toUpperCase() : '';
+                const sourceBadge = isCTV 
+                    ? `<span style="background:#EEF2FF; color:#4338CA; border:1px solid #C7D2FE; font-weight:700; padding:2px 8px; border-radius:6px; font-size:0.75rem; display:inline-block;">🤝 CTV: ${escapeHtml(ctvCode)}</span>`
+                    : (o.source === 'counter' || !o.lines 
+                        ? `<span style="background:#F1F5F9; color:#475569; font-weight:600; padding:2px 6px; border-radius:4px; font-size:0.75rem;">🏬 Tại quầy</span>`
+                        : `<span style="background:#ECFDF5; color:#065F46; font-weight:600; padding:2px 6px; border-radius:4px; font-size:0.75rem;">🌐 Web</span>`);
+
                 // Đơn hàng từ Server (Web đặt)
                 if (o.lines && Array.isArray(o.lines)) {
                     const custName = o.customer ? escapeHtml(o.customer.name) : 'Khách vãng lai';
@@ -947,6 +1046,7 @@
                     return `
                         <tr style="${isCancelled ? 'opacity:0.6; background:#F8FAFC;' : ''}">
                             <td><b style="font-size:0.95rem; color:var(--dark)">#${o.orderId}</b></td>
+                            <td>${sourceBadge}</td>
                             <td><small>${o.timeStr || (o.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN') : '---')}</small></td>
                             <td><b>${custName}</b><br><small style="color:var(--text-sub)">📞 ${custPhone}</small><br><small style="color:var(--text-sub); font-size:0.75rem;">📍 ${custAddr}</small></td>
                             <td>${itemsDesc}</td>
@@ -965,6 +1065,7 @@
                 return `
                     <tr>
                         <td><b>#${o.orderId}</b></td>
+                        <td>${sourceBadge}</td>
                         <td><small>${o.time}</small></td>
                         <td><b>Bán tại quầy</b></td>
                         <td><b>${escapeHtml(o.prodName)}</b><br><small style="color:var(--text-sub)">${escapeHtml(o.prodId)} - ${escapeHtml(o.prodCode)}</small> (x${o.qty})</td>
@@ -983,12 +1084,98 @@
         function switchAdminTab(tab) {
             document.getElementById('tab-content-stock').style.display = tab === 'stock' ? 'block' : 'none';
             document.getElementById('tab-content-orders').style.display = tab === 'orders' ? 'block' : 'none';
+            document.getElementById('tab-content-ctv').style.display = tab === 'ctv' ? 'block' : 'none';
             document.getElementById('tab-content-monthly').style.display = tab === 'monthly' ? 'block' : 'none';
             document.getElementById('tab-btn-stock').classList.toggle('active', tab === 'stock');
             document.getElementById('tab-btn-orders').classList.toggle('active', tab === 'orders');
+            document.getElementById('tab-btn-ctv').classList.toggle('active', tab === 'ctv');
             document.getElementById('tab-btn-monthly').classList.toggle('active', tab === 'monthly');
 
+            if (tab === 'ctv') {
+                generateCTVLink();
+                renderCTVAnalytics();
+            }
             if (tab === 'monthly') renderMonthlyTable();
+        }
+
+        // TẠO LINK UTM TIẾP THỊ CTV
+        function generateCTVLink() {
+            const rawName = (document.getElementById('ctv-name-input') || {}).value || '';
+            const platform = (document.getElementById('ctv-platform-select') || {}).value || 'ctv';
+            const cleanName = rawName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+            
+            // Lấy baseUrl
+            let baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace(/\/$/, '') + '/';
+            if (baseUrl.includes('http://') || baseUrl.includes('https://')) {
+                // ok
+            } else {
+                baseUrl = 'https://daokiet2602.github.io/zanhbanhoalego/';
+            }
+
+            const ctvCode = cleanName || 'ten_ctv';
+            const fullUrl = `${baseUrl}?utm_source=${encodeURIComponent(platform)}&utm_medium=affiliate&utm_campaign=${encodeURIComponent(ctvCode)}`;
+            
+            const outInput = document.getElementById('ctv-output-url');
+            if (outInput) outInput.value = fullUrl;
+        }
+
+        function copyCTVLink() {
+            const input = document.getElementById('ctv-output-url');
+            if (!input || !input.value) return;
+            navigator.clipboard.writeText(input.value).then(() => {
+                showToast("📋 Đã sao chép link UTM của CTV vào bộ nhớ tạm!");
+            }).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                showToast("📋 Đã sao chép link!");
+            });
+        }
+
+        // BÁO CÁO THỐNG KÊ DOANH THU THEO CTV
+        function renderCTVAnalytics() {
+            const tbody = document.getElementById('ctv-summary-tbody');
+            if (!tbody) return;
+            const history = window.realtimeStore.salesHistory || [];
+            
+            const ctvMap = {}; // { 'lan': { totalOrders: 0, validOrders: 0, revenue: 0 } }
+
+            history.forEach(o => {
+                if (o.source && o.source.startsWith('ctv:')) {
+                    const ctv = o.source.replace('ctv:', '').trim().toLowerCase();
+                    if (!ctvMap[ctv]) {
+                        ctvMap[ctv] = { code: ctv.toUpperCase(), totalOrders: 0, validOrders: 0, revenue: 0 };
+                    }
+                    ctvMap[ctv].totalOrders += 1;
+                    if (isRevenueOrder(o)) {
+                        ctvMap[ctv].validOrders += 1;
+                        ctvMap[ctv].revenue += (o.total || o.subtotal || 0);
+                    }
+                }
+            });
+
+            const list = Object.values(ctvMap);
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-sub)">Chưa có đơn hàng nào phát sinh từ link CTV. Hãy tạo link bên trên và gửi cho CTV chạy thử nhé!</td></tr>`;
+                return;
+            }
+
+            // Sắp xếp doanh thu cao nhất lên đầu
+            list.sort((a, b) => b.revenue - a.revenue);
+
+            tbody.innerHTML = list.map(c => {
+                const commission = Math.round(c.revenue * 0.1); // Hoa hồng 10% demo
+                const rate = c.totalOrders > 0 ? Math.round((c.validOrders / c.totalOrders) * 100) : 0;
+                return `
+                    <tr>
+                        <td><b>🤝 ${escapeHtml(c.code)}</b></td>
+                        <td style="text-align:center;">${c.totalOrders} đơn</td>
+                        <td style="text-align:center;"><b style="color:#22C55E;">${c.validOrders} đơn</b></td>
+                        <td class="num-right"><b style="color:var(--blue); font-size:1rem;">${fmtVND(c.revenue)}</b></td>
+                        <td class="num-right"><b style="color:#F59E0B;">${fmtVND(commission)}</b></td>
+                        <td style="text-align:center;"><b>${rate}%</b></td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         // BÁO CÁO DOANH THU THEO THÁNG

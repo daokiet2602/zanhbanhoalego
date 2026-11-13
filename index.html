@@ -1214,6 +1214,45 @@
 
         let WARDS_DATA = null;
 
+        // XỬ LÝ UTM / REF TỪ CTV
+        function captureAndSaveUTM() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const utmSource = params.get('utm_source') || params.get('ref') || params.get('ctv');
+                const utmMedium = params.get('utm_medium') || '';
+                const utmCampaign = params.get('utm_campaign') || '';
+                const utmContent = params.get('utm_content') || '';
+
+                if (utmSource) {
+                    const utmData = {
+                        source: utmSource.trim().toLowerCase(),
+                        medium: utmMedium.trim(),
+                        campaign: utmCampaign.trim(),
+                        content: utmContent.trim(),
+                        time: Date.now()
+                    };
+                    localStorage.setItem('danhbanhoa_utm', JSON.stringify(utmData));
+                }
+            } catch(e) {}
+        }
+        captureAndSaveUTM();
+
+        function getStoredUTM() {
+            try {
+                const raw = localStorage.getItem('danhbanhoa_utm');
+                if (!raw) return null;
+                const data = JSON.parse(raw);
+                // Lưu nhớ trong 30 ngày (30 * 24 * 60 * 60 * 1000)
+                if (Date.now() - (data.time || 0) > 2592000000) {
+                    localStorage.removeItem('danhbanhoa_utm');
+                    return null;
+                }
+                return data;
+            } catch(e) {
+                return null;
+            }
+        }
+
         async function init() {
             try {
                 // 1. TẢI SONG SONG SIÊU TỐC: Danh mục sản phẩm + Dữ liệu mây Cloud Worker + Danh mục hành chính
@@ -1752,7 +1791,8 @@
                     province: cityText,
                     note: note
                 },
-                items: items
+                items: items,
+                utm: getStoredUTM()
             };
 
             try {
