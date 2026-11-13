@@ -1103,12 +1103,11 @@
             const platform = (document.getElementById('ctv-platform-select') || {}).value || 'ctv';
             const cleanName = rawName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
             
-            // Lấy baseUrl
-            let baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace(/\/$/, '') + '/';
-            if (baseUrl.includes('http://') || baseUrl.includes('https://')) {
-                // ok
-            } else {
-                baseUrl = 'https://daokiet2602.github.io/zanhbanhoalego/';
+            // Link trang chủ mua hàng (bỏ admin.html hoặc /admin)
+            let path = window.location.pathname.replace(/\/admin(\.html)?\/?$/i, '').replace(/\/$/, '');
+            let baseUrl = window.location.origin + path + '/';
+            if (!baseUrl.startsWith('http')) {
+                baseUrl = 'https://zanhbanhoalego.pages.dev/';
             }
 
             const ctvCode = cleanName || 'ten_ctv';
