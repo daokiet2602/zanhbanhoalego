@@ -480,7 +480,7 @@
 
             <!-- BẢNG BÁO CÁO DOANH THU THEO TỪNG CTV -->
             <div style="font-weight:800; font-size:1.05rem; margin-bottom:12px; color:var(--dark);">
-                📊 Tổng Hợp Doanh Thu Theo Từng Cộng Tác Viên
+                📊 Tổng Hợp Đơn Hàng & Doanh Thu Theo Từng Cộng Tác Viên
             </div>
             <div class="table-wrap">
                 <table class="admin-table">
@@ -490,7 +490,6 @@
                             <th style="text-align:center;">Tổng Đơn Hàng</th>
                             <th style="text-align:center;">Đơn Đã Chốt/Thành Công</th>
                             <th class="num-right">Tổng Doanh Thu</th>
-                            <th class="num-right">Hoa Hồng Ước Tính (10%)</th>
                             <th style="text-align:center;">Tỷ Lệ Chốt</th>
                         </tr>
                     </thead>
@@ -1163,7 +1162,6 @@
             list.sort((a, b) => b.revenue - a.revenue);
 
             tbody.innerHTML = list.map(c => {
-                const commission = Math.round(c.revenue * 0.1); // Hoa hồng 10% demo
                 const rate = c.totalOrders > 0 ? Math.round((c.validOrders / c.totalOrders) * 100) : 0;
                 return `
                     <tr>
@@ -1171,7 +1169,6 @@
                         <td style="text-align:center;">${c.totalOrders} đơn</td>
                         <td style="text-align:center;"><b style="color:#22C55E;">${c.validOrders} đơn</b></td>
                         <td class="num-right"><b style="color:var(--blue); font-size:1rem;">${fmtVND(c.revenue)}</b></td>
-                        <td class="num-right"><b style="color:#F59E0B;">${fmtVND(commission)}</b></td>
                         <td style="text-align:center;"><b>${rate}%</b></td>
                     </tr>
                 `;
