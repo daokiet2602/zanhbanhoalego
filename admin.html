@@ -426,6 +426,7 @@
                             <th>Khách Hàng / SĐT</th>
                             <th>Món Hàng (Chi Tiết)</th>
                             <th class="num-right">Tổng Tiền</th>
+                            <th class="num-right" style="color:#059669;">Lợi Nhuận</th>
                             <th style="text-align: center;">Hình Thức</th>
                             <th style="text-align: center;">Trạng Thái</th>
                             <th>Ghi Chú</th>
@@ -500,6 +501,7 @@
                             <th style="text-align:center;">Tổng Đơn Hàng</th>
                             <th style="text-align:center;">Đơn Đã Chốt/Thành Công</th>
                             <th class="num-right">Tổng Doanh Thu</th>
+                            <th class="num-right" style="color:#059669;">Tổng Lợi Nhuận</th>
                             <th style="text-align:center;">Tỷ Lệ Chốt</th>
                         </tr>
                     </thead>
@@ -1017,6 +1019,7 @@
         function renderOrdersTable() {
             const tbody = document.getElementById('orders-tbody');
             const history = window.realtimeStore.salesHistory || [];
+            const allProds = DATA ? (DATA.products || []) : [];
             const filterSource = (document.getElementById('filter-order-source') || {}).value || 'ALL';
 
             const filteredHistory = history.filter(o => {
@@ -1029,7 +1032,7 @@
             });
 
             if (filteredHistory.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:30px; color:var(--text-sub)">Không tìm thấy đơn hàng nào phù hợp với bộ lọc.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:30px; color:var(--text-sub)">Không tìm thấy đơn hàng nào phù hợp với bộ lọc.</td></tr>`;
                 return;
             }
 
@@ -1042,14 +1045,25 @@
                         ? `<span style="background:#F1F5F9; color:#475569; font-weight:600; padding:2px 6px; border-radius:4px; font-size:0.75rem;">🏬 Tại quầy</span>`
                         : `<span style="background:#ECFDF5; color:#065F46; font-weight:600; padding:2px 6px; border-radius:4px; font-size:0.75rem;">🌐 Web</span>`);
 
-                // Đơn hàng từ Server (Web đặt)
+                // Tính lợi nhuận đơn hàng
+                let profitDisplay = '---';
+                const isCancelled = o.status === 'CANCELLED' || o.status === 'EXPIRED';
+
                 if (o.lines && Array.isArray(o.lines)) {
+                    let costSum = 0;
+                    o.lines.forEach(l => {
+                        const baseProd = allProds.find(p => p.id === l.id);
+                        const c = (l.cost !== undefined && l.cost !== null) ? l.cost : (baseProd ? (baseProd.price_cost || 0) : 0);
+                        costSum += c * (l.qty || 1);
+                    });
+                    const orderProfit = Math.max(0, (o.subtotal || o.total || 0) - costSum);
+                    profitDisplay = isCancelled ? '<span style="color:#94A3B8;">0 ₫</span>' : `<b style="color:#059669;">+${fmtVND(orderProfit)}</b>`;
+
                     const custName = o.customer ? escapeHtml(o.customer.name) : 'Khách vãng lai';
                     const custPhone = o.customer ? escapeHtml(o.customer.phone) : '---';
                     const custAddr = o.customer ? `${escapeHtml(o.customer.address || '')}${o.customer.ward ? ', ' + escapeHtml(o.customer.ward) : ''}${o.customer.province ? ', ' + escapeHtml(o.customer.province) : ''}` : '';
                     
                     const itemsDesc = o.lines.map(l => `• <b>${l.qty}x</b> ${escapeHtml(l.name || l.id)} (${fmtVND(l.price || l.lineTotal)})`).join('<br>');
-                    const isCancelled = o.status === 'CANCELLED' || o.status === 'EXPIRED';
                     const statusBadge = orderStatusBadge(o);
 
                     return `
@@ -1060,6 +1074,7 @@
                             <td><b>${custName}</b><br><small style="color:var(--text-sub)">📞 ${custPhone}</small><br><small style="color:var(--text-sub); font-size:0.75rem;">📍 ${custAddr}</small></td>
                             <td>${itemsDesc}</td>
                             <td class="num-right"><b style="color:var(--blue); font-size:1rem;">${fmtVND(o.total || o.subtotal)}</b></td>
+                            <td class="num-right">${profitDisplay}</td>
                             <td style="text-align:center;"><small><b>${o.payMethod === 'transfer' ? 'Chuyển Khoản' : (o.payMethod === 'direct' ? 'Trực tiếp' : 'COD')}</b></small></td>
                             <td style="text-align:center;">${statusBadge}</td>
                             <td><small>${escapeHtml((o.customer && o.customer.note) || o.note || '---')}</small></td>
@@ -1071,6 +1086,7 @@
                 }
 
                 // Đơn hàng bán nhanh thủ công tại quầy
+                const counterProfit = o.profit || 0;
                 return `
                     <tr>
                         <td><b>#${o.orderId}</b></td>
@@ -1079,6 +1095,7 @@
                         <td><b>Bán tại quầy</b></td>
                         <td><b>${escapeHtml(o.prodName)}</b><br><small style="color:var(--text-sub)">${escapeHtml(o.prodId)} - ${escapeHtml(o.prodCode)}</small> (x${o.qty})</td>
                         <td class="num-right"><b style="color:var(--blue)">${fmtVND(o.totalRevenue || (o.price * o.qty))}</b></td>
+                        <td class="num-right"><b style="color:#059669;">+${fmtVND(counterProfit)}</b></td>
                         <td style="text-align:center;"><small>Trực tiếp</small></td>
                         <td style="text-align:center;"><span class="stock-badge badge-active">Hoàn Tất</span></td>
                         <td><small>${escapeHtml(o.note || 'Bán trực tiếp')}</small></td>
@@ -1160,19 +1177,32 @@
             const tbody = document.getElementById('ctv-summary-tbody');
             if (!tbody) return;
             const history = window.realtimeStore.salesHistory || [];
+            const allProds = DATA ? (DATA.products || []) : [];
             
-            const ctvMap = {}; // { 'lan': { totalOrders: 0, validOrders: 0, revenue: 0 } }
+            const ctvMap = {}; // { 'lan': { code: 'LAN', totalOrders: 0, validOrders: 0, revenue: 0, profit: 0 } }
 
             history.forEach(o => {
                 if (o.source && o.source.startsWith('ctv:')) {
                     const ctv = o.source.replace('ctv:', '').trim().toLowerCase();
                     if (!ctvMap[ctv]) {
-                        ctvMap[ctv] = { code: ctv.toUpperCase(), totalOrders: 0, validOrders: 0, revenue: 0 };
+                        ctvMap[ctv] = { code: ctv.toUpperCase(), totalOrders: 0, validOrders: 0, revenue: 0, profit: 0 };
                     }
                     ctvMap[ctv].totalOrders += 1;
                     if (isRevenueOrder(o)) {
                         ctvMap[ctv].validOrders += 1;
-                        ctvMap[ctv].revenue += (o.total || o.subtotal || 0);
+                        const rev = (o.total || o.subtotal || 0);
+                        ctvMap[ctv].revenue += rev;
+
+                        // Tính lợi nhuận đơn CTV
+                        let costSum = 0;
+                        if (o.lines && Array.isArray(o.lines)) {
+                            o.lines.forEach(l => {
+                                const baseProd = allProds.find(p => p.id === l.id);
+                                const c = (l.cost !== undefined && l.cost !== null) ? l.cost : (baseProd ? (baseProd.price_cost || 0) : 0);
+                                costSum += c * (l.qty || 1);
+                            });
+                        }
+                        ctvMap[ctv].profit += Math.max(0, rev - costSum);
                     }
                 }
             });
@@ -1194,6 +1224,7 @@
                         <td style="text-align:center;">${c.totalOrders} đơn</td>
                         <td style="text-align:center;"><b style="color:#22C55E;">${c.validOrders} đơn</b></td>
                         <td class="num-right"><b style="color:var(--blue); font-size:1rem;">${fmtVND(c.revenue)}</b></td>
+                        <td class="num-right"><b style="color:#059669; font-size:1rem;">+${fmtVND(c.profit)}</b></td>
                         <td style="text-align:center;"><b>${rate}%</b></td>
                     </tr>
                 `;
