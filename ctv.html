@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cổng Tra Cứu Đơn Hàng & Doanh Thu CTV - Dánh Bán Hoa</title>
+    <link rel="icon" href="logo.jpg" type="image/jpeg">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF5E8E;
+            --primary-hover: #E04875;
+            --dark: #0F172A;
+            --text-sub: #64748B;
+            --bg: #F8FAFC;
+            --card: #FFFFFF;
+            --border: #E2E8F0;
+            --blue: #2563EB;
+            --green: #10B981;
+            --yellow: #F59E0B;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            line-height: 1.5;
+            padding: 20px 14px 40px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header img {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            margin-bottom: 12px;
+        }
+
+        .header h1 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: var(--dark);
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            font-size: 0.88rem;
+            color: var(--text-sub);
+        }
+
+        .search-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .search-group {
+            display: flex;
+            gap: 10px;
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 94, 142, 0.15);
+        }
+
+        .btn-search {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-search:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-search:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .kpi-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .kpi-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: var(--dark);
+            margin-top: 4px;
+        }
+
+        .kpi-sub {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        /* Orders Table */
+        .results-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .results-title {
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        table.ctv-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+            min-width: 780px;
+        }
+
+        table.ctv-table th {
+            background: #F8FAFC;
+            padding: 12px 14px;
+            font-weight: 700;
+            color: #475569;
+            border-bottom: 1px solid var(--border);
+        }
+
+        table.ctv-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        table.ctv-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .num-right { text-align: right; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .badge-paid { background: #DCFCE7; color: #15803D; }
+        .badge-pending { background: #FEF3C7; color: #B45309; }
+        .badge-cod { background: #E0E7FF; color: #3730A3; }
+        .badge-cancelled { background: #F1F5F9; color: #64748B; text-decoration: line-through; }
+        .badge-late { background: #FEE2E2; color: #B91C1C; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-sub);
+        }
+
+        .empty-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.8rem;
+            color: #94A3B8;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 14px 10px 30px; }
+            .header h1 { font-size: 1.25rem; }
+            .search-group { flex-direction: column; }
+            .btn-search { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <img src="logo.jpg" alt="Dánh Bán Hoa Logo" onerror="this.style.display='none'">
+            <h1>Cổng Tra Cứu Đơn Hàng & Doanh Thu CTV</h1>
+            <p>Hệ thống tự động ghi nhận đơn hàng qua link UTM của shop <b>Dánh Bán Hoa</b></p>
+        </div>
+
+        <!-- SEARCH FORM -->
+        <div class="search-card">
+            <form onsubmit="handleSearch(event)">
+                <div class="search-group">
+                    <input type="text" id="ctv-code-input" class="search-input" placeholder="Nhập mã CTV của bạn (Ví dụ: oanhpham)..." required autofocus>
+                    <button type="submit" id="search-btn" class="btn-search">
+                        🔍 Tra Cứu Ngay
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- KPI STATS -->
+        <div class="kpi-grid" id="kpi-section">
+            <div class="kpi-card">
+                <div class="kpi-title">Mã Cộng Tác Viên</div>
+                <div class="kpi-value" id="kpi-code" style="color:var(--primary);">---</div>
+                <div class="kpi-sub">Đang hoạt động</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Tổng Đơn Đã Đặt</div>
+                <div class="kpi-value" id="kpi-total-orders">0 đơn</div>
+                <div class="kpi-sub">Qua link UTM của bạn</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Đơn Đã Chốt / Thành Công</div>
+                <div class="kpi-value" id="kpi-valid-orders" style="color:var(--green);">0 đơn</div>
+                <div class="kpi-sub">Đã thanh toán hoặc COD duyệt</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Tổng Doanh Thu Đã Chốt</div>
+                <div class="kpi-value" id="kpi-revenue" style="color:var(--blue);">0 ₫</div>
+                <div class="kpi-sub">Tính trên các đơn thành công</div>
+            </div>
+        </div>
+
+        <!-- TABLE OF ORDERS -->
+        <div class="results-card" id="results-section">
+            <div class="results-header">
+                <div class="results-title">📋 Chi Tiết Các Đơn Hàng Đã Ghi Nhận</div>
+                <div style="font-size:0.8rem; color:var(--text-sub);">
+                    Dữ liệu được cập nhật tự động theo thời gian thực
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="ctv-table">
+                    <thead>
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Thời Gian</th>
+                            <th>Món Hàng (Chi Tiết)</th>
+                            <th class="num-right">Tổng Tiền</th>
+                            <th style="text-align:center;">Hình Thức</th>
+                            <th style="text-align:center;">Trạng Thái</th>
+                            <th>Ghi Chú</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-tbody">
+                        <!-- Rows rendered via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- EMPTY / MESSAGE -->
+        <div id="status-message" class="empty-state" style="display:none;"></div>
+
+        <div class="footer-note">
+            🌸 <b>Dánh Bán Hoa</b> &bull; Cửa hàng hoa LEGO & Quà tặng sáng tạo &bull; Hotline hỗ trợ CTV: 098.888.8888
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_API_URL = "https://sepay-checker.daokiet-work.workers.dev";
+
+        function fmtVND(n) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'PAID': return '<span class="badge badge-paid">Đã Thanh Toán ✓</span>';
+                case 'COD_NEW': return '<span class="badge badge-cod">COD Mới</span>';
+                case 'CONFIRMED': return '<span class="badge badge-paid">Đã Xác Nhận</span>';
+                case 'SHIPPED': return '<span class="badge badge-cod">Đang Giao 🚚</span>';
+                case 'DELIVERED': return '<span class="badge badge-paid">Đã Giao ✓</span>';
+                case 'COUNTER_SALE': return '<span class="badge badge-paid">Hoàn Tất</span>';
+                case 'CANCELLED': return '<span class="badge badge-cancelled">Đã Hủy</span>';
+                case 'EXPIRED': return '<span class="badge badge-cancelled">Hết Hạn</span>';
+                case 'PAID_LATE': return '<span class="badge badge-late">CK Muộn</span>';
+                default: return '<span class="badge badge-pending">Chờ Chuyển Khoản</span>';
+            }
+        }
+
+        async function fetchCTVData(code) {
+            const btn = document.getElementById('search-btn');
+            const msg = document.getElementById('status-message');
+            const kpiSection = document.getElementById('kpi-section');
+            const resultsSection = document.getElementById('results-section');
+            const tbody = document.getElementById('orders-tbody');
+
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Đang tải...';
+            msg.style.display = 'none';
+
+            try {
+                const res = await fetch(`${BACKEND_API_URL}/ctv-lookup?code=${encodeURIComponent(code)}`);
+                const data = await res.json();
+
+                if (!res.ok || !data.ok) {
+                    kpiSection.style.display = 'none';
+                    resultsSection.style.display = 'none';
+                    msg.style.display = 'block';
+                    msg.innerHTML = `
+                        <div class="empty-icon">⚠️</div>
+                        <b>${escapeHtml(data.message || 'Không thể tra cứu lúc này')}</b>
+                        <p style="font-size:0.85rem; margin-top:4px;">Vui lòng kiểm tra lại mã CTV của bạn.</p>
+                    `;
+                    return;
+                }
+
+                // Cập nhật KPI
+                document.getElementById('kpi-code').textContent = data.ctvCode;
+                document.getElementById('kpi-total-orders').textContent = `${data.stats.totalOrders} đơn`;
+                document.getElementById('kpi-valid-orders').textContent = `${data.stats.validOrdersCount} đơn`;
+                document.getElementById('kpi-revenue').textContent = fmtVND(data.stats.totalRevenue);
+                kpiSection.style.display = 'grid';
+
+                // Cập nhật Bảng Đơn
+                if (!data.orders || data.orders.length === 0) {
+                    resultsSection.style.display = 'none';
+                    msg.style.display = 'block';
+                    msg.innerHTML = `
+                        <div class="empty-icon">🌱</div>
+                        <b>Chưa có đơn hàng nào phát sinh từ mã CTV [${escapeHtml(data.ctvCode)}]</b>
+                        <p style="font-size:0.85rem; margin-top:4px;">Hãy tích cực chia sẻ link tiếp thị của bạn để nổ đơn đầu tiên nhé!</p>
+                    `;
+                    return;
+                }
+
+                resultsSection.style.display = 'block';
+                tbody.innerHTML = data.orders.map(o => {
+                    const itemsDesc = (o.lines || []).map(l => `• <b>${l.qty}x</b> ${escapeHtml(l.name)} (${fmtVND(l.price)})`).join('<br>');
+                    const isCancelled = o.status === 'CANCELLED' || o.status === 'EXPIRED';
+
+                    return `
+                        <tr style="${isCancelled ? 'opacity:0.6; background:#F8FAFC;' : ''}">
+                            <td><b style="color:var(--dark);">#${escapeHtml(o.orderId)}</b></td>
+                            <td><small>${escapeHtml(o.timeStr)}</small></td>
+                            <td>${itemsDesc || '---'}</td>
+                            <td class="num-right"><b style="color:var(--blue); font-size:0.95rem;">${fmtVND(o.total)}</b></td>
+                            <td style="text-align:center;"><small><b>${escapeHtml(o.payMethod)}</b></small></td>
+                            <td style="text-align:center;">${getStatusBadge(o.status)}</td>
+                            <td><small>${escapeHtml(o.note || '---')}</small></td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch(e) {
+                kpiSection.style.display = 'none';
+                resultsSection.style.display = 'none';
+                msg.style.display = 'block';
+                msg.innerHTML = `
+                    <div class="empty-icon">❌</div>
+                    <b>Lỗi kết nối máy chủ</b>
+                    <p style="font-size:0.85rem; margin-top:4px;">Vui lòng thử lại sau ít phút.</p>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔍 Tra Cứu Ngay';
+            }
+        }
+
+        function handleSearch(e) {
+            if (e) e.preventDefault();
+            const input = document.getElementById('ctv-code-input');
+            const code = input.value.trim().toLowerCase();
+            if (!code) return;
+
+            // Cập nhật URL không reload trang
+            const newUrl = window.location.pathname + '?code=' + encodeURIComponent(code);
+            window.history.replaceState({ path: newUrl }, '', newUrl);
+
+            fetchCTVData(code);
+        }
+
+        // Tự động tìm kiếm nếu URL có tham số ?code=...
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            if (code) {
+                const input = document.getElementById('ctv-code-input');
+                input.value = code;
+                fetchCTVData(code);
+            }
+        });
+    </script>
+</body>
+</html>

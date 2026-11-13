@@ -49,6 +49,10 @@ export default {
         const r = await handleOrderLookup(req, env, url);
         return json(r.body, r.status, cors);
       }
+      if (p === '/ctv-lookup' && m === 'GET') {
+        const r = await handleCTVLookup(req, env, url);
+        return json(r.body, r.status, cors);
+      }
 
       if (p.startsWith('/admin/')) {
         const auth = await verifyAdmin(req, env);
@@ -415,6 +419,60 @@ async function handleOrderLookup(req, env, url) {
         subtotal: o.subtotal, total: o.total, paidAmount: o.paidAmount, timeStr: o.timeStr,
         lines: o.lines.map(l => ({ name: l.name, qty: l.qty, price: l.price, lineTotal: l.lineTotal }))
       }
+    }
+  };
+}
+
+// GET /ctv-lookup?code=  (CTV tự tra cứu đơn hàng & doanh thu của mình)
+async function handleCTVLookup(req, env, url) {
+  const ip = req.headers.get('CF-Connecting-IP') || 'unknown';
+  if (!(await rateHit(env.DB, 'ctv-lookup-ip:' + ip, 60, 10 * 60 * 1000))) {
+    return fail(429, 'TOO_MANY_REQUESTS', 'Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút.');
+  }
+
+  const rawCode = String(url.searchParams.get('code') || '').trim().toLowerCase();
+  const cleanCode = rawCode.replace(/[^a-z0-9_-]/g, '');
+  if (!cleanCode) {
+    return fail(400, 'INVALID_CODE', 'Vui lòng nhập mã CTV hợp lệ.');
+  }
+
+  const targetSource = 'ctv:' + cleanCode;
+  const { results } = await env.DB.prepare(
+    'SELECT order_id, status, pay_method, total, lines, customer_note, created_at, time_str FROM orders WHERE source = ? ORDER BY created_at DESC LIMIT 200'
+  ).bind(targetSource).all();
+
+  const orders = (results || []).map(r => {
+    let lines = [];
+    try { lines = JSON.parse(r.lines || '[]'); } catch (e) {}
+    return {
+      orderId: r.order_id,
+      timeStr: r.time_str || (r.created_at ? new Date(r.created_at).toLocaleString('vi-VN') : '---'),
+      lines: lines.map(l => ({ name: l.name || l.id, qty: l.qty, price: l.price || l.lineTotal })),
+      total: r.total || 0,
+      payMethod: r.pay_method === 'transfer' ? 'Chuyển Khoản' : (r.pay_method === 'direct' ? 'Trực tiếp' : 'COD'),
+      status: r.status,
+      note: r.customer_note || ''
+    };
+  });
+
+  // Thống kê nhanh cho CTV
+  const totalOrders = orders.length;
+  // Đơn hợp lệ tính doanh thu: không bị hủy / hết hạn / chờ chuyển khoản
+  const validOrders = orders.filter(o => !['CANCELLED', 'EXPIRED', 'PENDING_PAYMENT', 'UNDERPAID', 'PAID_LATE'].includes(o.status));
+  const validOrdersCount = validOrders.length;
+  const totalRevenue = validOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      ctvCode: cleanCode.toUpperCase(),
+      stats: {
+        totalOrders,
+        validOrdersCount,
+        totalRevenue
+      },
+      orders
     }
   };
 }

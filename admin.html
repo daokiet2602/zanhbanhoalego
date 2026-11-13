@@ -469,12 +469,22 @@
 
                 <div style="margin-top:16px; background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:8px; padding:12px 16px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                        <span style="font-size:0.82rem; font-weight:700; color:#475569;">Link UTM hoàn chỉnh phát cho CTV:</span>
+                        <span style="font-size:0.82rem; font-weight:700; color:#475569;">1. Link Tiếp Thị Bán Hàng (Gửi khách mua qua link này):</span>
                         <button type="button" class="btn-confirm-sale" style="background:#22C55E; color:#fff; padding:6px 14px; font-size:0.85rem;" onclick="copyCTVLink()">
-                            📋 Copy Link Gửi CTV
+                            📋 Copy Link Bán Hàng
                         </button>
                     </div>
                     <input type="text" id="ctv-output-url" readonly class="form-control" style="margin-top:8px; background:#fff; font-family:monospace; font-weight:700; color:var(--blue);" value="">
+                </div>
+
+                <div style="margin-top:12px; background:#F0FDF4; border:1px dashed #86EFAC; border-radius:8px; padding:12px 16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <span style="font-size:0.82rem; font-weight:700; color:#166534;">2. Link Tra Cứu Doanh Thu (Gửi CTV để tự xem số đơn của mình):</span>
+                        <button type="button" class="btn-confirm-sale" style="background:#0284C7; color:#fff; padding:6px 14px; font-size:0.85rem;" onclick="copyCTVPortalLink()">
+                            🔗 Copy Link Tra Cứu CTV
+                        </button>
+                    </div>
+                    <input type="text" id="ctv-portal-url" readonly class="form-control" style="margin-top:8px; background:#fff; font-family:monospace; font-weight:700; color:#0369A1;" value="">
                 </div>
             </div>
 
@@ -1112,20 +1122,36 @@
 
             const ctvCode = cleanName || 'ten_ctv';
             const fullUrl = `${baseUrl}?utm_source=${encodeURIComponent(platform)}&utm_medium=affiliate&utm_campaign=${encodeURIComponent(ctvCode)}`;
+            const portalUrl = `${baseUrl}ctv.html?code=${encodeURIComponent(ctvCode)}`;
             
             const outInput = document.getElementById('ctv-output-url');
             if (outInput) outInput.value = fullUrl;
+
+            const portalInput = document.getElementById('ctv-portal-url');
+            if (portalInput) portalInput.value = portalUrl;
         }
 
         function copyCTVLink() {
             const input = document.getElementById('ctv-output-url');
             if (!input || !input.value) return;
             navigator.clipboard.writeText(input.value).then(() => {
-                showToast("📋 Đã sao chép link UTM của CTV vào bộ nhớ tạm!");
+                showToast("📋 Đã sao chép link bán hàng của CTV!");
             }).catch(() => {
                 input.select();
                 document.execCommand('copy');
                 showToast("📋 Đã sao chép link!");
+            });
+        }
+
+        function copyCTVPortalLink() {
+            const input = document.getElementById('ctv-portal-url');
+            if (!input || !input.value) return;
+            navigator.clipboard.writeText(input.value).then(() => {
+                showToast("🔗 Đã sao chép link tra cứu doanh thu của CTV!");
+            }).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                showToast("🔗 Đã sao chép link tra cứu!");
             });
         }
 
