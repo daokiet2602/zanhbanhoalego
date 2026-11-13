@@ -371,10 +371,12 @@ async function handleCreateOrder(req, env, ctx) {
   }
   if (!order) return fail(503, 'ORDER_ID_BUSY', 'Hệ thống đang bận, vui lòng thử lại sau giây lát.');
 
-  const header = payMethod === 'transfer'
-    ? '🌸 <b>ĐƠN HÀNG MỚI (CHỜ CHUYỂN KHOẢN) - DÁNH BÁN HOA!</b>'
-    : '🌸 <b>ĐƠN HÀNG MỚI (COD) - DÁNH BÁN HOA!</b>';
-  ctx.waitUntil(sendTelegramOrder(env, order, header));
+  // Chỉ gửi thông báo nhận đơn mới ngay lập tức cho đơn COD.
+  // Đơn Chuyển khoản (transfer) sẽ đợi SePay webhook xác nhận chuyển khoản thành công mới gửi thông báo.
+  if (payMethod === 'cod') {
+    const header = '🌸 <b>ĐƠN HÀNG MỚI (COD) - DÁNH BÁN HOA!</b>';
+    ctx.waitUntil(sendTelegramOrder(env, order, header));
+  }
 
   return {
     status: 200,
@@ -748,13 +750,23 @@ function chatIds(env) {
   return (env.TELEGRAM_CHAT_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 }
 async function broadcastTelegram(token, ids, htmlMsg) {
-  return Promise.all(ids.map(chatId =>
-    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: htmlMsg, parse_mode: 'HTML' })
-    }).catch(err => console.warn('Lỗi Telegram:', err))
-  ));
+  return Promise.all(ids.map(async chatId => {
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: htmlMsg, parse_mode: 'HTML' })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || (data && !data.ok)) {
+        console.error('Lỗi Telegram gửi tới chat_id ' + chatId + ':', JSON.stringify(data));
+      } else {
+        console.log('Telegram gửi thành công tới ' + chatId);
+      }
+    } catch (err) {
+      console.error('Lỗi ngoại lệ Telegram:', err);
+    }
+  }));
 }
 
 async function sendTelegramOrder(env, order, headerText) {
@@ -785,13 +797,24 @@ async function sendTelegramPaidAlert(env, order, tx, headerText, note = '') {
   const token = env.TELEGRAM_BOT_TOKEN, ids = chatIds(env);
   if (!token || !ids.length) return;
   const amountIn = parseFloat(tx.transferAmount || tx.amount_in || tx.amount || 0);
+  const itemsText = (order.lines || []).map(l =>
+    `• <b>${l.qty}x</b> [${escapeHtml(l.id)}] ${escapeHtml(l.name)}: <code>${fmtVND(l.lineTotal || (l.price * l.qty))}</code>\n`).join('');
+  const c = order.customer || {};
+  const fullAddr = `${c.address || ''}${c.ward ? ', ' + c.ward : ''}${c.province ? ', ' + c.province : ''}`;
+  const ctvTag = (order.source && order.source.startsWith('ctv:')) ? `\n🏷️ <b>Nguồn CTV:</b> <code>${escapeHtml(order.source.replace('ctv:', '').toUpperCase())}</code>` : '';
+
   const msg = `${headerText}\n━━━━━━━━━━━━━━━━━━\n` +
-    `📦 <b>Mã đơn hàng:</b> <code>#${order.orderId}</code>\n` +
-    `👤 <b>Khách hàng:</b> ${escapeHtml(order.customer.name)} (<code>${escapeHtml(order.customer.phone)}</code>)\n` +
+    `📦 <b>Mã đơn hàng:</b> <code>#${order.orderId}</code>` + ctvTag + `\n` +
+    `👤 <b>Khách hàng:</b> ${escapeHtml(c.name || 'Khách vãng lai')} (<code>${escapeHtml(c.phone || '')}</code>)\n` +
+    `📍 <b>Địa chỉ:</b> ${escapeHtml(fullAddr || '---')}\n` +
+    `🚚 <b>Vận chuyển:</b> ${escapeHtml(order.shipName || 'Tiêu chuẩn')} (${fmtVND(order.shipFee || 0)})\n` +
+    `${c.note ? `📝 <b>Ghi chú:</b> <i>${escapeHtml(c.note)}</i>\n` : ''}` +
+    `━━━━━━━━━━━━━━━━━━\n🛍️ <b>CHI TIẾT MÓN:</b>\n${itemsText}` +
+    `━━━━━━━━━━━━━━━━━━\n` +
     `🏦 <b>Ngân hàng:</b> ${escapeHtml(tx.bank_brand_name || tx.gateway || 'MBBank')}\n` +
     `💵 <b>Số tiền nhận:</b> <b>${fmtVND(amountIn)}</b> (Đã nhận tổng: ${fmtVND(order.paidAmount)} / Cần: ${fmtVND(order.total)})\n` +
     `📝 <b>Nội dung CK:</b> <i>${escapeHtml(tx.content || tx.transaction_content || tx.description || '')}</i>\n` +
-    `⏰ <b>Thời gian:</b> ${escapeHtml(tx.transaction_date || vnTimeStr())}\n` +
+    `⏰ <b>Thời gian CK:</b> ${escapeHtml(tx.transaction_date || vnTimeStr())}\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
     (note ? `ℹ️ <i>${escapeHtml(note)}</i>` : (order.status === 'PAID' ? '✅ <i>Hệ thống đã tự động duyệt đơn, sẵn sàng đóng gói giao hàng!</i>' : ''));
   return broadcastTelegram(token, ids, msg);
