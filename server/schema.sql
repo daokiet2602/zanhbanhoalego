@@ -84,3 +84,11 @@ CREATE TABLE IF NOT EXISTS ctvs (
 );
 CREATE INDEX IF NOT EXISTS idx_ctvs_status ON ctvs (status);
 
+-- Nạp sẵn các CTV đã kích hoạt
+INSERT OR IGNORE INTO ctvs (code, name, status, note, created_at, updated_at) VALUES 
+  ('oanhpham', 'Oanh Phạm', 'active', 'CTV ban đầu', 1731456000000, 1731456000000),
+  ('kimngan', 'Kim Ngân', 'active', 'Link tiếp thị UTM', 1731760200000, 1731760200000),
+  ('subi', 'Subi', 'active', 'Link tiếp thị UTM', 1731760200000, 1731760200000),
+  ('daokiet', 'Đào Kiệt', 'active', 'Link tiếp thị UTM', 1731760200000, 1731760200000);
+
+
