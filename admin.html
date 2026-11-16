@@ -442,19 +442,67 @@
 
         <!-- TAB CTV: BỘ TẠO LINK TIẾP THỊ & BÁO CÁO DOANH THU CTV -->
         <div id="tab-content-ctv" style="display: none;">
-            <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:22px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,0.03);">
+            <!-- 1. QUẢN LÝ DANH SÁCH CTV CHÍNH THỨC -->
+            <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,0.03);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+                    <div>
+                        <div style="font-weight:800; font-size:1.15rem; color:var(--dark);">
+                            🤝 Quản Lý Danh Sách Cộng Tác Viên (CTV) Chính Thức
+                        </div>
+                        <div style="font-size:0.82rem; color:var(--text-sub); margin-top:2px;">
+                            Chỉ những CTV có trong danh sách và ở trạng thái "Đang hoạt động" mới có thể tra cứu đơn tại trang CTV.
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button type="button" class="btn-confirm-sale" style="background:#22C55E; color:#fff; padding:8px 16px; font-size:0.88rem;" onclick="loadAdminCTVs()">
+                            🔄 Làm Mới
+                        </button>
+                        <button type="button" class="btn-confirm-sale" style="background:var(--blue); color:#fff; padding:8px 16px; font-size:0.88rem;" onclick="openCTVModal()">
+                            ➕ Thêm CTV Mới
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Mã CTV</th>
+                                <th>Họ Tên CTV</th>
+                                <th>Số Điện Thoại</th>
+                                <th style="text-align:center;">Trạng Thái</th>
+                                <th style="text-align:center;">Đơn / Doanh Thu</th>
+                                <th>Ghi Chú</th>
+                                <th style="text-align:right;">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ctv-list-tbody">
+                            <!-- Rows rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 2. BỘ TẠO LINK UTM TIẾP THỊ CHO CTV -->
+            <div id="ctv-generator-card" style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:22px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,0.03);">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
                     <span style="font-size:1.5rem;">🔗</span>
                     <div>
-                        <b style="font-size:1.15rem; color:var(--dark);">Bộ Tạo Link UTM Tiếp Thị Cho Cộng Tác Viên</b>
-                        <div style="font-size:0.82rem; color:var(--text-sub);">Nhập tên CTV để tự động sinh link tiếp thị chuẩn. Khi khách click vào link, hệ thống sẽ lưu vết 30 ngày và ghi nhận đơn hàng cho CTV.</div>
+                        <b style="font-size:1.15rem; color:var(--dark);">Bộ Tạo Link Tiếp Thị & Tra Cứu Cho Cộng Tác Viên</b>
+                        <div style="font-size:0.82rem; color:var(--text-sub);">Tự động sinh link tiếp thị chuẩn. Khi khách click vào link, hệ thống sẽ lưu vết 30 ngày và ghi nhận đơn hàng cho CTV.</div>
                     </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-top:16px;">
                     <div>
-                        <label style="font-size:0.82rem; font-weight:700; color:var(--dark);">Tên hoặc Mã CTV (viết liền không dấu):</label>
-                        <input type="text" id="ctv-name-input" class="form-control" style="margin-top:6px;" placeholder="Ví dụ: lan, minh_anh, hoang_lego" oninput="generateCTVLink()">
+                        <label style="font-size:0.82rem; font-weight:700; color:var(--dark);">Chọn CTV đã duyệt:</label>
+                        <select id="ctv-select-picker" class="form-control" style="margin-top:6px;" onchange="onSelectCTVPicker(event)">
+                            <option value="">-- Chọn nhanh CTV từ danh sách --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:0.82rem; font-weight:700; color:var(--dark);">Mã CTV (viết liền không dấu):</label>
+                        <input type="text" id="ctv-name-input" class="form-control" style="margin-top:6px;" placeholder="Ví dụ: oanhpham, lan" oninput="generateCTVLink()">
                     </div>
                     <div>
                         <label style="font-size:0.82rem; font-weight:700; color:var(--dark);">Kênh tiếp thị (Tùy chọn):</label>
@@ -489,7 +537,7 @@
                 </div>
             </div>
 
-            <!-- BẢNG BÁO CÁO DOANH THU THEO TỪNG CTV -->
+            <!-- 3. BẢNG BÁO CÁO DOANH THU THEO TỪNG CTV -->
             <div style="font-weight:800; font-size:1.05rem; margin-bottom:12px; color:var(--dark);">
                 📊 Tổng Hợp Đơn Hàng & Doanh Thu Theo Từng Cộng Tác Viên
             </div>
@@ -600,6 +648,50 @@
         </div>
     </div>
 
+    <!-- MODAL THÊM / SỬA CTV -->
+    <div id="ctv-modal" style="position:fixed; inset:0; background:rgba(15,23,42,0.7); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(6px);">
+        <div style="background:#fff; width:100%; max-width:480px; border-radius:24px; border:3px solid var(--dark); padding:24px; box-shadow:8px 8px 0 var(--blue); max-height:90vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:2px solid var(--border); padding-bottom:12px;">
+                <h3 style="font-size:1.25rem; font-weight:900;" id="ctv-modal-title">🤝 Thêm Cộng Tác Viên Mới</h3>
+                <button type="button" onclick="closeCTVModal()" style="background:#F1F5F9; border:2px solid var(--dark); width:32px; height:32px; border-radius:50%; font-weight:900; cursor:pointer;">✕</button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <div class="form-group">
+                    <label>Mã CTV (Viết liền không dấu, dùng trong link UTM) *</label>
+                    <input type="text" class="form-control" id="modal-ctv-code" placeholder="VD: oanhpham, lan, minh_anh">
+                </div>
+
+                <div class="form-group">
+                    <label>Họ và Tên CTV *</label>
+                    <input type="text" class="form-control" id="modal-ctv-name" placeholder="VD: Phạm Thị Kiều Oanh">
+                </div>
+
+                <div class="form-group">
+                    <label>Số Điện Thoại Liên Hệ</label>
+                    <input type="text" class="form-control" id="modal-ctv-phone" placeholder="VD: 0988xxxxxx">
+                </div>
+
+                <div class="form-group">
+                    <label>Trạng Thái Hoạt Động</label>
+                    <select class="form-control" id="modal-ctv-status">
+                        <option value="active">🟢 Đang hoạt động (Được tra cứu & nhận đơn)</option>
+                        <option value="locked">🔴 Tạm khóa (Chặn tra cứu)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Ghi Chú (Kênh tiếp thị, Số tài khoản nhận hoa hồng...)</label>
+                    <input type="text" class="form-control" id="modal-ctv-note" placeholder="VD: TikToker 20k follow, STK MB 1234...">
+                </div>
+
+                <button class="btn-confirm-sale" style="width:100%; padding:14px; margin-top:8px;" onclick="submitSaveCTV()">
+                    💾 Lưu Thông Tin CTV
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="toast" id="toast">Thông báo</div>
 
     <script>
@@ -696,6 +788,7 @@
                 const store = window.realtimeStore;
                 await store.syncWithCloudWorker(true);
                 await store.fetchAdminOrders(true);
+                loadAdminCTVs();
 
                 populateSelectDropdown();
                 if (!window.ADMIN_SUBSCRIBED) {
@@ -1118,10 +1211,204 @@
             document.getElementById('tab-btn-monthly').classList.toggle('active', tab === 'monthly');
 
             if (tab === 'ctv') {
+                loadAdminCTVs();
                 generateCTVLink();
                 renderCTVAnalytics();
             }
             if (tab === 'monthly') renderMonthlyTable();
+        }
+
+        // ============================ QUẢN LÝ CỘNG TÁC VIÊN (CTV) ============================
+        let ADMIN_CTVS = [];
+
+        async function loadAdminCTVs() {
+            try {
+                ADMIN_CTVS = await window.realtimeStore.fetchAdminCTVs();
+                renderCTVsTable();
+                updateCTVSelectDropdown();
+            } catch(e) {
+                console.error('Lỗi tải danh sách CTV:', e);
+            }
+        }
+
+        function renderCTVsTable() {
+            const tbody = document.getElementById('ctv-list-tbody');
+            if (!tbody) return;
+
+            if (!ADMIN_CTVS || ADMIN_CTVS.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-sub);">Chưa có CTV nào trong danh sách chính thức. Bấm nút <b>➕ Thêm CTV Mới</b> để tạo CTV đầu tiên!</td></tr>`;
+                return;
+            }
+
+            const history = window.realtimeStore.salesHistory || [];
+            const statsMap = {};
+            history.forEach(o => {
+                if (o.source && o.source.startsWith('ctv:')) {
+                    const c = o.source.replace('ctv:', '').trim().toLowerCase();
+                    if (!statsMap[c]) statsMap[c] = { orders: 0, revenue: 0 };
+                    statsMap[c].orders += 1;
+                    if (isRevenueOrder(o)) {
+                        statsMap[c].revenue += (o.total || o.subtotal || 0);
+                    }
+                }
+            });
+
+            tbody.innerHTML = ADMIN_CTVS.map(c => {
+                const s = statsMap[c.code.toLowerCase()] || { orders: 0, revenue: 0 };
+                const isActive = c.status === 'active';
+                const statusBadge = isActive 
+                    ? `<span style="background:#DCFCE7; color:#15803D; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem;">🟢 Hoạt Động</span>`
+                    : `<span style="background:#F1F5F9; color:#64748B; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem;">🔴 Tạm Khóa</span>`;
+
+                return `
+                    <tr style="${!isActive ? 'opacity:0.65; background:#FAFAFA;' : ''}">
+                        <td><b style="font-family:monospace; font-size:0.95rem; color:var(--blue);">🤝 ${escapeHtml(c.code)}</b></td>
+                        <td><b>${escapeHtml(c.name)}</b></td>
+                        <td>${escapeHtml(c.phone || '---')}</td>
+                        <td style="text-align:center;">${statusBadge}</td>
+                        <td style="text-align:center;">
+                            <b>${s.orders} đơn</b><br>
+                            <small style="color:var(--blue); font-weight:700;">${fmtVND(s.revenue)}</small>
+                        </td>
+                        <td><small style="color:var(--text-sub);">${escapeHtml(c.note || '---')}</small></td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <button type="button" class="btn-confirm-sale" style="background:#0284C7; color:#fff; padding:4px 10px; font-size:0.8rem; margin-right:4px;" onclick="selectCTVForLink('${escapeHtml(c.code)}')">
+                                🔗 Lấy Link
+                            </button>
+                            <button type="button" class="btn-confirm-sale" style="background:#E2E8F0; color:var(--dark); padding:4px 10px; font-size:0.8rem; margin-right:4px;" onclick="editCTV('${escapeHtml(c.code)}')">
+                                ✏️ Sửa
+                            </button>
+                            <button type="button" class="btn-confirm-sale" style="background:${isActive ? '#F59E0B' : '#10B981'}; color:#fff; padding:4px 10px; font-size:0.8rem; margin-right:4px;" onclick="toggleCTVStatus('${escapeHtml(c.code)}', '${c.status}')">
+                                ${isActive ? '🔒 Khóa' : '🔓 Mở'}
+                            </button>
+                            <button type="button" class="btn-confirm-sale" style="background:#EF4444; color:#fff; padding:4px 8px; font-size:0.8rem;" onclick="deleteCTV('${escapeHtml(c.code)}')">
+                                🗑️
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateCTVSelectDropdown() {
+            const select = document.getElementById('ctv-select-picker');
+            if (!select) return;
+            const currentVal = select.value;
+            select.innerHTML = `<option value="">-- Chọn nhanh CTV từ danh sách --</option>` +
+                ADMIN_CTVS.map(c => `<option value="${escapeHtml(c.code)}">${escapeHtml(c.name)} (${escapeHtml(c.code)}) ${c.status === 'locked' ? '[Đang khóa]' : ''}</option>`).join('');
+            if (currentVal) select.value = currentVal;
+        }
+
+        function onSelectCTVPicker(e) {
+            const val = e.target.value;
+            if (val) {
+                document.getElementById('ctv-name-input').value = val;
+                generateCTVLink();
+            }
+        }
+
+        function selectCTVForLink(code) {
+            document.getElementById('ctv-name-input').value = code;
+            generateCTVLink();
+            const el = document.getElementById('ctv-generator-card');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+            showToast(`🔗 Đã chuẩn bị link cho CTV [${code}]!`);
+        }
+
+        function openCTVModal(code = null) {
+            document.getElementById('ctv-modal').style.display = 'flex';
+            if (code) {
+                const ctv = ADMIN_CTVS.find(c => c.code === code);
+                if (ctv) {
+                    document.getElementById('ctv-modal-title').textContent = '✏️ Chỉnh Sửa Cộng Tác Viên';
+                    document.getElementById('modal-ctv-code').value = ctv.code;
+                    document.getElementById('modal-ctv-code').readOnly = true;
+                    document.getElementById('modal-ctv-name').value = ctv.name;
+                    document.getElementById('modal-ctv-phone').value = ctv.phone || '';
+                    document.getElementById('modal-ctv-status').value = ctv.status || 'active';
+                    document.getElementById('modal-ctv-note').value = ctv.note || '';
+                    return;
+                }
+            }
+            document.getElementById('ctv-modal-title').textContent = '🤝 Thêm Cộng Tác Viên Mới';
+            document.getElementById('modal-ctv-code').value = '';
+            document.getElementById('modal-ctv-code').readOnly = false;
+            document.getElementById('modal-ctv-name').value = '';
+            document.getElementById('modal-ctv-phone').value = '';
+            document.getElementById('modal-ctv-status').value = 'active';
+            document.getElementById('modal-ctv-note').value = '';
+            document.getElementById('modal-ctv-code').focus();
+        }
+
+        function editCTV(code) {
+            openCTVModal(code);
+        }
+
+        function closeCTVModal() {
+            document.getElementById('ctv-modal').style.display = 'none';
+        }
+
+        async function submitSaveCTV() {
+            const code = document.getElementById('modal-ctv-code').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+            const name = document.getElementById('modal-ctv-name').value.trim();
+            const phone = document.getElementById('modal-ctv-phone').value.trim();
+            const status = document.getElementById('modal-ctv-status').value;
+            const note = document.getElementById('modal-ctv-note').value.trim();
+
+            if (!code || code.length < 2) {
+                alert('Vui lòng nhập mã CTV hợp lệ (từ 2 ký tự trở lên, chữ thường không dấu)');
+                return;
+            }
+            if (!name) {
+                alert('Vui lòng nhập họ và tên CTV');
+                return;
+            }
+
+            const res = await window.realtimeStore.saveAdminCTV({ code, name, phone, status, note });
+            if (!res.success) {
+                alert(res.msg);
+                return;
+            }
+
+            closeCTVModal();
+            showToast(`✅ Đã lưu CTV [${code}] thành công!`);
+            await loadAdminCTVs();
+        }
+
+        async function toggleCTVStatus(code, currentStatus) {
+            const nextStatus = currentStatus === 'active' ? 'locked' : 'active';
+            const actionText = nextStatus === 'active' ? 'MỞ HOẠT ĐỘNG' : 'TẠM KHÓA';
+            if (!confirm(`Bạn có chắc muốn ${actionText} CTV [${code}]?`)) return;
+
+            const ctv = ADMIN_CTVS.find(c => c.code === code);
+            if (!ctv) return;
+
+            const res = await window.realtimeStore.saveAdminCTV({
+                code: ctv.code,
+                name: ctv.name,
+                phone: ctv.phone,
+                status: nextStatus,
+                note: ctv.note
+            });
+
+            if (res.success) {
+                showToast(`✅ Đã cập nhật trạng thái CTV [${code}]!`);
+                await loadAdminCTVs();
+            } else {
+                alert(res.msg);
+            }
+        }
+
+        async function deleteCTV(code) {
+            if (!confirm(`Bạn có chắc muốn XÓA CTV [${code}] khỏi danh sách chính thức?\n(Các đơn hàng cũ vẫn giữ nguyên, nhưng mã này sẽ không còn tra cứu được)`)) return;
+
+            const res = await window.realtimeStore.deleteAdminCTV(code);
+            if (res.success) {
+                showToast(`🗑️ Đã xóa CTV [${code}] thành công!`);
+                await loadAdminCTVs();
+            } else {
+                alert(res.msg);
+            }
         }
 
         // TẠO LINK UTM TIẾP THỊ CTV

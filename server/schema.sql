@@ -71,3 +71,16 @@ CREATE TABLE IF NOT EXISTS meta (
   value INTEGER NOT NULL
 );
 INSERT OR IGNORE INTO meta (key, value) VALUES ('version', 1);
+
+-- Danh mục Cộng Tác Viên (CTV) chính thức được cấp phép
+CREATE TABLE IF NOT EXISTS ctvs (
+  code        TEXT PRIMARY KEY,                  -- mã CTV viết thường không dấu (vd: oanhpham, lan)
+  name        TEXT NOT NULL,                     -- họ tên đầy đủ hiển thị
+  phone       TEXT NOT NULL DEFAULT '',          -- số điện thoại liên hệ
+  status      TEXT NOT NULL DEFAULT 'active',    -- active (hoạt động) | locked (tạm khóa)
+  note        TEXT NOT NULL DEFAULT '',          -- ghi chú (kênh tiếp thị, số TK ngân hàng...)
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ctvs_status ON ctvs (status);
+

@@ -281,7 +281,7 @@
             <div class="kpi-card">
                 <div class="kpi-title">Mã Cộng Tác Viên</div>
                 <div class="kpi-value" id="kpi-code" style="color:var(--primary);">---</div>
-                <div class="kpi-sub">Đang hoạt động</div>
+                <div class="kpi-sub" id="kpi-status-sub">Đang kiểm tra...</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Tổng Đơn Đã Đặt</div>
@@ -384,16 +384,19 @@
                     kpiSection.style.display = 'none';
                     resultsSection.style.display = 'none';
                     msg.style.display = 'block';
+                    const icon = data.error === 'CTV_LOCKED' ? '🔒' : '⚠️';
                     msg.innerHTML = `
-                        <div class="empty-icon">⚠️</div>
-                        <b>${escapeHtml(data.message || 'Không thể tra cứu lúc này')}</b>
-                        <p style="font-size:0.85rem; margin-top:4px;">Vui lòng kiểm tra lại mã CTV của bạn.</p>
+                        <div class="empty-icon">${icon}</div>
+                        <b style="font-size:1.05rem; color:#B91C1C;">${escapeHtml(data.message || 'Mã CTV không tồn tại trên hệ thống')}</b>
+                        <p style="font-size:0.85rem; margin-top:6px; color:var(--text-sub);">Vui lòng kiểm tra lại chính xác mã CTV hoặc liên hệ shop để được cấp quyền.</p>
                     `;
                     return;
                 }
 
                 // Cập nhật KPI
                 document.getElementById('kpi-code').textContent = data.ctvCode;
+                const ctvDisplayName = data.ctvName ? `👤 ${escapeHtml(data.ctvName)} &bull; ` : '';
+                document.getElementById('kpi-status-sub').innerHTML = `${ctvDisplayName}<span style="color:var(--green); font-weight:700;">Đang hoạt động ✓</span>`;
                 document.getElementById('kpi-total-orders').textContent = `${data.stats.totalOrders} đơn`;
                 document.getElementById('kpi-valid-orders').textContent = `${data.stats.validOrdersCount} đơn`;
                 document.getElementById('kpi-revenue').textContent = fmtVND(data.stats.totalRevenue);
@@ -405,7 +408,7 @@
                     msg.style.display = 'block';
                     msg.innerHTML = `
                         <div class="empty-icon">🌱</div>
-                        <b>Chưa có đơn hàng nào phát sinh từ mã CTV [${escapeHtml(data.ctvCode)}]</b>
+                        <b>Mã CTV [${escapeHtml(data.ctvCode)}] đã kích hoạt nhưng chưa có đơn hàng nào phát sinh</b>
                         <p style="font-size:0.85rem; margin-top:4px;">Hãy tích cực chia sẻ link tiếp thị của bạn để nổ đơn đầu tiên nhé!</p>
                     `;
                     return;

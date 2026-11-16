@@ -332,6 +332,22 @@ class RealtimeStore {
         return { success: false, msg: r.data.message || 'Không đổi được trạng thái.' };
     }
 
+    // Quản lý Cộng Tác Viên (CTV)
+    async fetchAdminCTVs() {
+        const r = await this._api('/admin/ctvs', { admin: true });
+        return r.ok ? (r.data.ctvs || []) : [];
+    }
+
+    async saveAdminCTV(ctvData) {
+        const r = await this._api('/admin/ctvs', { method: 'POST', admin: true, body: ctvData });
+        return r.ok ? { success: true, ctv: r.data.ctv } : { success: false, msg: r.data.message || 'Lỗi lưu CTV' };
+    }
+
+    async deleteAdminCTV(code) {
+        const r = await this._api(`/admin/ctvs?code=${encodeURIComponent(code)}`, { method: 'DELETE', admin: true });
+        return r.ok ? { success: true } : { success: false, msg: r.data.message || 'Lỗi xóa CTV' };
+    }
+
     // Đơn bán quầy đã nằm trên server, "hoàn tác" = hủy đơn. Giữ hàm này để code cũ không lỗi.
     undoSale() { return false; }
 }

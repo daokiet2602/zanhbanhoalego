@@ -436,6 +436,15 @@ async function handleCTVLookup(req, env, url) {
     return fail(400, 'INVALID_CODE', 'Vui lòng nhập mã CTV hợp lệ.');
   }
 
+  // Xác thực mã CTV từ bảng ctvs
+  const ctv = await env.DB.prepare('SELECT code, name, phone, status, created_at FROM ctvs WHERE code = ?').bind(cleanCode).first();
+  if (!ctv) {
+    return fail(404, 'CTV_NOT_FOUND', `Mã CTV [${cleanCode.toUpperCase()}] không tồn tại trên hệ thống. Vui lòng liên hệ shop để được cấp mã CTV chính thức.`);
+  }
+  if (ctv.status !== 'active') {
+    return fail(403, 'CTV_LOCKED', `Mã CTV [${cleanCode.toUpperCase()}] hiện đang tạm ngưng hoạt động. Vui lòng liên hệ shop để được hỗ trợ.`);
+  }
+
   const targetSource = 'ctv:' + cleanCode;
   const { results } = await env.DB.prepare(
     'SELECT order_id, status, pay_method, total, lines, customer_note, created_at, time_str FROM orders WHERE source = ? ORDER BY created_at DESC LIMIT 200'
@@ -466,7 +475,13 @@ async function handleCTVLookup(req, env, url) {
     status: 200,
     body: {
       ok: true,
-      ctvCode: cleanCode.toUpperCase(),
+      ctv: {
+        code: ctv.code.toUpperCase(),
+        name: ctv.name,
+        status: ctv.status
+      },
+      ctvCode: ctv.code.toUpperCase(),
+      ctvName: ctv.name,
       stats: {
         totalOrders,
         validOrdersCount,
@@ -773,6 +788,44 @@ async function handleAdmin(p, m, req, env, url) {
       ]);
     }
     return { body: { ok: true, orderId: id, status: next, version: await getVersion(db) } };
+  }
+
+  // Quản lý CTV (Tiếp Thị / Affiliate)
+  if (p === '/admin/ctvs' && m === 'GET') {
+    const { results } = await db.prepare('SELECT * FROM ctvs ORDER BY created_at DESC').all();
+    return { body: { ok: true, ctvs: results || [] } };
+  }
+
+  if (p === '/admin/ctvs' && m === 'POST') {
+    const b = await readJson(req);
+    if (!b) return fail(400, 'INVALID_INPUT', 'Dữ liệu không hợp lệ.');
+    const rawCode = String(b.code || '').trim().toLowerCase();
+    const cleanCode = rawCode.replace(/[^a-z0-9_-]/g, '');
+    if (!cleanCode || cleanCode.length < 2) return fail(400, 'INVALID_CODE', 'Mã CTV phải từ 2 ký tự (chữ thường, số, dấu gạch).');
+    const name = cleanText(b.name, 100);
+    if (!name) return fail(400, 'INVALID_NAME', 'Vui lòng nhập họ tên CTV.');
+    const phone = cleanText(b.phone || '', 20);
+    const note = cleanText(b.note || '', 500);
+    const status = b.status === 'locked' ? 'locked' : 'active';
+    const now = Date.now();
+
+    await db.prepare(`
+      INSERT INTO ctvs (code, name, phone, status, note, created_at, updated_at)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
+      ON CONFLICT(code) DO UPDATE SET
+        name = ?2, phone = ?3, status = ?4, note = ?5, updated_at = ?6
+    `).bind(cleanCode, name, phone, status, note, now).run();
+
+    const ctv = await db.prepare('SELECT * FROM ctvs WHERE code = ?').bind(cleanCode).first();
+    return { body: { ok: true, ctv } };
+  }
+
+  if (p === '/admin/ctvs' && m === 'DELETE') {
+    const rawCode = String(url.searchParams.get('code') || '').trim().toLowerCase();
+    const cleanCode = rawCode.replace(/[^a-z0-9_-]/g, '');
+    if (!cleanCode) return fail(400, 'INVALID_CODE', 'Thiếu mã CTV.');
+    await db.prepare('DELETE FROM ctvs WHERE code = ?').bind(cleanCode).run();
+    return { body: { ok: true, code: cleanCode } };
   }
 
   return fail(404, 'NOT_FOUND', 'Không có chức năng này.');
